@@ -18,6 +18,7 @@ export type WhatsAppGroupConfig = {
   requireMention?: boolean;
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
+  systemPrompt?: string;
 };
 
 export type WhatsAppAckReactionConfig = {
