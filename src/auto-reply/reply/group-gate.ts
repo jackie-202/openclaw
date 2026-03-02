@@ -104,6 +104,8 @@ Read the conversation flow. Consider:
 
 Think about it like this: you're Jackie's social awareness. A good group chat participant knows when to speak and when to listen. Sometimes an @mention is a real summon ("Jackie, what do you think?"). Sometimes it's just people talking about you ("Jackie musel odbranchovat openclaw"). Sometimes a message without any mention still clearly wants your input. Read the room.
 
+Pay attention to Jackie's SILENCE pattern in the history. If Jackie hasn't responded for many messages in a row, the threshold for responding should get LOWER — people might be wondering why Jackie is quiet. Comments like "we overdid the silence" or "is Jackie even here?" or indirect references to Jackie's absence are social signals to re-engage. A long silence followed by someone mentioning Jackie (even in third person) often means "hey, say something."
+
 Patterns that usually warrant a response:
 - Direct questions or requests aimed at Jackie (by name, @mention, or context)
 - Follow-up questions to something Jackie said
