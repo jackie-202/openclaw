@@ -277,6 +277,17 @@ export type AgentDefaultsConfig = {
   };
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: AgentSandboxConfig;
+  /** Two-phase LLM gate for always-on group chats (decides whether to respond before full LLM run). */
+  groupGate?: {
+    /** Enable the group gate (default: false). */
+    enabled?: boolean;
+    /** Model to use for the gate call (provider/model string, e.g. "copilot/gpt-4o-mini"). */
+    model?: string;
+    /** Number of recent session messages to include in the gate prompt (default: 20). */
+    historyLimit?: number;
+    /** Timeout in milliseconds for the gate LLM call (default: 10000). */
+    timeoutMs?: number;
+  };
 };
 
 export type AgentCompactionMode = "default" | "safeguard";
