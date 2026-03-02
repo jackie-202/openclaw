@@ -543,6 +543,11 @@ export async function runEmbeddedAttempt(
         contextMode: params.bootstrapContextMode,
         runKind: params.bootstrapContextRunKind,
       });
+    // DEBUG: log which bootstrap files are injected per session
+    log.info(
+      `bootstrap context resolved: sessionKey=${params.sessionKey ?? "?"} contextMode=${params.bootstrapContextMode ?? "full"} files=[${hookAdjustedBootstrapFiles.map((f) => `${f.name}(${f.missing ? "MISSING" : `${f.content?.length ?? 0}B`})`).join(", ")}] contextFiles=${contextFiles.length}`,
+    );
+
     const workspaceNotes = hookAdjustedBootstrapFiles.some(
       (file) => file.name === DEFAULT_BOOTSTRAP_FILENAME && !file.missing,
     )
