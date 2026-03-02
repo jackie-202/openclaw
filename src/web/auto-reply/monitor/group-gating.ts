@@ -44,7 +44,7 @@ function isOwnerSender(baseMentionConfig: MentionConfig, msg: WebInboundMsg) {
   return owners.includes(sender);
 }
 
-function recordPendingGroupHistoryEntry(params: {
+export function recordPendingGroupHistoryEntry(params: {
   msg: WebInboundMsg;
   groupHistories: Map<string, GroupHistoryEntry[]>;
   groupHistoryKey: string;
