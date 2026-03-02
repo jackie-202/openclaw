@@ -85,7 +85,7 @@ function buildGatePrompt(transcript: string[], newSender: string, newMessage: st
   const historyBlock =
     transcript.length > 0 ? transcript.join("\n") : "(No prior conversation history)";
 
-  return `You are a group chat response gate. Your ONLY job is to decide whether the AI assistant should respond to the latest message.
+  return `You are a group chat response gate. Decide whether the AI assistant ("Jackie") should respond to the latest message.
 
 ## Conversation History (last ${transcript.length} messages):
 ${historyBlock}
@@ -93,19 +93,31 @@ ${historyBlock}
 ## New Message:
 ${newSender}: ${newMessage}
 
-## Rules — respond YES only if:
-- The message is a direct question or request TO the assistant
-- The assistant was mentioned by name
-- The assistant has genuinely new information to add
-- Someone is replying to something the assistant said, with a follow-up question
+## ALWAYS respond YES if:
+- The message contains @mention of the assistant (any @ tag referencing Jackie or the assistant's ID) — this is a DIRECT summon, always respond
+- The message directly addresses Jackie by name ("Jackie, ...", "hej Jackie", etc.)
+- Someone asks Jackie a question or gives Jackie a command/request ("Jackie potvrd", "Jackie co si myslíš", etc.)
+- Someone is replying to something Jackie said, asking a follow-up question
 
-## Rules — respond NO if:
-- The assistant already answered this question/topic
-- The message is just an emoji, reaction, or short acknowledgment (ok, jo, jojo, :D, etc.)
-- It's banter between other people that doesn't involve the assistant
-- It's a meta-comment ABOUT the assistant (not TO the assistant)
-- The assistant would just be repeating what it already said
-- The message is a link the assistant can't access (and nobody asked for analysis)
+## Respond YES if:
+- The assistant has genuinely new, useful information to add that nobody else covered
+- Someone asks a factual question that Jackie can answer and nobody else has answered yet
+
+## Respond NO if:
+- The assistant already answered this exact question/topic recently (check history)
+- The message is just an emoji, reaction, or short acknowledgment (ok, jo, jojo, :D, 🫡, etc.)
+- It's casual banter between other people where Jackie has nothing meaningful to add
+- The message is about Jackie but not directed TO Jackie (e.g. "Jackie musel..." or "ten bot je...")  — UNLESS it also contains an @mention or direct address
+- Adding a response would just repeat what Jackie already said
+- The message is a shared link with no question attached
+
+## Critical distinction:
+- "Jackie potvrd" or "@Jackie potvrd" = DIRECT COMMAND → YES
+- "Jackie musel odbranchovat openclaw" = TALKING ABOUT Jackie → NO
+- "je tu @Jackie" + a request = SUMMONING Jackie → YES
+- "vidíš jak je těžký mlčet pro LLM?" = meta-commentary → NO
+
+When in doubt, lean towards YES. It's better to respond once too many than to ignore a direct request.
 
 ## Response Format (JSON only, no other text):
 {"shouldRespond": true/false, "reason": "brief explanation"}`;
