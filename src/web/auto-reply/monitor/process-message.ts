@@ -39,6 +39,7 @@ import { whatsappInboundLog, whatsappOutboundLog } from "../loggers.js";
 import type { WebInboundMsg } from "../types.js";
 import { elide } from "../util.js";
 import { maybeSendAckReaction } from "./ack-reaction.js";
+import { resolveGroupPolicyFor } from "./group-activation.js";
 import { formatGroupMembers } from "./group-members.js";
 import { trackBackgroundTask, updateLastRouteInBackground } from "./last-route.js";
 import { buildInboundLine } from "./message-line.js";
@@ -289,6 +290,19 @@ export async function processMessage(params: {
         )
       : undefined;
 
+  // Resolve per-group systemPrompt for group messages.
+  const groupSystemPrompt =
+    params.msg.chatType === "group"
+      ? (() => {
+          const { groupConfig, defaultConfig } = resolveGroupPolicyFor(params.cfg, conversationId);
+          const prompt =
+            (groupConfig as { systemPrompt?: string } | undefined)?.systemPrompt?.trim() ||
+            (defaultConfig as { systemPrompt?: string } | undefined)?.systemPrompt?.trim() ||
+            undefined;
+          return prompt;
+        })()
+      : undefined;
+
   const ctxPayload = finalizeInboundContext({
     Body: combinedBody,
     BodyForAgent: params.msg.body,
@@ -314,6 +328,7 @@ export async function processMessage(params: {
       roster: params.groupMemberNames.get(params.groupHistoryKey),
       fallbackE164: params.msg.senderE164,
     }),
+    GroupSystemPrompt: groupSystemPrompt,
     SenderName: params.msg.senderName,
     SenderId: params.msg.senderJid?.trim() || params.msg.senderE164,
     SenderE164: params.msg.senderE164,
