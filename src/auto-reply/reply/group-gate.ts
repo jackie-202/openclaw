@@ -161,6 +161,48 @@ function isTextContentBlock(block: { type: string }): block is TextContent {
 }
 
 /**
+ * Replace raw WhatsApp LID/JID @-mentions in the message body with resolved
+ * human-readable names from the participant roster.
+ *
+ * E.g. `@194146111357056` → `@Jackie` when the roster maps that LID to
+ * "Jackie". Unresolved @-mentions are left as-is.
+ */
+function resolveMentionsInBody(
+  body: string,
+  mentionedJids: string[] | undefined,
+  participantRoster: Map<string, string> | undefined,
+): string {
+  if (!mentionedJids?.length || !participantRoster?.size) {
+    return body;
+  }
+
+  let resolved = body;
+  for (const jid of mentionedJids) {
+    // WhatsApp @-mentions appear in the body as the user-part of the JID
+    // (the part before '@'), e.g. for JID "194146111357056:2@s.whatsapp.net"
+    // or LID "194146111357056@lid" the body will contain "@194146111357056".
+    const userPart = jid.split(/[:@]/)[0];
+    if (!userPart) {
+      continue;
+    }
+
+    // Look up name by full JID first, then by E164-normalised variants
+    const name =
+      participantRoster.get(jid) ??
+      participantRoster.get(`+${userPart}`) ??
+      Array.from(participantRoster.entries()).find(
+        ([key]) => key.split(/[:@]/)[0] === userPart,
+      )?.[1];
+
+    if (name) {
+      // Replace the @-mention in the body (there may be multiple for the same JID)
+      resolved = resolved.replaceAll(`@${userPart}`, `@${name}`);
+    }
+  }
+  return resolved;
+}
+
+/**
  * Run the two-phase LLM gate for an always-on group chat.
  *
  * Returns `{ shouldRespond: true }` (safe fallback) on any error or if the
@@ -171,6 +213,7 @@ export const _test = {
   readRecentSessionTranscript,
   buildGatePrompt,
   parseGateResponse,
+  resolveMentionsInBody,
 };
 
 export async function runGroupGate(params: {
@@ -179,8 +222,19 @@ export async function runGroupGate(params: {
   sessionKey: string;
   senderName: string;
   messageBody: string;
+  /** Raw mentionedJids from the inbound message (WhatsApp LIDs / JIDs). */
+  mentionedJids?: string[];
+  /** Group participant roster: JID → display name. */
+  participantRoster?: Map<string, string>;
 }): Promise<GroupGateResult> {
-  const { cfg, agentId, sessionKey, senderName, messageBody } = params;
+  const { cfg, agentId, sessionKey, senderName } = params;
+
+  // Resolve raw @-mention LIDs to human-readable names before the gate sees them
+  const messageBody = resolveMentionsInBody(
+    params.messageBody,
+    params.mentionedJids,
+    params.participantRoster,
+  );
 
   const gateConfig: GroupGateConfig = cfg.agents?.defaults?.groupGate;
 
