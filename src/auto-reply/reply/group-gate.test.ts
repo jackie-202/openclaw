@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/config.js";
 import { _test, runGroupGate } from "./group-gate.js";
 
-const { readRecentSessionTranscript, buildGatePrompt, parseGateResponse } = _test;
+const { readRecentSessionTranscript, buildGatePrompt, parseGateResponse, resolveMentionsInBody } =
+  _test;
 
 // ── Module mocks ───────────────────────────────────────────────────────
 
@@ -185,10 +186,10 @@ describe("group-gate", () => {
       expect(prompt).toContain("Bob: hey");
     });
 
-    it("includes YES and NO rules", () => {
+    it("includes decision guidance and response format", () => {
       const prompt = buildGatePrompt([], "Eve", "test");
-      expect(prompt).toContain("respond YES only if");
-      expect(prompt).toContain("respond NO if");
+      expect(prompt).toContain("Patterns that usually warrant a response");
+      expect(prompt).toContain("Patterns that usually don't");
       expect(prompt).toContain("shouldRespond");
     });
   });
@@ -338,6 +339,105 @@ describe("group-gate", () => {
 
       expect(result.shouldRespond).toBe(true);
       expect(result.reason).toContain("gate error");
+    });
+
+    it("resolves @LID mentions in messageBody before sending to gate model", async () => {
+      vi.spyOn(fs, "readFileSync").mockReturnValue(makeSessionJSONL([]));
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage('{"shouldRespond": true, "reason": "direct mention of Jackie"}'),
+      );
+
+      const roster = new Map<string, string>();
+      roster.set("194146111357056:2@s.whatsapp.net", "Jackie");
+
+      await runGroupGate({
+        cfg: baseCfg,
+        agentId: "default",
+        sessionKey: "test-session",
+        senderName: "Michal",
+        messageBody: "@194146111357056 popiš co se snažíme docílit",
+        mentionedJids: ["194146111357056:2@s.whatsapp.net"],
+        participantRoster: roster,
+      });
+
+      // Verify the prompt sent to the model contains resolved name, not LID
+      const call = vi.mocked(completeSimple).mock.calls[0];
+      const promptContent = (call[1] as { messages: Array<{ content: string }> }).messages[0]
+        .content;
+      expect(promptContent).toContain("@Jackie popiš co se snažíme docílit");
+      expect(promptContent).not.toContain("@194146111357056");
+    });
+  });
+
+  // ── resolveMentionsInBody ──────────────────────────────────────────
+
+  describe("resolveMentionsInBody", () => {
+    it("replaces LID @-mention with resolved name", () => {
+      const roster = new Map([["194146111357056:2@s.whatsapp.net", "Jackie"]]);
+      const result = resolveMentionsInBody(
+        "@194146111357056 ahoj",
+        ["194146111357056:2@s.whatsapp.net"],
+        roster,
+      );
+      expect(result).toBe("@Jackie ahoj");
+    });
+
+    it("replaces multiple different mentions", () => {
+      const roster = new Map([
+        ["111@s.whatsapp.net", "Alice"],
+        ["222@s.whatsapp.net", "Bob"],
+      ]);
+      const result = resolveMentionsInBody(
+        "@111 a @222 ahoj",
+        ["111@s.whatsapp.net", "222@s.whatsapp.net"],
+        roster,
+      );
+      expect(result).toBe("@Alice a @Bob ahoj");
+    });
+
+    it("leaves unresolved mentions intact", () => {
+      const roster = new Map([["111@s.whatsapp.net", "Alice"]]);
+      const result = resolveMentionsInBody(
+        "@111 a @999 ahoj",
+        ["111@s.whatsapp.net", "999@s.whatsapp.net"],
+        roster,
+      );
+      expect(result).toBe("@Alice a @999 ahoj");
+    });
+
+    it("returns body unchanged when no mentionedJids", () => {
+      const roster = new Map([["111@s.whatsapp.net", "Alice"]]);
+      expect(resolveMentionsInBody("hello", undefined, roster)).toBe("hello");
+      expect(resolveMentionsInBody("hello", [], roster)).toBe("hello");
+    });
+
+    it("returns body unchanged when no roster", () => {
+      expect(resolveMentionsInBody("@111 hello", ["111@s.whatsapp.net"], undefined)).toBe(
+        "@111 hello",
+      );
+      expect(resolveMentionsInBody("@111 hello", ["111@s.whatsapp.net"], new Map())).toBe(
+        "@111 hello",
+      );
+    });
+
+    it("handles LID format with colon separator", () => {
+      const roster = new Map([["194146111357056:2@s.whatsapp.net", "Jackie"]]);
+      const result = resolveMentionsInBody(
+        "@194146111357056 test",
+        ["194146111357056:2@s.whatsapp.net"],
+        roster,
+      );
+      expect(result).toBe("@Jackie test");
+    });
+
+    it("replaces all occurrences of the same mention", () => {
+      const roster = new Map([["111@s.whatsapp.net", "Alice"]]);
+      const result = resolveMentionsInBody(
+        "@111 said @111 is here",
+        ["111@s.whatsapp.net"],
+        roster,
+      );
+      expect(result).toBe("@Alice said @Alice is here");
     });
   });
 });

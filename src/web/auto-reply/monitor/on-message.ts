@@ -154,12 +154,17 @@ export function createWebOnMessageHandler(params: {
         conversationId,
       });
       if (activation === "always") {
+        // Build participant roster for mention resolution in the gate prompt
+        const groupRoster = params.groupMemberNames.get(conversationId);
+
         const gateResult = await runGroupGate({
           cfg: params.cfg,
           agentId: route.agentId,
           sessionKey: route.sessionKey,
           senderName: msg.senderName ?? msg.senderE164 ?? "Unknown",
           messageBody: msg.body,
+          mentionedJids: msg.mentionedJids,
+          participantRoster: groupRoster,
         });
         if (!gateResult.shouldRespond) {
           logVerbose(
