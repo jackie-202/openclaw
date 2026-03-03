@@ -180,6 +180,15 @@ export const AgentDefaultsSchema = z
       .strict()
       .optional(),
     sandbox: AgentSandboxSchema,
+    groupGate: z
+      .object({
+        enabled: z.boolean().optional(),
+        model: z.string().optional(),
+        historyLimit: z.number().int().min(1).optional(),
+        timeoutMs: z.number().int().min(1000).optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .optional();

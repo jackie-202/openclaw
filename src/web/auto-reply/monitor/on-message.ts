@@ -1,4 +1,5 @@
 import type { getReplyFromConfig } from "../../../auto-reply/reply.js";
+import { runGroupGate } from "../../../auto-reply/reply/group-gate.js";
 import type { MsgContext } from "../../../auto-reply/templating.js";
 import { loadConfig } from "../../../config/config.js";
 import { logVerbose } from "../../../globals.js";
@@ -9,8 +10,9 @@ import type { MentionConfig } from "../mentions.js";
 import type { WebInboundMsg } from "../types.js";
 import { maybeBroadcastMessage } from "./broadcast.js";
 import type { EchoTracker } from "./echo.js";
+import { resolveGroupActivationFor } from "./group-activation.js";
 import type { GroupHistoryEntry } from "./group-gating.js";
-import { applyGroupGating } from "./group-gating.js";
+import { applyGroupGating, recordPendingGroupHistoryEntry } from "./group-gating.js";
 import { updateLastRouteInBackground } from "./last-route.js";
 import { resolvePeerId } from "./peer.js";
 import { processMessage } from "./process-message.js";
@@ -141,6 +143,41 @@ export function createWebOnMessageHandler(params: {
       });
       if (!gating.shouldProcess) {
         return;
+      }
+
+      // Two-phase LLM gate for always-on groups: ask a cheap model whether
+      // the assistant should respond before running the full (expensive) LLM.
+      const activation = resolveGroupActivationFor({
+        cfg: params.cfg,
+        agentId: route.agentId,
+        sessionKey: route.sessionKey,
+        conversationId,
+      });
+      if (activation === "always") {
+        // Build participant roster for mention resolution in the gate prompt
+        const groupRoster = params.groupMemberNames.get(conversationId);
+
+        const gateResult = await runGroupGate({
+          cfg: params.cfg,
+          agentId: route.agentId,
+          sessionKey: route.sessionKey,
+          senderName: msg.senderName ?? msg.senderE164 ?? "Unknown",
+          messageBody: msg.body,
+          mentionedJids: msg.mentionedJids,
+          participantRoster: groupRoster,
+        });
+        if (!gateResult.shouldRespond) {
+          logVerbose(
+            `Group gate blocked response (reason: ${gateResult.reason}) in ${conversationId}`,
+          );
+          recordPendingGroupHistoryEntry({
+            msg,
+            groupHistories: params.groupHistories,
+            groupHistoryKey,
+            groupHistoryLimit: params.groupHistoryLimit,
+          });
+          return;
+        }
       }
     } else {
       // Ensure `peerId` for DMs is stable and stored as E.164 when possible.

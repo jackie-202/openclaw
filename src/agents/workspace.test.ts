@@ -254,4 +254,29 @@ describe("filterBootstrapFilesForSession", () => {
     const result = filterBootstrapFilesForSession(mockFiles, "agent:default:cron:daily-check");
     expectSubagentAllowedBootstrapNames(result);
   });
+
+  // Group session bootstrap — verifies workspace files propagate to group chats
+  it("returns all files for WhatsApp group session key (wa: prefix)", () => {
+    const result = filterBootstrapFilesForSession(
+      mockFiles,
+      "agent:main:wa:420776600475-1590265989@g.us",
+    );
+    expect(result).toHaveLength(mockFiles.length);
+  });
+
+  it("returns all files for group-typed session key (group: prefix)", () => {
+    const result = filterBootstrapFilesForSession(
+      mockFiles,
+      "agent:main:group:telegram:some-chat-id",
+    );
+    expect(result).toHaveLength(mockFiles.length);
+  });
+
+  it("returns all files for Discord channel session key", () => {
+    const result = filterBootstrapFilesForSession(
+      mockFiles,
+      "agent:main:discord:1234567890:channel",
+    );
+    expect(result).toHaveLength(mockFiles.length);
+  });
 });

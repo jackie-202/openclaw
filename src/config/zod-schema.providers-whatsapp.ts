@@ -16,6 +16,9 @@ const WhatsAppGroupEntrySchema = z
     requireMention: z.boolean().optional(),
     tools: ToolPolicySchema,
     toolsBySender: ToolPolicyBySenderSchema,
+    systemPrompt: z.string().optional(),
+    knowledgeFile: z.string().optional(),
+    previousSessionTailMessages: z.coerce.number().int().min(0).max(50).optional(),
   })
   .strict()
   .optional();

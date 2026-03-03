@@ -8,6 +8,7 @@ import {
   resolveEmbeddedSessionLane,
 } from "../../agents/pi-embedded.js";
 import type { OpenClawConfig } from "../../config/config.js";
+import { resolveChannelGroupPolicy } from "../../config/group-policy.js";
 import {
   resolveGroupSessionKey,
   resolveSessionFilePath,
@@ -37,6 +38,7 @@ import { runReplyAgent } from "./agent-runner.js";
 import { applySessionHints } from "./body.js";
 import type { buildCommandContext } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
+import { loadGroupKnowledgeFile, loadPreviousSessionTail } from "./group-context-priming.js";
 import { buildGroupChatContext, buildGroupIntro } from "./groups.js";
 import { buildInboundMetaSystemPrompt, buildInboundUserContextPrefix } from "./inbound-meta.js";
 import type { createModelSelectionState } from "./model-selection.js";
@@ -264,6 +266,28 @@ export async function runPreparedReply(
       })
     : "";
   const groupSystemPrompt = sessionCtx.GroupSystemPrompt?.trim() ?? "";
+
+  // --- Group session continuity priming (first turn only) ---
+  let groupKnowledgeBlock = "";
+  let groupPreviousSessionTailBlock = "";
+  if (isGroupChat && isFirstTurnInSession) {
+    // Resolve per-group config for knowledgeFile / previousSessionTailMessages
+    const groupId = resolveGroupSessionKey(sessionCtx)?.id;
+    const rawChannel = sessionCtx.Provider?.trim()?.toLowerCase() ?? "whatsapp";
+    const groupPolicy = groupId
+      ? resolveChannelGroupPolicy({ cfg, channel: rawChannel as "whatsapp", groupId })
+      : undefined;
+    const groupCfg = groupPolicy?.groupConfig ?? groupPolicy?.defaultConfig;
+    const knowledgeFilePath = (groupCfg as { knowledgeFile?: string } | undefined)?.knowledgeFile;
+    const tailMessages = (groupCfg as { previousSessionTailMessages?: number } | undefined)
+      ?.previousSessionTailMessages;
+
+    groupKnowledgeBlock = loadGroupKnowledgeFile(workspaceDir, knowledgeFilePath) ?? "";
+    groupPreviousSessionTailBlock =
+      loadPreviousSessionTail(sessionEntry?.sessionFile, tailMessages) ?? "";
+  }
+  // --- End group priming ---
+
   const inboundMetaPrompt = buildInboundMetaSystemPrompt(
     isNewSession ? sessionCtx : { ...sessionCtx, ThreadStarterBody: undefined },
   );
@@ -272,6 +296,8 @@ export async function runPreparedReply(
     groupChatContext,
     groupIntro,
     groupSystemPrompt,
+    groupKnowledgeBlock,
+    groupPreviousSessionTailBlock,
   ].filter(Boolean);
   const baseBody = sessionCtx.BodyStripped ?? sessionCtx.Body ?? "";
   // Use CommandBody/RawBody for bare reset detection (clean message without structural context).
