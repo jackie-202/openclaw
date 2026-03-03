@@ -126,4 +126,60 @@ describe("resolveBootstrapContextForRun", () => {
 
     expect(files).toEqual([]);
   });
+
+  // Group session bootstrap integration tests
+  it("includes all workspace files for WhatsApp group session key", async () => {
+    const workspaceDir = await makeTempWorkspace("openclaw-bootstrap-group-");
+    await fs.writeFile(path.join(workspaceDir, "SOUL.md"), "persona", "utf8");
+    await fs.writeFile(path.join(workspaceDir, "IDENTITY.md"), "identity", "utf8");
+    await fs.writeFile(path.join(workspaceDir, "AGENTS.md"), "agents", "utf8");
+    await fs.writeFile(path.join(workspaceDir, "MEMORY.md"), "memory", "utf8");
+    await fs.writeFile(path.join(workspaceDir, "USER.md"), "user", "utf8");
+    await fs.writeFile(path.join(workspaceDir, "HEARTBEAT.md"), "heartbeat", "utf8");
+
+    const result = await resolveBootstrapContextForRun({
+      workspaceDir,
+      sessionKey: "agent:main:wa:420776600475-1590265989@g.us",
+    });
+
+    const bootstrapNames = result.bootstrapFiles.map((f) => f.name);
+    // Group sessions should currently receive ALL files (no group-specific filter yet)
+    expect(bootstrapNames).toContain("SOUL.md");
+    expect(bootstrapNames).toContain("IDENTITY.md");
+    expect(bootstrapNames).toContain("AGENTS.md");
+    expect(bootstrapNames).toContain("MEMORY.md");
+    expect(bootstrapNames).toContain("USER.md");
+    expect(bootstrapNames).toContain("HEARTBEAT.md");
+    // Verify content is populated in contextFiles
+    expect(result.contextFiles.length).toBeGreaterThan(0);
+    const soulCtx = result.contextFiles.find((f) => f.path.endsWith("SOUL.md"));
+    expect(soulCtx?.content).toBe("persona");
+  });
+
+  it("filters files for subagent session but not for group session", async () => {
+    const workspaceDir = await makeTempWorkspace("openclaw-bootstrap-group-");
+    await fs.writeFile(path.join(workspaceDir, "SOUL.md"), "persona", "utf8");
+    await fs.writeFile(path.join(workspaceDir, "MEMORY.md"), "memory", "utf8");
+    await fs.writeFile(path.join(workspaceDir, "HEARTBEAT.md"), "heartbeat", "utf8");
+
+    // Subagent: MEMORY.md and HEARTBEAT.md should be filtered out
+    const subagentResult = await resolveBootstrapContextForRun({
+      workspaceDir,
+      sessionKey: "agent:main:subagent:task-1",
+    });
+    const subagentNames = subagentResult.bootstrapFiles.map((f) => f.name);
+    expect(subagentNames).toContain("SOUL.md");
+    expect(subagentNames).not.toContain("MEMORY.md");
+    expect(subagentNames).not.toContain("HEARTBEAT.md");
+
+    // Group: everything should pass through
+    const groupResult = await resolveBootstrapContextForRun({
+      workspaceDir,
+      sessionKey: "agent:main:wa:420776600475-1590265989@g.us",
+    });
+    const groupNames = groupResult.bootstrapFiles.map((f) => f.name);
+    expect(groupNames).toContain("SOUL.md");
+    expect(groupNames).toContain("MEMORY.md");
+    expect(groupNames).toContain("HEARTBEAT.md");
+  });
 });
