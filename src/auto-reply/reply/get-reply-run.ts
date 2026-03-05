@@ -17,6 +17,7 @@ import {
   updateSessionStore,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
 import { normalizeMainKey } from "../../routing/session-key.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
@@ -38,7 +39,11 @@ import { runReplyAgent } from "./agent-runner.js";
 import { applySessionHints } from "./body.js";
 import type { buildCommandContext } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
-import { loadGroupKnowledgeFile, loadPreviousSessionTail } from "./group-context-priming.js";
+import {
+  loadGroupKnowledgeFiles,
+  loadPreviousSessionTail,
+  resolveGroupKnowledgeFiles,
+} from "./group-context-priming.js";
 import { buildGroupChatContext, buildGroupIntro } from "./groups.js";
 import { buildInboundMetaSystemPrompt, buildInboundUserContextPrefix } from "./inbound-meta.js";
 import type { createModelSelectionState } from "./model-selection.js";
@@ -54,6 +59,8 @@ import { appendUntrustedContext } from "./untrusted-context.js";
 
 type AgentDefaults = NonNullable<OpenClawConfig["agents"]>["defaults"];
 type ExecOverrides = Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
+
+const log = createSubsystemLogger("get-reply-run");
 
 function buildResetSessionNoticeText(params: {
   provider: string;
@@ -278,13 +285,30 @@ export async function runPreparedReply(
       ? resolveChannelGroupPolicy({ cfg, channel: rawChannel as "whatsapp", groupId })
       : undefined;
     const groupCfg = groupPolicy?.groupConfig ?? groupPolicy?.defaultConfig;
-    const knowledgeFilePath = (groupCfg as { knowledgeFile?: string } | undefined)?.knowledgeFile;
+    const knowledgeFiles = resolveGroupKnowledgeFiles({
+      sharedKnowledgeFile: (groupPolicy?.defaultConfig as { knowledgeFile?: string } | undefined)
+        ?.knowledgeFile,
+      groupKnowledgeFile: (groupPolicy?.groupConfig as { knowledgeFile?: string } | undefined)
+        ?.knowledgeFile,
+    });
+    const knowledge = loadGroupKnowledgeFiles(workspaceDir, knowledgeFiles);
     const tailMessages = (groupCfg as { previousSessionTailMessages?: number } | undefined)
       ?.previousSessionTailMessages;
 
-    groupKnowledgeBlock = loadGroupKnowledgeFile(workspaceDir, knowledgeFilePath) ?? "";
+    groupKnowledgeBlock = knowledge.block ?? "";
     groupPreviousSessionTailBlock =
       loadPreviousSessionTail(sessionEntry?.sessionFile, tailMessages) ?? "";
+
+    const knowledgeSources = knowledge.sources.map((source) => `${source.scope}:${source.file}`);
+    const charsBySource = Object.entries(knowledge.charsBySource).map(
+      ([file, chars]) => `${file}:${chars}`,
+    );
+    log.debug(
+      `Group priming knowledge: knowledgeSources=[${knowledgeSources.join(", ") || "none"}], charsBySource={${charsBySource.join(", ") || "none"}}, totalChars=${knowledge.totalChars}`,
+    );
+    log.trace(
+      `Main group priming prompt blocks:\n[groupKnowledgeBlock]\n${groupKnowledgeBlock || "(none)"}\n\n[groupPreviousSessionTailBlock]\n${groupPreviousSessionTailBlock || "(none)"}`,
+    );
   }
   // --- End group priming ---
 

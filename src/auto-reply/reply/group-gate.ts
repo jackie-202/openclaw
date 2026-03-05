@@ -8,11 +8,13 @@
 
 import fs from "node:fs";
 import { completeSimple, type TextContent } from "@mariozechner/pi-ai";
+import { resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import { DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import { getApiKeyForModel, requireApiKey } from "../../agents/model-auth.js";
 import { parseModelRef } from "../../agents/model-selection.js";
 import { resolveModel } from "../../agents/pi-embedded-runner/model.js";
 import type { OpenClawConfig } from "../../config/config.js";
+import { resolveChannelGroupPolicy } from "../../config/group-policy.js";
 import {
   loadSessionStore,
   resolveSessionFilePath,
@@ -20,6 +22,7 @@ import {
   resolveStorePath,
 } from "../../config/sessions.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { loadGroupKnowledgeFiles, resolveGroupKnowledgeFiles } from "./group-context-priming.js";
 
 const log = createSubsystemLogger("group-gate");
 
@@ -81,9 +84,17 @@ function readRecentSessionTranscript(sessionFilePath: string, limit: number): st
  * Build the structured gate prompt that asks the cheap model whether the
  * assistant should respond to the latest group message.
  */
-function buildGatePrompt(transcript: string[], newSender: string, newMessage: string): string {
+function buildGatePrompt(
+  transcript: string[],
+  newSender: string,
+  newMessage: string,
+  gateMemory?: string,
+): string {
   const historyBlock =
     transcript.length > 0 ? transcript.join("\n") : "(No prior conversation history)";
+  const gateMemoryBlock = gateMemory?.trim()
+    ? `\n## Gate Decision Memory (distilled lessons, treat as hard constraints):\n${gateMemory.trim()}\n`
+    : "";
 
   return `You are deciding whether an AI participant ("Jackie") in a group chat should respond to the latest message. Read the full conversation, understand the social dynamics, and make a judgment call — like a human would in a group chat.
 
@@ -92,7 +103,7 @@ ${historyBlock}
 
 ## New Message:
 ${newSender}: ${newMessage}
-
+${gateMemoryBlock}
 ## How to decide:
 
 Read the conversation flow. Consider:
@@ -158,6 +169,41 @@ function parseGateResponse(text: string): GroupGateResult {
 
 function isTextContentBlock(block: { type: string }): block is TextContent {
   return block.type === "text";
+}
+
+function loadGateKnowledgeMemory(params: {
+  cfg: OpenClawConfig;
+  channel: string;
+  groupId: string;
+  workspaceDir: string;
+}): {
+  text?: string;
+  sources: string[];
+  charsBySource: Record<string, number>;
+  totalChars: number;
+} {
+  const policy = resolveChannelGroupPolicy({
+    cfg: params.cfg,
+    channel: params.channel as "whatsapp",
+    groupId: params.groupId,
+  });
+  const knowledgeFiles = resolveGroupKnowledgeFiles({
+    sharedKnowledgeFile: (policy.defaultConfig as { knowledgeFile?: string } | undefined)
+      ?.knowledgeFile,
+    groupKnowledgeFile: (policy.groupConfig as { knowledgeFile?: string } | undefined)
+      ?.knowledgeFile,
+  });
+  const knowledge = loadGroupKnowledgeFiles(params.workspaceDir, knowledgeFiles, {
+    maxChars: 5000,
+  });
+  const sources = knowledge.sources.map((source) => `${source.scope}:${source.file}`);
+
+  return {
+    text: knowledge.block,
+    sources,
+    charsBySource: knowledge.charsBySource,
+    totalChars: knowledge.totalChars,
+  };
 }
 
 /**
@@ -226,8 +272,14 @@ export async function runGroupGate(params: {
   mentionedJids?: string[];
   /** Group participant roster: JID → display name. */
   participantRoster?: Map<string, string>;
+  /** Channel id for group knowledge resolution (e.g. "whatsapp"). */
+  channel?: string;
+  /** Group id/JID for knowledge mapping (e.g. "420...@g.us"). */
+  groupId?: string;
 }): Promise<GroupGateResult> {
   const { cfg, agentId, sessionKey, senderName } = params;
+  const channel = params.channel?.trim().toLowerCase() ?? "whatsapp";
+  const groupId = params.groupId?.trim();
 
   // Resolve raw @-mention LIDs to human-readable names before the gate sees them
   const messageBody = resolveMentionsInBody(
@@ -248,22 +300,50 @@ export async function runGroupGate(params: {
   const modelString = gateConfig.model ?? DEFAULT_GATE_MODEL;
 
   try {
-    // Resolve the session transcript file
-    const storePath = resolveStorePath(cfg.session?.store, { agentId });
-    const store = loadSessionStore(storePath);
-    const entry = store[sessionKey];
-    const sessionId = entry?.sessionId ?? sessionKey;
-    const sessionFilePath = resolveSessionFilePath(
-      sessionId,
-      entry,
-      resolveSessionFilePathOptions({ agentId, storePath }),
-    );
+    // Resolve the session transcript file; tolerate missing/invalid session IDs
+    // (e.g. compound keys with colons or @ that haven't been persisted yet)
+    // by falling back to an empty transcript so the gate can still run with
+    // knowledge-memory constraints instead of failing open entirely.
+    let transcript: string[] = [];
+    try {
+      const storePath = resolveStorePath(cfg.session?.store, { agentId });
+      const store = loadSessionStore(storePath);
+      const entry = store[sessionKey];
+      const sessionId = entry?.sessionId ?? sessionKey;
+      const sessionFilePath = resolveSessionFilePath(
+        sessionId,
+        entry,
+        resolveSessionFilePathOptions({ agentId, storePath }),
+      );
+      transcript = readRecentSessionTranscript(sessionFilePath, historyLimit);
+      log.debug(
+        `Gate inputs: sessionFile=${sessionFilePath}, historyLimit=${historyLimit}, transcriptMessages=${transcript.length}, channel=${channel}, groupId=${groupId ?? "unknown"}`,
+      );
+    } catch (sessionErr) {
+      const sessionMsg = sessionErr instanceof Error ? sessionErr.message : String(sessionErr);
+      log.warn(`Gate session load failed (continuing without history): ${sessionMsg}`);
+    }
 
-    // Read recent conversation history
-    const transcript = readRecentSessionTranscript(sessionFilePath, historyLimit);
+    const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
+    const gateKnowledge =
+      groupId && channel === "whatsapp"
+        ? loadGateKnowledgeMemory({
+            cfg,
+            channel,
+            groupId,
+            workspaceDir,
+          })
+        : { text: undefined, sources: [], charsBySource: {}, totalChars: 0 };
 
     // Build the gate prompt
-    const prompt = buildGatePrompt(transcript, senderName, messageBody);
+    const prompt = buildGatePrompt(transcript, senderName, messageBody, gateKnowledge.text);
+    const charsBySource = Object.entries(gateKnowledge.charsBySource).map(
+      ([file, chars]) => `${file}:${chars}`,
+    );
+    log.debug(
+      `Gate knowledge: sources=[${gateKnowledge.sources.join(", ") || "none"}], charsBySource={${charsBySource.join(", ") || "none"}}, totalChars=${gateKnowledge.totalChars}`,
+    );
+    log.trace(`Gate prompt:\n${prompt}`);
 
     // Resolve the gate model
     const parsed = parseModelRef(modelString, DEFAULT_PROVIDER);

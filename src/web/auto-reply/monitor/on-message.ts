@@ -165,6 +165,8 @@ export function createWebOnMessageHandler(params: {
           messageBody: msg.body,
           mentionedJids: msg.mentionedJids,
           participantRoster: groupRoster,
+          channel: "whatsapp",
+          groupId: conversationId,
         });
         if (!gateResult.shouldRespond) {
           logVerbose(

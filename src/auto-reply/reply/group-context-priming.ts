@@ -20,6 +20,129 @@ const MAX_KNOWLEDGE_CHARS = 6000;
 const DEFAULT_TAIL_MESSAGES = 15;
 const MAX_TAIL_CHARS = 3000;
 
+type GroupKnowledgeScope = "shared" | "group";
+
+export type GroupKnowledgeSource = {
+  scope: GroupKnowledgeScope;
+  file: string;
+};
+
+export type LoadedGroupKnowledge = {
+  block?: string;
+  totalChars: number;
+  charsBySource: Record<string, number>;
+  sources: GroupKnowledgeSource[];
+};
+
+function resolveKnowledgeSectionTitle(scope: GroupKnowledgeScope): string {
+  return scope === "shared" ? "Shared Group Knowledge" : "Group Knowledge (specific)";
+}
+
+function isPathWithinWorkspace(workspaceDir: string, filePath: string): boolean {
+  const workspaceRoot = path.resolve(workspaceDir);
+  const relative = path.relative(workspaceRoot, filePath);
+  return relative.length > 0 && !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+
+export function resolveGroupKnowledgeFiles(params: {
+  sharedKnowledgeFile?: string;
+  groupKnowledgeFile?: string;
+}): GroupKnowledgeSource[] {
+  const ordered: GroupKnowledgeSource[] = [];
+  const seen = new Set<string>();
+  const candidates: GroupKnowledgeSource[] = [
+    { scope: "shared", file: params.sharedKnowledgeFile?.trim() ?? "" },
+    { scope: "group", file: params.groupKnowledgeFile?.trim() ?? "" },
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate.file) {
+      continue;
+    }
+    if (seen.has(candidate.file)) {
+      continue;
+    }
+    seen.add(candidate.file);
+    ordered.push(candidate);
+  }
+
+  return ordered;
+}
+
+export function loadGroupKnowledgeFiles(
+  workspaceDir: string,
+  files: GroupKnowledgeSource[],
+  options?: {
+    maxChars?: number;
+  },
+): LoadedGroupKnowledge {
+  const maxChars = options?.maxChars ?? MAX_KNOWLEDGE_CHARS;
+  const sections: string[] = [];
+  const charsBySource: Record<string, number> = {};
+  const sources: GroupKnowledgeSource[] = [];
+  let totalChars = 0;
+  let truncated = false;
+
+  for (const file of files) {
+    if (!file.file.trim()) {
+      continue;
+    }
+
+    const filePath = path.resolve(workspaceDir, file.file);
+    if (!isPathWithinWorkspace(workspaceDir, filePath)) {
+      log.warn(`Group knowledge file path escapes workspace: ${file.file}`);
+      continue;
+    }
+
+    let content = "";
+    try {
+      content = fs.readFileSync(filePath, "utf-8").trim();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      log.warn(`Failed to load group knowledge file ${file.file}: ${message}`);
+      continue;
+    }
+
+    if (!content) {
+      continue;
+    }
+
+    const remaining = maxChars - totalChars;
+    if (remaining <= 0) {
+      truncated = true;
+      break;
+    }
+
+    if (content.length > remaining) {
+      content = content.slice(0, remaining);
+      truncated = true;
+    }
+
+    const chars = content.length;
+    totalChars += chars;
+    charsBySource[file.file] = chars;
+    sources.push(file);
+    sections.push(`## ${resolveKnowledgeSectionTitle(file.scope)}\n\n${content}`);
+  }
+
+  if (sections.length === 0) {
+    return {
+      totalChars,
+      charsBySource,
+      sources,
+    };
+  }
+
+  const block = `${sections.join("\n\n")}${truncated ? "\n\n[truncated]" : ""}`;
+  log.debug(`Loaded group knowledge: sources=${sources.length}, chars=${totalChars}`);
+  return {
+    block,
+    totalChars,
+    charsBySource,
+    sources,
+  };
+}
+
 /**
  * Load the group knowledge file content from workspace.
  *
@@ -31,32 +154,8 @@ export function loadGroupKnowledgeFile(
   workspaceDir: string,
   knowledgeFile: string | undefined,
 ): string | undefined {
-  if (!knowledgeFile?.trim()) {
-    return undefined;
-  }
-
-  const filePath = path.resolve(workspaceDir, knowledgeFile.trim());
-
-  // Safety: must stay within workspace
-  if (!filePath.startsWith(path.resolve(workspaceDir))) {
-    log.warn(`Group knowledge file path escapes workspace: ${knowledgeFile}`);
-    return undefined;
-  }
-
-  try {
-    let content = fs.readFileSync(filePath, "utf-8").trim();
-    if (!content) {
-      return undefined;
-    }
-    if (content.length > MAX_KNOWLEDGE_CHARS) {
-      content = content.slice(0, MAX_KNOWLEDGE_CHARS) + "\n\n[truncated]";
-    }
-    log.debug(`Loaded group knowledge: ${knowledgeFile} (${content.length} chars)`);
-    return `## Group Knowledge (from previous sessions)\n\n${content}`;
-  } catch {
-    log.debug(`Group knowledge file not found: ${filePath}`);
-    return undefined;
-  }
+  const files = resolveGroupKnowledgeFiles({ groupKnowledgeFile: knowledgeFile });
+  return loadGroupKnowledgeFiles(workspaceDir, files).block;
 }
 
 /**

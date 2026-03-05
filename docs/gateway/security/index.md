@@ -891,6 +891,13 @@ Details: [Logging](/gateway/logging)
 
 In group chats, only respond when explicitly mentioned.
 
+If you use `channels.whatsapp.groups[*].knowledgeFile`, knowledge is layered by default:
+
+- `groups["*"].knowledgeFile` is treated as shared group knowledge.
+- `groups["<group-id>"].knowledgeFile` is treated as group-specific knowledge.
+- When both exist, OpenClaw loads both in order (`shared` -> `specific`) and deduplicates identical file paths.
+- Missing/unreadable files are skipped (warn logged), and loading continues with remaining sources.
+
 ### 3. Separate Numbers
 
 Consider running your AI on a separate phone number from your personal one:
