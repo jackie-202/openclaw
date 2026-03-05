@@ -54,6 +54,7 @@ vi.mock("../../agents/model-selection.js", () => ({
 
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveDefaultAgentId: vi.fn(() => "default"),
+  resolveAgentWorkspaceDir: vi.fn(() => "/tmp/workspace"),
 }));
 
 vi.mock("../../config/sessions.js", () => ({
@@ -67,6 +68,7 @@ vi.mock("../../config/sessions.js", () => ({
 
 vi.mock("../../logging/subsystem.js", () => ({
   createSubsystemLogger: vi.fn(() => ({
+    trace: vi.fn(),
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
@@ -366,6 +368,149 @@ describe("group-gate", () => {
         .content;
       expect(promptContent).toContain("@Jackie popiš co se snažíme docílit");
       expect(promptContent).not.toContain("@194146111357056");
+    });
+
+    it("loads shared and group knowledge in the correct order", async () => {
+      vi.spyOn(fs, "readFileSync").mockImplementation((pathArg) => {
+        const filePath = String(pathArg);
+        if (filePath === "/tmp/test-session.jsonl") {
+          return makeSessionJSONL([{ role: "user", content: "Ahoj" }]);
+        }
+        if (filePath === "/tmp/workspace/knowledge/groups/_shared.md") {
+          return "Shared rule";
+        }
+        if (filePath === "/tmp/workspace/knowledge/groups/dnd.md") {
+          return "Group rule";
+        }
+        throw new Error(`Unexpected read path: ${filePath}`);
+      });
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage('{"shouldRespond": true, "reason": "has context"}'),
+      );
+
+      const cfg = {
+        ...baseCfg,
+        channels: {
+          whatsapp: {
+            groups: {
+              "*": { knowledgeFile: "knowledge/groups/_shared.md" },
+              "420123@g.us": { knowledgeFile: "knowledge/groups/dnd.md" },
+            },
+          },
+        },
+      } as OpenClawConfig;
+
+      await runGroupGate({
+        cfg,
+        agentId: "default",
+        sessionKey: "test-session",
+        senderName: "Michal",
+        messageBody: "co je novyho",
+        channel: "whatsapp",
+        groupId: "420123@g.us",
+      });
+
+      const call = vi.mocked(completeSimple).mock.calls[0];
+      const promptContent = (call[1] as { messages: Array<{ content: string }> }).messages[0]
+        .content;
+      expect(promptContent).toContain("## Shared Group Knowledge");
+      expect(promptContent).toContain("Shared rule");
+      expect(promptContent).toContain("## Group Knowledge (specific)");
+      expect(promptContent).toContain("Group rule");
+      expect(promptContent.indexOf("Shared rule")).toBeLessThan(
+        promptContent.indexOf("Group rule"),
+      );
+    });
+
+    it("loads shared-only knowledge when group-specific file is not configured", async () => {
+      vi.spyOn(fs, "readFileSync").mockImplementation((pathArg) => {
+        const filePath = String(pathArg);
+        if (filePath === "/tmp/test-session.jsonl") {
+          return makeSessionJSONL([{ role: "user", content: "Ahoj" }]);
+        }
+        if (filePath === "/tmp/workspace/knowledge/groups/_shared.md") {
+          return "Only shared";
+        }
+        throw new Error(`Unexpected read path: ${filePath}`);
+      });
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage('{"shouldRespond": true, "reason": "shared available"}'),
+      );
+
+      const cfg = {
+        ...baseCfg,
+        channels: {
+          whatsapp: {
+            groups: {
+              "*": { knowledgeFile: "knowledge/groups/_shared.md" },
+              "420123@g.us": {},
+            },
+          },
+        },
+      } as OpenClawConfig;
+
+      await runGroupGate({
+        cfg,
+        agentId: "default",
+        sessionKey: "test-session",
+        senderName: "Michal",
+        messageBody: "ping",
+        channel: "whatsapp",
+        groupId: "420123@g.us",
+      });
+
+      const call = vi.mocked(completeSimple).mock.calls[0];
+      const promptContent = (call[1] as { messages: Array<{ content: string }> }).messages[0]
+        .content;
+      expect(promptContent).toContain("Only shared");
+      expect(promptContent).not.toContain("## Group Knowledge (specific)");
+    });
+
+    it("continues when one knowledge file fails to load", async () => {
+      vi.spyOn(fs, "readFileSync").mockImplementation((pathArg) => {
+        const filePath = String(pathArg);
+        if (filePath === "/tmp/test-session.jsonl") {
+          return makeSessionJSONL([{ role: "user", content: "Ahoj" }]);
+        }
+        if (filePath === "/tmp/workspace/knowledge/groups/_shared.md") {
+          throw new Error("ENOENT");
+        }
+        if (filePath === "/tmp/workspace/knowledge/groups/dnd.md") {
+          return "Group-only fallback";
+        }
+        throw new Error(`Unexpected read path: ${filePath}`);
+      });
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage('{"shouldRespond": true, "reason": "context loaded"}'),
+      );
+
+      const cfg = {
+        ...baseCfg,
+        channels: {
+          whatsapp: {
+            groups: {
+              "*": { knowledgeFile: "knowledge/groups/_shared.md" },
+              "420123@g.us": { knowledgeFile: "knowledge/groups/dnd.md" },
+            },
+          },
+        },
+      } as OpenClawConfig;
+
+      await runGroupGate({
+        cfg,
+        agentId: "default",
+        sessionKey: "test-session",
+        senderName: "Michal",
+        messageBody: "potvrd",
+        channel: "whatsapp",
+        groupId: "420123@g.us",
+      });
+
+      const call = vi.mocked(completeSimple).mock.calls[0];
+      const promptContent = (call[1] as { messages: Array<{ content: string }> }).messages[0]
+        .content;
+      expect(promptContent).toContain("Group-only fallback");
+      expect(promptContent).not.toContain("Shared rule");
     });
   });
 
