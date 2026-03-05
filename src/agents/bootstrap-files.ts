@@ -1,4 +1,5 @@
 import type { OpenClawConfig } from "../config/config.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getOrLoadBootstrapFiles } from "./bootstrap-cache.js";
 import { applyBootstrapHookOverrides } from "./bootstrap-hooks.js";
 import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
@@ -15,6 +16,8 @@ import {
 
 export type BootstrapContextMode = "full" | "lightweight";
 export type BootstrapContextRunKind = "default" | "heartbeat" | "cron";
+
+const bootstrapLog = createSubsystemLogger("bootstrap");
 
 export function makeBootstrapWarn(params: {
   sessionLabel: string;
@@ -114,5 +117,18 @@ export async function resolveBootstrapContextForRun(params: {
     totalMaxChars: resolveBootstrapTotalMaxChars(params.config),
     warn: params.warn,
   });
+
+  const loadedContextNames = contextFiles.map(
+    (file) => file.path.split(/[\\/]/).pop() ?? file.path,
+  );
+  const missingNames = bootstrapFiles.filter((file) => file.missing).map((file) => file.name);
+  const skippedByBudget = bootstrapFiles
+    .filter((file) => !file.missing && !loadedContextNames.includes(file.name))
+    .map((file) => file.name);
+
+  bootstrapLog.debug(
+    `bootstrap context resolved (sessionKey=${params.sessionKey ?? params.sessionId ?? "unknown"}, runKind=${params.runKind ?? "default"}, contextMode=${params.contextMode ?? "full"}, loaded=[${loadedContextNames.join(", ")}], missing=[${missingNames.join(", ")}], skipped=[${skippedByBudget.join(", ")}])`,
+  );
+
   return { bootstrapFiles, contextFiles };
 }
