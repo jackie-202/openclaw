@@ -55,6 +55,7 @@ import {
   updateExecApprovalsFormValue,
 } from "./controllers/exec-approvals.ts";
 import { loadLogs } from "./controllers/logs.ts";
+import { loadModels } from "./controllers/models.ts";
 import { loadNodes } from "./controllers/nodes.ts";
 import { loadPresence } from "./controllers/presence.ts";
 import { deleteSessionAndRefresh, loadSessions, patchSession } from "./controllers/sessions.ts";
@@ -85,6 +86,7 @@ import { renderExecApprovalPrompt } from "./views/exec-approval.ts";
 import { renderGatewayUrlConfirmation } from "./views/gateway-url-confirmation.ts";
 import { renderInstances } from "./views/instances.ts";
 import { renderLogs } from "./views/logs.ts";
+import { renderModels } from "./views/models.ts";
 import { renderNodes } from "./views/nodes.ts";
 import { renderOverview } from "./views/overview.ts";
 import { renderSessions } from "./views/sessions.ts";
@@ -452,6 +454,17 @@ export function renderApp(state: AppViewState) {
         }
 
         ${renderUsageTab(state)}
+
+        ${
+          state.tab === "models"
+            ? renderModels({
+                loading: state.modelsLoading,
+                error: state.modelsError,
+                data: state.modelsData,
+                onRefresh: () => loadModels(state),
+              })
+            : nothing
+        }
 
         ${
           state.tab === "cron"
