@@ -4,6 +4,7 @@ import type { CronModelSuggestionsState, CronState } from "./controllers/cron.ts
 import type { DevicePairingList } from "./controllers/devices.ts";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
+import type { ModelsDashboardData } from "./controllers/models.ts";
 import type { SkillMessage } from "./controllers/skills.ts";
 import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
 import type { Tab } from "./navigation.ts";
@@ -242,6 +243,9 @@ export type AppViewState = {
     debugCallResult: string | null;
     debugCallError: string | null;
     logsLoading: boolean;
+    modelsLoading: boolean;
+    modelsData: ModelsDashboardData | null;
+    modelsError: string | null;
     logsError: string | null;
     logsFile: string | null;
     logsEntries: LogEntry[];
