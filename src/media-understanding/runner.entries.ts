@@ -599,22 +599,36 @@ export async function runCliEntry(params: {
   const outputDir = await fs.mkdtemp(
     path.join(resolvePreferredOpenClawTmpDir(), "openclaw-media-cli-"),
   );
-  const mediaPath = pathResult.path;
-  const outputBase = path.join(outputDir, path.parse(mediaPath).name);
-
-  const templCtx: MsgContext = {
-    ...ctx,
-    MediaPath: mediaPath,
-    MediaDir: path.dirname(mediaPath),
-    OutputDir: outputDir,
-    OutputBase: outputBase,
-    Prompt: prompt,
-    MaxChars: maxChars,
-  };
-  const argv = [command, ...args].map((part, index) =>
-    index === 0 ? part : applyTemplate(part, templCtx),
-  );
+  let convertedMediaPath: string | null = null;
+  let mediaPath = pathResult.path;
   try {
+    if (capability === "audio") {
+      const ext = path.extname(pathResult.path).toLowerCase();
+      if (ext !== ".wav") {
+        convertedMediaPath = path.join(outputDir, `${path.parse(pathResult.path).name}.wav`);
+        await runExec(
+          "ffmpeg",
+          ["-y", "-i", pathResult.path, "-ar", "16000", "-ac", "1", convertedMediaPath],
+          { timeoutMs, maxBuffer: CLI_OUTPUT_MAX_BUFFER },
+        );
+        mediaPath = convertedMediaPath;
+      }
+    }
+
+    const outputBase = path.join(outputDir, path.parse(mediaPath).name);
+    const templCtx: MsgContext = {
+      ...ctx,
+      MediaPath: mediaPath,
+      MediaDir: path.dirname(mediaPath),
+      OutputDir: outputDir,
+      OutputBase: outputBase,
+      Prompt: prompt,
+      MaxChars: maxChars,
+    };
+    const argv = [command, ...args].map((part, index) =>
+      index === 0 ? part : applyTemplate(part, templCtx),
+    );
+
     if (shouldLogVerbose()) {
       logVerbose(`Media understanding via CLI: ${argv.join(" ")}`);
     }
@@ -640,6 +654,9 @@ export async function runCliEntry(params: {
       model: command,
     };
   } finally {
+    if (convertedMediaPath) {
+      await fs.rm(convertedMediaPath, { force: true }).catch(() => {});
+    }
     await fs.rm(outputDir, { recursive: true, force: true }).catch(() => {});
   }
 }

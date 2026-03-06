@@ -16,6 +16,8 @@ export type WhatsAppActionConfig = {
 
 export type WhatsAppGroupConfig = {
   requireMention?: boolean;
+  /** Override the model used for this group session. */
+  model?: string;
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
   systemPrompt?: string;
