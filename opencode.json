@@ -1,22 +1,10 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "permission": {
-    "rules": [
-      {
-        "permission": "external_directory",
-        "pattern": "/Users/michal/Projects/mission-control/*",
-        "action": "allow"
-      },
-      {
-        "permission": "external_directory",
-        "pattern": "/Users/michal/Projects/mission-control-data/*",
-        "action": "allow"
-      },
-      {
-        "permission": "external_directory",
-        "pattern": "/Users/michal/.openclaw/workspace/*",
-        "action": "allow"
-      }
-    ]
+    "external_directory": {
+      "~/Projects/mission-control/**": "allow",
+      "~/Projects/mission-control-data/**": "allow",
+      "~/.openclaw/workspace/**": "allow"
+    }
   }
 }
