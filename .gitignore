@@ -123,3 +123,6 @@ dist/protocol.schema.json
 # Synthing
 **/.stfolder/
 .dev-state
+
+# Upstream sync marker (branch-based sync workflow)
+.upstream-sync-branch
