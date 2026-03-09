@@ -123,6 +123,11 @@ Evaluate whether this would reduce errors and improve agent reliability.
 ## Context
 
 - Code-review skill expected path: `~/Projects/openclaw-fork/skills/code-review/` (may need to be created)
-- State file: `~/.openclaw/workspace/km-system/state/opencode-tasks.json`
+- State file: `/Users/michal/.openclaw/workspace/km-system/state/opencode-tasks.json`
+- `start-task.sh`: `/Users/michal/.openclaw/workspace/km-system/scripts/start-task.sh`
+- `opencode-monitor.py`: `/Users/michal/.openclaw/workspace/km-system/scripts/opencode-monitor.py`
+- `link-plan.py`: `/Users/michal/.openclaw/workspace/km-system/scripts/link-plan.py`
+- Mission Control server: `/Users/michal/Projects/mission-control/server.js`
+- Mission Control frontend: `/Users/michal/Projects/mission-control/public/app.js`
 - Reference: existing plan/implement phase in `start-task.sh` (lines ~328–360)
 - Both `openclaw-fork` and `mission-control` repos need changes
