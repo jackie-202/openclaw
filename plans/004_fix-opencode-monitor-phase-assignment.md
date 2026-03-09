@@ -2,8 +2,8 @@
 
 Fix the phase transition logic in `opencode-monitor.py` so that orphaned tasks get the correct phase based on their current phase, not a blanket `phase=done`.
 
-*Status: DRAFT*
-*Vytvořeno: 2026-03-07*
+_Status: DRAFT_
+_Vytvořeno: 2026-03-07_
 
 ---
 
@@ -22,8 +22,8 @@ Fix the phase transition logic in `opencode-monitor.py` so that orphaned tasks g
 
 ```
 planning → planned → implementing → done
-   ↓          ↓          ↓           
- failed     failed      failed       
+   ↓          ↓          ↓
+ failed     failed      failed
 ```
 
 - `status=done` means the **current phase** finished successfully
@@ -32,18 +32,20 @@ planning → planned → implementing → done
 
 ### When monitor detects orphaned task (no process, age > 5min):
 
-| Current phase | Correct transition |
-|---|---|
-| `planning` (status=running) | → `phase=planned`, `status=done` |
-| `implementing` (status=running) | → `phase=done`, `status=done` |
+| Current phase                   | Correct transition               |
+| ------------------------------- | -------------------------------- |
+| `planning` (status=running)     | → `phase=planned`, `status=done` |
+| `implementing` (status=running) | → `phase=done`, `status=done`    |
 
 ### Phase/status mismatch fixes (always apply, even without orphan detection):
+
 - `status=done` + `phase=implementing` → `phase=done`
 - `status=failed` + `phase=implementing` → `phase=failed`
 - `status=done` + `phase=planning` → `phase=planned`
 - `status=failed` + `phase=planning` → `phase=failed`
 
 ### Active task detection:
+
 A task is "active" only if: `status=running` AND `phase` is `planning` or `implementing`.
 A task with `phase=planned` and `status=done` is NOT active — it's waiting for implementation.
 
@@ -55,7 +57,7 @@ A task with `phase=planned` and `status=done` is NOT active — it's waiting for
 
 **Key functions with bugs:**
 
-1. **`is_phase_status_mismatch()` (lines 99-107)** — Only checks for `phase != "done"` when `status == "done"` and `phase != "failed"` when `status == "failed"`. Missing: when `status=done` and `phase=planning`, the correct fix is `phase=planned` (not `phase=done`). The function itself is OK as a detector (it correctly identifies mismatches), but the *fixer* logic uses `new_phase = old_status` which is wrong for the planning→planned case.
+1. **`is_phase_status_mismatch()` (lines 99-107)** — Only checks for `phase != "done"` when `status == "done"` and `phase != "failed"` when `status == "failed"`. Missing: when `status=done` and `phase=planning`, the correct fix is `phase=planned` (not `phase=done`). The function itself is OK as a detector (it correctly identifies mismatches), but the _fixer_ logic uses `new_phase = old_status` which is wrong for the planning→planned case.
 
 2. **Phase/status mismatch fix block (lines 154-168)** — Sets `new_phase = old_status` (line 158), which means `status=done` → `phase=done`. This is wrong for `phase=planning` where it should become `phase=planned`.
 
@@ -66,6 +68,7 @@ A task with `phase=planned` and `status=done` is NOT active — it's waiting for
 5. **`needs_deploy` list (lines 197-198)** — Triggers deploy for `old_phase == "implementing"` OR `old_status == "running"`. The `old_status == "running"` condition is too broad — a planning task with `status=running` that becomes orphaned shouldn't trigger deploy.
 
 **Related files:**
+
 - `~/.openclaw/workspace/km-system/scripts/task-state.py` — task state reader/writer (no phase logic bugs, but shows field structure)
 - `~/.openclaw/workspace/km-system/scripts/start-task.sh` — task launcher, defines the phases: `planning` (phase=planning, status=running) → `implementing` (phase=implementing, status=running)
 - `~/.openclaw/workspace/km-system/state/opencode-tasks.json` — live state file with 22 tasks
@@ -106,12 +109,14 @@ def resolve_phase(current_phase, terminal_status):
 ```
 
 This single function handles both:
+
 - Mismatch correction (when status is already terminal but phase hasn't caught up)
 - Orphan resolution (when we need to set both status and phase)
 
 ## Implementation
 
 ### Pre-implementation checklist
+
 - [ ] Read current `opencode-monitor.py` to confirm line numbers haven't shifted
 - [ ] Verify no other script depends on the blanket `phase=done` behavior
 
@@ -122,7 +127,7 @@ Add after the `is_process_running()` function (after line 85):
 ```python
 def resolve_phase(current_phase, terminal_status):
     """Given the current phase and a terminal status, return the correct new phase.
-    
+
     - planning + done → planned (planning finished, waiting for implementation)
     - implementing + done → done (full lifecycle complete)
     - any phase + failed → failed
@@ -194,6 +199,7 @@ def is_active_task(task):
 ```
 
 This is much simpler and correct. It excludes:
+
 - `phase=planned, status=done` (waiting for implementation — not active)
 - `phase=done/failed` (terminal)
 - `status=planning` (not a valid status, was a bug in the old code)
@@ -230,6 +236,7 @@ Replace the blanket `phase=done` with phase-aware logic:
 ```
 
 Key changes:
+
 - `new_phase = resolve_phase(old_phase, "done")` instead of hardcoded `"done"`
 - Deploy only when `new_phase == "done"` (full implementation done), not for planning→planned transitions
 - Report includes `new_phase` which may be `"planned"` or `"done"`
@@ -242,8 +249,8 @@ The current `is_terminal()` only considers `phase == status` (both `done` or bot
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
+| File                                                          | Change                      |
+| ------------------------------------------------------------- | --------------------------- |
 | `~/.openclaw/workspace/km-system/scripts/opencode-monitor.py` | All 5 fixes described above |
 
 ## Testing
@@ -251,18 +258,22 @@ The current `is_terminal()` only considers `phase == status` (both `done` or bot
 ### Manual test procedure
 
 1. **Dry-run with current state:**
+
    ```bash
    python3 ~/.openclaw/workspace/km-system/scripts/opencode-monitor.py --dry-run
    ```
+
    Verify output JSON shows correct behavior for existing tasks.
 
 2. **Create a test state file with known mismatches:**
+
    ```bash
    # Backup current state
    cp ~/.openclaw/workspace/km-system/state/opencode-tasks.json /tmp/opencode-tasks-backup.json
    ```
-   
+
    Add test tasks to the state file:
+
    ```json
    {"id": "test-1", "task": "test planning orphan", "phase": "planning", "status": "running", "pid": 99999, "startedAt": "2026-03-01T00:00:00+00:00", "planningStartedAt": "2026-03-01T00:00:00+00:00"}
    {"id": "test-2", "task": "test implementing orphan", "phase": "implementing", "status": "running", "pid": 99998, "startedAt": "2026-03-01T00:00:00+00:00", "implementingStartedAt": "2026-03-01T00:00:00+00:00"}
@@ -273,13 +284,13 @@ The current `is_terminal()` only considers `phase == status` (both `done` or bot
 
 3. **Expected results:**
 
-   | Test task | Expected outcome |
-   |-----------|-----------------|
-   | test-1 (planning orphan, pid 99999 dead) | → `phase=planned, status=done`. NOT in `needs_deploy`. |
-   | test-2 (implementing orphan, pid 99998 dead) | → `phase=done, status=done`. IN `needs_deploy`. |
-   | test-3 (planning + done mismatch) | → `phase=planned` (mismatch fix). NOT in `needs_deploy`. |
-   | test-4 (implementing + done mismatch) | → `phase=done` (mismatch fix). |
-   | test-5 (planned + done) | No change (not a mismatch, not active). |
+   | Test task                                    | Expected outcome                                         |
+   | -------------------------------------------- | -------------------------------------------------------- |
+   | test-1 (planning orphan, pid 99999 dead)     | → `phase=planned, status=done`. NOT in `needs_deploy`.   |
+   | test-2 (implementing orphan, pid 99998 dead) | → `phase=done, status=done`. IN `needs_deploy`.          |
+   | test-3 (planning + done mismatch)            | → `phase=planned` (mismatch fix). NOT in `needs_deploy`. |
+   | test-4 (implementing + done mismatch)        | → `phase=done` (mismatch fix).                           |
+   | test-5 (planned + done)                      | No change (not a mismatch, not active).                  |
 
 4. **Restore state after testing:**
    ```bash
@@ -289,12 +300,14 @@ The current `is_terminal()` only considers `phase == status` (both `done` or bot
 ### Regression check
 
 After applying the fix, the cron job continues running every 2 minutes. Monitor the next few runs:
+
 ```bash
 # Watch the cron output
 tail -f /tmp/opencode-monitor-*.log
 ```
 
 Verify that:
+
 - Currently running tasks (like `fresh-dune-8581` in planning) are NOT prematurely marked done
 - Already-terminal tasks are not re-processed
 - The `needs_deploy` list only fires for implementing→done transitions
@@ -307,5 +320,6 @@ Verify that:
 - The `deploy-fork.sh` script does NOT need changes (it receives task IDs from `needs_deploy` and deploys)
 
 ---
-*Vytvořeno: 2026-03-07*
-*Status: DRAFT*
+
+_Vytvořeno: 2026-03-07_
+_Status: DRAFT_

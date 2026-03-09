@@ -2,8 +2,8 @@
 
 Refactor the `opencode-monitor` cron job from a pure LLM prompt to a deterministic Python script that handles orphaned task detection and state cleanup, with the LLM only acting on structured JSON output.
 
-*Status: DRAFT*
-*Created: 2026-03-07*
+_Status: DRAFT_
+_Created: 2026-03-07_
 
 ---
 
@@ -25,6 +25,7 @@ The `opencode-monitor` cron job runs every 2 minutes using gpt-5-mini with a lon
 ### Codebase context
 
 **Current cron job** (`~/.openclaw/cron/jobs.json`, job `opencode-monitor`):
+
 - Schedule: every 120s (`everyMs: 120000`)
 - Model: `copilot/gpt-5-mini` with 90s timeout
 - Delivery: `announce` to WhatsApp `+420736490171`
@@ -32,6 +33,7 @@ The `opencode-monitor` cron job runs every 2 minutes using gpt-5-mini with a lon
 - Current issues: LLM sometimes misclassifies tasks, inconsistent phase/status fixing
 
 **State file** (`~/.openclaw/workspace/km-system/state/opencode-tasks.json`):
+
 - Structure: `{"tasks": [{...}, ...]}`
 - Task fields: `id`, `sessionId`, `task`, `startedAt`, `status`, `phase`, `finishedAt`, `result`, `pid`, `planFile`, `taskFile`, `definedAt`, `implementingStartedAt`, `planningStartedAt`, `plannedAt`, `planSessionId`, `implSessionId`, `errorMessage`
 - Status values observed: `running`, `done`, `failed`
@@ -46,6 +48,7 @@ The `opencode-monitor` cron job runs every 2 minutes using gpt-5-mini with a lon
 | `dark-fork-2858` | `running` | `planning` | Active task — needs process check (pid=4881) |
 
 **Existing scripts (patterns to follow):**
+
 - `task-state.py`: Shared load/save for the state file, `now_iso()` helper. **Reuse `load()`/`save()` pattern.**
 - `supervisor-check.py`: Structured output pattern (ALL_CLEAR / NEEDS_ATTENTION). Good model for output design.
 - `deploy-fork.sh`: OK/FAIL/SKIP structured output. Called by the cron job on task completion.
@@ -59,6 +62,7 @@ The `opencode-monitor` cron job runs every 2 minutes using gpt-5-mini with a lon
 ### Knowledge base
 
 **Patterns from existing scripts:**
+
 - All Python scripts are stdlib-only (no external deps)
 - State file path is hardcoded: `~/.openclaw/workspace/km-system/state/opencode-tasks.json`
 - ISO timestamps use `datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")`
@@ -66,6 +70,7 @@ The `opencode-monitor` cron job runs every 2 minutes using gpt-5-mini with a lon
 - Graceful handling of missing/corrupt state file: return `{"tasks": []}`
 
 **Cron job patterns:**
+
 - "Script-first" jobs (autocommit, transcript-export) have the simplest LLM prompts
 - LLM prompt for script-first: "Run this exact command and report ONLY the output"
 - For jobs needing conditional logic post-script: keep prompt short, reference JSON output fields
@@ -354,19 +359,21 @@ Edit `~/.openclaw/cron/jobs.json` — replace the `message` field of the `openco
 
 ## Files to Create/Modify
 
-| File | Action | Description |
-|------|--------|-------------|
-| `~/.openclaw/workspace/km-system/scripts/opencode-monitor.py` | **CREATE** | New Python script — deterministic task monitoring |
-| `~/.openclaw/cron/jobs.json` | **MODIFY** | Replace `opencode-monitor` job's `message` field with new short prompt |
+| File                                                          | Action     | Description                                                            |
+| ------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------- |
+| `~/.openclaw/workspace/km-system/scripts/opencode-monitor.py` | **CREATE** | New Python script — deterministic task monitoring                      |
+| `~/.openclaw/cron/jobs.json`                                  | **MODIFY** | Replace `opencode-monitor` job's `message` field with new short prompt |
 
 ## Testing
 
 ### Manual testing sequence
 
 1. **Dry run (no state changes):**
+
    ```bash
    python3 ~/.openclaw/workspace/km-system/scripts/opencode-monitor.py --dry-run
    ```
+
    Verify JSON output includes the known mismatches (`cool-opus-`, `opus-impl-4429`).
 
 2. **Verify mismatch detection:**
@@ -378,19 +385,24 @@ Edit `~/.openclaw/cron/jobs.json` — replace the `message` field of the `openco
    - If pid 4881 is not running and age > 5min → should appear in `fixed` and `needs_deploy`
 
 4. **Live run (writes state):**
+
    ```bash
    python3 ~/.openclaw/workspace/km-system/scripts/opencode-monitor.py
    ```
+
    Verify state file is updated, mismatches are fixed.
 
 5. **Idempotency test:**
+
    ```bash
    python3 ~/.openclaw/workspace/km-system/scripts/opencode-monitor.py
    python3 ~/.openclaw/workspace/km-system/scripts/opencode-monitor.py
    ```
+
    Second run should output `{"nothing_to_do": true, "fixed": [], ...}`.
 
 6. **Missing state file test:**
+
    ```bash
    mv ~/.openclaw/workspace/km-system/state/opencode-tasks.json /tmp/backup.json
    python3 ~/.openclaw/workspace/km-system/scripts/opencode-monitor.py
@@ -415,13 +427,14 @@ Edit `~/.openclaw/cron/jobs.json` — replace the `message` field of the `openco
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Script crashes mid-write → corrupt state | State lost | Atomic write via `os.replace()` (write to `.tmp`, rename) |
-| Process PID reuse (rare) | False "still running" | 5-minute age threshold makes this extremely unlikely |
-| State file locked by another writer | Race condition | Unlikely at 2min intervals; atomic write helps |
-| LLM fails to parse JSON | No action taken | JSON is simple; fallback: LLM reports raw output |
+| Risk                                     | Impact                | Mitigation                                                |
+| ---------------------------------------- | --------------------- | --------------------------------------------------------- |
+| Script crashes mid-write → corrupt state | State lost            | Atomic write via `os.replace()` (write to `.tmp`, rename) |
+| Process PID reuse (rare)                 | False "still running" | 5-minute age threshold makes this extremely unlikely      |
+| State file locked by another writer      | Race condition        | Unlikely at 2min intervals; atomic write helps            |
+| LLM fails to parse JSON                  | No action taken       | JSON is simple; fallback: LLM reports raw output          |
 
 ---
-*Created: 2026-03-07*
-*Status: DRAFT*
+
+_Created: 2026-03-07_
+_Status: DRAFT_

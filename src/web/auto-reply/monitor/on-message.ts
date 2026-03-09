@@ -1,4 +1,7 @@
 import type { getReplyFromConfig } from "../../../auto-reply/reply.js";
+import { resolveGateContext } from "../../../auto-reply/reply/gate-context.js";
+import type { GateContext } from "../../../auto-reply/reply/gate-context.js";
+import { classifyInboundSecurity } from "../../../auto-reply/reply/gate-security.js";
 import { runGroupGate } from "../../../auto-reply/reply/group-gate.js";
 import type { MsgContext } from "../../../auto-reply/templating.js";
 import { loadConfig } from "../../../config/config.js";
@@ -39,6 +42,7 @@ export function createWebOnMessageHandler(params: {
     opts?: {
       groupHistory?: GroupHistoryEntry[];
       suppressGroupHistoryClear?: boolean;
+      gateCtx?: GateContext;
     },
   ) =>
     processMessage({
@@ -60,6 +64,7 @@ export function createWebOnMessageHandler(params: {
       buildCombinedEchoKey: params.echoTracker.buildCombinedKey,
       groupHistory: opts?.groupHistory,
       suppressGroupHistoryClear: opts?.suppressGroupHistoryClear,
+      gateCtx: opts?.gateCtx,
     });
 
   return async (msg: WebInboundMsg) => {
@@ -96,6 +101,10 @@ export function createWebOnMessageHandler(params: {
       params.echoTracker.forget(msg.body);
       return;
     }
+
+    // Track gateCtx at handler scope so it can be threaded to processMessage
+    // for outbound security scanning. Only populated for always-on groups.
+    let gateCtx: GateContext | undefined;
 
     if (msg.chatType === "group") {
       const metaCtx = {
@@ -157,16 +166,43 @@ export function createWebOnMessageHandler(params: {
         // Build participant roster for mention resolution in the gate prompt
         const groupRoster = params.groupMemberNames.get(conversationId);
 
-        const gateResult = await runGroupGate({
+        // Resolve shared gate context ONCE for all pipeline stages
+        gateCtx = resolveGateContext({
           cfg: params.cfg,
           agentId: route.agentId,
           sessionKey: route.sessionKey,
+          groupId: conversationId,
+          channel: "whatsapp",
+          accountId: route.accountId,
+          rawMessage: msg.body,
           senderName: msg.senderName ?? msg.senderE164 ?? "Unknown",
-          messageBody: msg.body,
+          senderE164: msg.senderE164,
+          senderJid: msg.senderJid,
+          activation,
           mentionedJids: msg.mentionedJids,
           participantRoster: groupRoster,
-          channel: "whatsapp",
-          groupId: conversationId,
+          rawParticipants: msg.groupParticipants,
+        });
+
+        // Security gate: classify inbound message for social engineering
+        const securityResult = classifyInboundSecurity(gateCtx);
+        if (securityResult.flagged) {
+          logVerbose(
+            `Security gate flagged inbound (reason: ${securityResult.reason}) in ${conversationId}`,
+          );
+          recordPendingGroupHistoryEntry({
+            msg,
+            groupHistories: params.groupHistories,
+            groupHistoryKey,
+            groupHistoryLimit: params.groupHistoryLimit,
+          });
+          return;
+        }
+
+        // Relevance gate: uses pre-resolved GateContext (no duplicate context loading)
+        const gateResult = await runGroupGate({
+          ctx: gateCtx,
+          cfg: params.cfg,
         });
         if (!gateResult.shouldRespond) {
           logVerbose(
@@ -204,6 +240,6 @@ export function createWebOnMessageHandler(params: {
       return;
     }
 
-    await processForRoute(msg, route, groupHistoryKey);
+    await processForRoute(msg, route, groupHistoryKey, { gateCtx });
   };
 }

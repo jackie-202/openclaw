@@ -2,8 +2,8 @@
 
 Robustly link the correct plan file to each task after the planning session finishes, using log-scraping as the primary method and timestamp-based scanning as fallback. Works with parallel sessions, requires changes to `start-task.sh`, `opencode-monitor.py`, and a new `link-plan.py` helper.
 
-*Status: DRAFT*
-*Created: 2026-03-08*
+_Status: DRAFT_
+_Created: 2026-03-08_
 
 ## Problem
 
@@ -12,6 +12,7 @@ When the opencode monitor detects that a planning session finished (process gone
 The current workaround — manually scanning `plans/` for the newest file — is NOT acceptable because multiple planning sessions may run in parallel, so the newest plan file may belong to a different task.
 
 ### Requirements
+
 - Must work with parallel planning sessions
 - Must work when monitor detects orphaned tasks without per-session knowledge
 - Must work when task-state record already has phase=planned and status=done
@@ -21,42 +22,50 @@ The current workaround — manually scanning `plans/` for the newest file — is
 ### Context from codebase [DONE]
 
 **State file structure** (`~/.openclaw/workspace/km-system/state/opencode-tasks.json`):
+
 - Each task has: `id`, `task`, `taskFile`, `phase`, `status`, `planSessionId`, `implSessionId`, `planFile`, `pid`, `planningStartedAt`, `finishedAt`, `result`, etc.
 - `planFile` is initialized as `null` in `start-task.sh:197`.
 - Tasks with `planFile` populated were ALL set manually (via `task-state.py set-plan` or direct JSON edits).
 
 **Monitor** (`opencode-monitor.py`):
+
 - Lines 192-215: When a process is gone + old enough → sets `status=done`, resolves phase (`planning→planned`), sets `finishedAt`, sets `result="completed (detected by monitor)"`.
 - **Never touches `planFile`** — this is the root cause.
 - Has access to: task's `planSessionId`, `planningStartedAt`, `finishedAt`, `pid`, `taskFile`.
 - Does NOT know the project directory or plans directory.
 
 **start-task.sh**:
+
 - Lines 146-206: Creates task record with `planFile: null`.
 - Knows `PROJECT_DIR` at launch time but does NOT store it in the task record.
 - Generates `SESSION_ID` (e.g., "bold-mist-3919"), stores it as `planSessionId`.
 - Log goes to `/tmp/opencode-<SESSION_ID>.log`.
 
 **task-state.py**:
+
 - Already has a `set-plan` command (line 64-76) that matches by session ID or task ID.
 - Currently unused in any automated flow.
 
 **Plan naming by compound-plan skill**:
+
 - Format: `NNN_kebab-case-name.md` (e.g., `006_upstream-sync-branch-strategy.md`)
 - Number is determined at skill init: `ls plans/*.md | sort -V | tail -1` + 1.
 - Name is derived from the task description by the skill.
 - The plan file is created early (Phase 0 of compound-plan) as a WIP, then finalized.
 
 **Opencode logs** (`/tmp/opencode-<sessionId>.log`):
+
 - Contain Write tool output like `← Write plans/006_upstream-sync-branch-strategy.md`.
 - The plan file path appears in the log as the Write tool target.
 - Log files persist after the session ends.
 
 **Project directory problem**:
+
 - The task record does NOT store `projectDir`. The monitor doesn't know which `plans/` dir to scan.
 - `taskFile` contains the full path (e.g., `/Users/michal/Projects/openclaw-fork/plans/tasks/...`), from which `projectDir` can be derived.
 
 **Parallel session analysis** (from real state data):
+
 - Tasks `quick-mist-4786` (openclaw-fork) and `quick-mist-5763` (mission-control) ran in parallel with `planFile: null` — exactly the problem scenario.
 - Task `bold-mist-3919` is currently running (this very session).
 - Historical tasks: `dark-fork-2858` through `quick-peak-8250` had `planFile` set — but these were set manually AFTER the fact, not by the monitor.
@@ -71,6 +80,7 @@ The current workaround — manually scanning `plans/` for the newest file — is
 
 No project-specific learnings directory exists for openclaw-fork.
 Applied general patterns from existing code:
+
 - **Atomic state writes**: `opencode-monitor.py` uses `os.replace()` for atomic writes — any new logic should follow this.
 - **Session ID as key**: All scripts use `sessionId` / task `id` as the primary lookup key.
 - **taskFile path convention**: Full absolute paths stored in `taskFile` field.
@@ -79,17 +89,18 @@ Applied general patterns from existing code:
 
 ### Approach evaluation
 
-| # | Approach | Parallel-safe? | Reliability | Complexity | Verdict |
-|---|----------|---------------|-------------|------------|---------|
-| 1 | Predict plan filename in start-task.sh | No | Low — opencode picks number + name | Low | **Rejected** — filename unpredictable |
-| 2 | Timestamp-based scan of plans/ | Mostly | Medium — needs projectDir, time windows can overlap with parallel sessions if they finish in same minute | Medium | **Fallback** — good secondary strategy |
-| 3 | Sidecar file (`.planlink`) | Yes | High — explicit link | Medium | **Not chosen** — requires compound-plan skill changes across all projects; skill is a shared config |
-| 4 | Log scraping (`/tmp/opencode-<sessionId>.log`) | Yes | High — log contains exact Write path, scoped per session | Low | **Primary** — session-scoped, no skill changes |
-| 5 | Embed task ID in plan filename | Yes | High — exact match | High | **Not chosen** — invasive change to compound-plan skill and all existing naming conventions |
+| #   | Approach                                       | Parallel-safe? | Reliability                                                                                              | Complexity | Verdict                                                                                             |
+| --- | ---------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| 1   | Predict plan filename in start-task.sh         | No             | Low — opencode picks number + name                                                                       | Low        | **Rejected** — filename unpredictable                                                               |
+| 2   | Timestamp-based scan of plans/                 | Mostly         | Medium — needs projectDir, time windows can overlap with parallel sessions if they finish in same minute | Medium     | **Fallback** — good secondary strategy                                                              |
+| 3   | Sidecar file (`.planlink`)                     | Yes            | High — explicit link                                                                                     | Medium     | **Not chosen** — requires compound-plan skill changes across all projects; skill is a shared config |
+| 4   | Log scraping (`/tmp/opencode-<sessionId>.log`) | Yes            | High — log contains exact Write path, scoped per session                                                 | Low        | **Primary** — session-scoped, no skill changes                                                      |
+| 5   | Embed task ID in plan filename                 | Yes            | High — exact match                                                                                       | High       | **Not chosen** — invasive change to compound-plan skill and all existing naming conventions         |
 
 ### Chosen solution: Log scraping (primary) + Timestamp scan (fallback)
 
 **Primary: Log scraping** — Parse `/tmp/opencode-<planSessionId>.log` for the last `Write plans/NNN_*.md` entry. This is:
+
 - **Session-scoped**: Each session has its own log file, so parallel sessions cannot interfere.
 - **Zero changes to opencode or compound-plan skill**: The log already contains the Write tool output.
 - **High reliability**: The plan file is written at least twice during compound-plan (Phase 0 create, Phase 3 finalize), so the pattern is consistently present.
@@ -124,6 +135,7 @@ Add `"projectDir": PROJECT_DIR` to the task record created in the Python block (
 Also add a 6th positional arg to the Python block to receive `PROJECT_DIR`.
 
 For the implement phase Python block (line 210 area), add `projectDir` if not already set:
+
 ```python
 if not t.get("projectDir"):
     t["projectDir"] = project_dir
@@ -142,6 +154,7 @@ Usage:
 ```
 
 Logic:
+
 1. Load state file
 2. For each target task (with `planFile == null` and `phase` in `["planned", "done"]` and `planSessionId` set):
    a. **Try log scraping first**: Read `/tmp/opencode-<planSessionId>.log`, extract last line matching `Write plans/.*\.md`. Resolve to absolute path using `projectDir` from task record.
@@ -151,6 +164,7 @@ Logic:
 3. Output JSON summary of linked/skipped/failed tasks.
 
 Key implementation details:
+
 - Log pattern to match: `Write plans/` (the `←` prefix is ANSI-decorated, so match on `Write plans/` after stripping ANSI)
 - Use `os.path.getmtime()` for timestamp comparison
 - Atomic state write via `os.replace()` (same pattern as monitor)
@@ -183,10 +197,12 @@ if changes_made and not dry_run:
 ### Step 4: Backfill existing tasks with null planFile
 
 Run `link-plan.py --all` once after deployment to fix existing tasks. This will attempt to link:
+
 - `quick-mist-4786` (openclaw-fork, session log at `/tmp/opencode-quick-mist-4786.log`)
 - `quick-mist-5763` (mission-control, session log at `/tmp/opencode-quick-mist-5763.log`)
 
 For backfill, since these tasks don't have `projectDir` stored yet, the script should fall back to deriving it from `taskFile`:
+
 ```python
 project_dir = task.get("projectDir")
 if not project_dir and task.get("taskFile"):
@@ -208,28 +224,31 @@ if new_phase == "planned":
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `~/.openclaw/workspace/km-system/scripts/start-task.sh` | Add `projectDir` to task record (both plan and implement phases) |
+| File                                                          | Change                                                                                      |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `~/.openclaw/workspace/km-system/scripts/start-task.sh`       | Add `projectDir` to task record (both plan and implement phases)                            |
 | `~/.openclaw/workspace/km-system/scripts/opencode-monitor.py` | Call `link-plan.py --all` after state write; set `plannedAt` on planning→planned transition |
-| `~/.openclaw/workspace/km-system/scripts/link-plan.py` | **NEW** — plan file linker with log-scraping + timestamp fallback |
-| `~/.openclaw/workspace/km-system/scripts/task-state.py` | No changes needed (existing `set-plan` command remains for manual use) |
+| `~/.openclaw/workspace/km-system/scripts/link-plan.py`        | **NEW** — plan file linker with log-scraping + timestamp fallback                           |
+| `~/.openclaw/workspace/km-system/scripts/task-state.py`       | No changes needed (existing `set-plan` command remains for manual use)                      |
 
 ## Testing
 
 ### Manual verification
+
 1. Run `link-plan.py --all` on current state — should attempt to link `quick-mist-4786` and `quick-mist-5763`
 2. Verify by checking `opencode-tasks.json` that `planFile` is populated for both
 3. Start a new planning session via `start-task.sh --phase plan`, verify `projectDir` is stored
 4. After session completes, run monitor, verify `planFile` is auto-linked
 
 ### Parallel session test
+
 1. Start two planning sessions simultaneously (one in openclaw-fork, one in mission-control)
 2. Wait for both to complete
 3. Run monitor or `link-plan.py --all`
 4. Verify each task gets the correct plan file (not cross-linked)
 
 ### Edge cases to verify
+
 - Log file missing (`/tmp/` cleared): should fall back to timestamp scan
 - Log file has no Write lines (session crashed early): should fall back to timestamp scan
 - Multiple plan files in timestamp window (parallel sessions in same project): should skip (not guess)
@@ -238,15 +257,18 @@ if new_phase == "planned":
 ## Dependencies
 
 ### Prerequisites
+
 - Python 3 available (already in use by all km-system scripts)
 - `/tmp/opencode-*.log` files persist (confirmed: they do, cleaned only on reboot)
 - `taskFile` field reliably contains the canonical path under `<projectDir>/plans/tasks/`
 
 ### No external dependencies
+
 - No new packages needed
 - No changes to opencode binary or compound-plan skill
 - No changes to mission-control dashboard (it already reads `planFile` from state)
 
 ---
-*Created: 2026-03-08*
-*Status: DRAFT*
+
+_Created: 2026-03-08_
+_Status: DRAFT_

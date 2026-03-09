@@ -3,6 +3,7 @@ Use the compound-plan skill to create a plan for:
 ## Task: Upstream sync branch strategy + skill update
 
 Current situation:
+
 - We have a fork of openclaw/openclaw at ~/Projects/openclaw-fork
 - We are 537 commits behind upstream, 23 commits ahead (our custom features)
 - Our custom code lives in: src/auto-reply/reply/group-gate.ts, src/media-understanding/runner.entries.ts, src/config/zod-schema.providers-whatsapp.ts, src/config/types.whatsapp.ts
@@ -12,7 +13,7 @@ Current situation:
 ## Goal
 
 1. Update the upstream sync workflow to use a dedicated branch strategy:
-   - Instead of merging directly into main/master, create a new branch (e.g. `upstream-sync/YYYY-MM-DD`) 
+   - Instead of merging directly into main/master, create a new branch (e.g. `upstream-sync/YYYY-MM-DD`)
    - Do the full merge + build + test on that branch
    - If everything works: merge back to main
    - If it breaks: easy rollback, main stays clean

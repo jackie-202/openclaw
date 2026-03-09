@@ -2,8 +2,8 @@
 
 Redesign the openclaw upstream sync workflow to use a dedicated branch strategy instead of merging directly into main. Update the skill SKILL.md and sync.sh script accordingly.
 
-*Status: DRAFT*
-*Vytvořeno: 2026-03-08*
+_Status: DRAFT_
+_Vytvořeno: 2026-03-08_
 
 ---
 
@@ -19,6 +19,7 @@ Redesign the openclaw upstream sync workflow to use a dedicated branch strategy 
 Current upstream sync merges directly into main, which is risky with 537 commits behind upstream. If the merge breaks the build or introduces conflicts with our 23 custom commits, main is left in a broken state and rollback is painful.
 
 **Requirements:**
+
 1. Branch-based sync: create `upstream-sync/YYYY-MM-DD` branch for merge + build + test
 2. Three script modes: `--branch` (default), `--merge`, `--abort`
 3. Pre-merge: summarize our custom commits that need to survive
@@ -30,12 +31,14 @@ Current upstream sync merges directly into main, which is risky with 537 commits
 ### Kontext z codebase
 
 **Git topology:**
+
 - `origin` → `git@github.com:jackie-202/openclaw.git` (fork)
 - `upstream` → `https://github.com/openclaw/openclaw.git` (official)
 - Current branches: `main`, `feat/group-chat-gate`
 - 537 commits behind upstream/main, 23 commits ahead
 
 **Our custom commits (23, from git log):**
+
 - Group chat gate feature: two-phase LLM gate, gate prompt rewrites, bias tuning, session continuity, knowledge layering, mentions handling
 - WhatsApp config: systemPrompt support for group config, types + zod schema extensions
 - Media understanding: whisper fix, attachment guards, proxy fetchFn
@@ -44,18 +47,21 @@ Current upstream sync merges directly into main, which is risky with 537 commits
 - Upstream merge commit from 2026-03-06
 
 **Key custom files (must survive sync):**
+
 - `src/auto-reply/reply/group-gate.ts` (15KB) — group chat LLM gating
 - `src/media-understanding/runner.entries.ts` (21KB) — media understanding with our fixes
 - `src/config/zod-schema.providers-whatsapp.ts` (5.8KB) — WhatsApp config schema extensions
 - `src/config/types.whatsapp.ts` (4.5KB) — WhatsApp config type extensions
 
 **Existing skill structure:**
+
 - Skill: `~/.openclaw/workspace/skills/openclaw-upstream/SKILL.md` (44 lines)
 - Script: `~/.openclaw/workspace/skills/openclaw-upstream/scripts/sync.sh` (80 lines)
 - Current flow: auto-commit dirty state → fetch → merge → build → npm link → doctor → push
 - Only supports `--dry-run` flag
 
 **Current script issues:**
+
 1. Merges directly into main — no rollback if build/tests fail
 2. No custom file protection — doesn't check if upstream modified our files
 3. No summary of our custom commits before merge
@@ -108,12 +114,14 @@ Replace the single-shot merge-into-main approach with a staged workflow using a 
 ```
 
 **Advantages over current approach:**
+
 - Main stays clean until human verifies the merge
 - Easy rollback: just `--abort` and sync branch disappears
 - Custom file diff report allows manual inspection before merge
 - Build + test run on the sync branch, not on main
 
 **Design decisions:**
+
 1. Branch naming: `upstream-sync/YYYY-MM-DD` (with `-N` suffix if branch already exists for same day)
 2. State tracking: use a marker file `.upstream-sync-branch` in repo root (gitignored) to remember the active sync branch name — avoids complex branch detection logic
 3. `--dry-run` preserved as a sub-mode of `--branch` (fetch + show count + show custom summary, but don't create branch)
@@ -123,6 +131,7 @@ Replace the single-shot merge-into-main approach with a staged workflow using a 
 ## Implementation
 
 ### Pre-implementation checklist
+
 - [ ] Back up current `sync.sh` (git tracks it; no extra action needed)
 - [ ] Verify `.gitignore` includes `.upstream-sync-branch` marker file
 
@@ -152,6 +161,7 @@ CUSTOM_FILES=(
 ```
 
 **Mode: `--branch` (default)**
+
 1. Check for uncommitted changes — refuse if dirty (don't auto-commit; let user decide)
 2. `git fetch upstream`
 3. Count upstream-ahead commits; exit 0 if none
@@ -169,6 +179,7 @@ CUSTOM_FILES=(
 12. Print summary: "Sync branch ready. Inspect, then run `sync.sh --merge` or `sync.sh --abort`"
 
 **Mode: `--dry-run`**
+
 1. `git fetch upstream`
 2. Count + list upstream commits
 3. Print custom commit summary
@@ -176,6 +187,7 @@ CUSTOM_FILES=(
 5. Exit 0
 
 **Mode: `--merge`**
+
 1. Read `$MARKER_FILE` — if missing, error "no active sync branch"
 2. Verify sync branch exists
 3. `git checkout main`
@@ -188,6 +200,7 @@ CUSTOM_FILES=(
 10. Print "Sync complete"
 
 **Mode: `--abort`**
+
 1. Read `$MARKER_FILE` — if missing, error "no active sync branch"
 2. `git checkout main`
 3. Delete sync branch: `git branch -D $SYNC_BRANCH`
@@ -199,6 +212,7 @@ CUSTOM_FILES=(
 Rewrite `~/.openclaw/workspace/skills/openclaw-upstream/SKILL.md` to document the new three-phase flow.
 
 **New structure:**
+
 - Description: updated to mention branch-based strategy
 - Quick reference: three commands (default, --merge, --abort, --dry-run)
 - Workflow section explaining the staged approach
@@ -213,11 +227,11 @@ Add the marker file pattern to the repo's `.gitignore` so it's never committed.
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
+| File                                                             | Change                                         |
+| ---------------------------------------------------------------- | ---------------------------------------------- |
 | `~/.openclaw/workspace/skills/openclaw-upstream/scripts/sync.sh` | Complete rewrite: three-mode branch-based sync |
-| `~/.openclaw/workspace/skills/openclaw-upstream/SKILL.md` | Rewrite docs for new workflow |
-| `~/Projects/openclaw-fork/.gitignore` | Add `.upstream-sync-branch` |
+| `~/.openclaw/workspace/skills/openclaw-upstream/SKILL.md`        | Rewrite docs for new workflow                  |
+| `~/Projects/openclaw-fork/.gitignore`                            | Add `.upstream-sync-branch`                    |
 
 ## Testing
 
@@ -243,6 +257,7 @@ Add the marker file pattern to the repo's `.gitignore` so it's never committed.
    - Verify: `git log -1` shows merge, `openclaw doctor` passes
 
 ### Edge cases to verify:
+
 - Running `--merge` without an active sync branch → error message
 - Running `--branch` with dirty working tree → refused with message
 - Running `--branch` when already on a sync branch → error or re-use
@@ -256,5 +271,6 @@ Add the marker file pattern to the repo's `.gitignore` so it's never committed.
 - `npm link` permissions (current setup works)
 
 ---
-*Vytvořeno: 2026-03-08*
-*Status: DRAFT*
+
+_Vytvořeno: 2026-03-08_
+_Status: DRAFT_

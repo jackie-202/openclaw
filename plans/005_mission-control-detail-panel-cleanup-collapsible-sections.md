@@ -2,8 +2,8 @@
 
 Clean up the detail panel compact header (remove duration and planFile link) and wrap the Zadání and Plán sections in collapsible `<details>` elements matching the existing "Všechny atributy" collapsible style.
 
-*Status: WIP*
-*Vytvořeno: 2026-03-07*
+_Status: WIP_
+_Vytvořeno: 2026-03-07_
 
 ---
 
@@ -27,6 +27,7 @@ The compact detail header currently shows: task label, phase, started at, last c
 ### 2. Make "📋 Zadání" section collapsible
 
 Wrap the task definition section (taskFile markdown) in a `<details>/<summary>` element:
+
 - Default state: **collapsed**
 - Summary text: `📋 Zadání`
 - Content: the rendered markdown (existing `renderTaskFile` output)
@@ -34,6 +35,7 @@ Wrap the task definition section (taskFile markdown) in a `<details>/<summary>` 
 ### 3. Make "📄 Plán" section collapsible
 
 Wrap the plan section (planFile markdown) in a `<details>/<summary>` element:
+
 - Default state: **collapsed**
 - Summary text: `📄 Plán`
 - Content: the rendered markdown (existing `renderPlan` output)
@@ -47,11 +49,13 @@ Both sections should use consistent styling — same `<details>` look as the "V�
 **Project structure:** `~/Projects/mission-control/` is a plain Node.js HTTP server (`server.js`) serving static files from `public/`. No build step, no framework — vanilla HTML/CSS/JS.
 
 **Files involved:**
+
 - `public/app.js` (688 lines) — all rendering logic
 - `public/index.html` (92 lines) — HTML structure for the detail panel
 - `public/style.css` (759 lines) — all styles including existing collapsible `.detail-collapsible` classes
 
 **Current detail panel structure (index.html lines 53–78):**
+
 ```
 detail-view
   detail-shell
@@ -63,6 +67,7 @@ detail-view
 ```
 
 **Current compact header rendering (`renderDetail` in app.js, lines 377–438):**
+
 ```javascript
 headerEl.innerHTML = [
   renderHeaderRowHtml('Task', `<strong>${esc(label)}</strong>`),
@@ -80,23 +85,27 @@ headerEl.innerHTML = [
 The "Všechny atributy" section already uses `<details class="detail-collapsible">` / `<summary class="detail-collapsible-summary">`. This exact pattern should be reused for the Zadání and Plán sections.
 
 **Existing collapsible CSS (style.css lines 572–600):**
+
 - `.detail-collapsible` — removes padding
 - `.detail-collapsible-summary` — styled like a panel title with cyan color, 11px, 700 weight, 2px letter-spacing, `var(--bg-card)` background
 - `.detail-collapsible[open] .detail-collapsible-summary` — bottom border
 - Hides the native `<details>` marker via `::-webkit-details-marker`
 
 **Task file rendering (`renderTaskFile`, app.js lines 470–498):**
+
 - Fetches markdown from `/api/taskfile?path=...`
 - Renders into `#detail-taskfile` element
 - Panel visibility controlled via `panelEl.style.display`
 
 **Plan rendering (`renderPlan`, app.js lines 441–468):**
+
 - Fetches markdown from `/api/plan?file=...`
 - Renders into `#detail-plan` element
 
 ### Knowledge base
 
 No dedicated learnings directory in this repo. Patterns derived from codebase:
+
 - **Native HTML `<details>/<summary>`** already in use — no JS needed for collapse/expand
 - **CSS classes** `.detail-collapsible` and `.detail-collapsible-summary` are the established pattern
 - **DOMPurify** is used for sanitizing rendered markdown — collapsible wrapper must be outside the sanitized content
@@ -119,6 +128,7 @@ All three changes are straightforward edits to existing code. No new dependencie
 However, the existing "Všechny atributy" collapsible is created entirely in JS (`fieldsEl.innerHTML = ...`). For consistency within the JS code, it would be equally valid to build the `<details>` in JS.
 
 **Chosen approach:** Build `<details>` wrappers in **static HTML** (index.html) because:
+
 - The panel sections already exist in HTML with `detail-panel-title` divs
 - We simply replace the static `detail-panel-title` div with a `<details>` wrapper
 - The JS render functions only need to target the content container (already the case)
@@ -134,36 +144,44 @@ However, the existing "Všechny atributy" collapsible is created entirely in JS 
 **Change:** Remove lines for `Duration` and `Plan file` from the `headerEl.innerHTML` array.
 
 **Before:**
+
 ```javascript
 headerEl.innerHTML = [
-  renderHeaderRowHtml('Task', `<strong>${esc(label)}</strong>`),
-  renderHeaderRowHtml('Phase', phaseHtml),
-  renderHeaderRow('Started', startTime || '—'),
-  renderHeaderRow('Last changed', lastChanged ? formatRelativeTime(lastChanged) : '—'),
-  renderHeaderRow('Duration', durationMs == null ? '—' : formatDuration(durationMs)),
+  renderHeaderRowHtml("Task", `<strong>${esc(label)}</strong>`),
+  renderHeaderRowHtml("Phase", phaseHtml),
+  renderHeaderRow("Started", startTime || "—"),
+  renderHeaderRow("Last changed", lastChanged ? formatRelativeTime(lastChanged) : "—"),
+  renderHeaderRow("Duration", durationMs == null ? "—" : formatDuration(durationMs)),
   task.planFile
-    ? renderHeaderRowHtml('Plan file', `<a href="#" style="color:var(--yellow)" title="${esc(task.planFile)}">${esc(task.planFile.split('/').pop())}</a>`)
-    : '',
-].filter(Boolean).join('');
+    ? renderHeaderRowHtml(
+        "Plan file",
+        `<a href="#" style="color:var(--yellow)" title="${esc(task.planFile)}">${esc(task.planFile.split("/").pop())}</a>`,
+      )
+    : "",
+]
+  .filter(Boolean)
+  .join("");
 ```
 
 **After:**
+
 ```javascript
 headerEl.innerHTML = [
-  renderHeaderRowHtml('Task', `<strong>${esc(label)}</strong>`),
-  renderHeaderRowHtml('Phase', phaseHtml),
-  renderHeaderRow('Started', startTime || '—'),
-  renderHeaderRow('Last changed', lastChanged ? formatRelativeTime(lastChanged) : '—'),
-].join('');
+  renderHeaderRowHtml("Task", `<strong>${esc(label)}</strong>`),
+  renderHeaderRowHtml("Phase", phaseHtml),
+  renderHeaderRow("Started", startTime || "—"),
+  renderHeaderRow("Last changed", lastChanged ? formatRelativeTime(lastChanged) : "—"),
+].join("");
 ```
 
 Also clean up the now-unused variables `durationMs`, `startedAtMs`, `finishedAtMs` from the function (lines 393–396). These are only used for the duration display. However `startedAtMs` is used to compute `durationMs` which we're removing. The `startTime` variable itself is still used for the "Started" row, so keep that.
 
 **Variables to remove (lines 394–396):**
+
 ```javascript
 const startedAtMs = startTime ? new Date(startTime).getTime() : null;
 const finishedAtMs = task.finishedAt ? new Date(task.finishedAt).getTime() : null;
-const durationMs = startedAtMs ? ((finishedAtMs || Date.now()) - startedAtMs) : null;
+const durationMs = startedAtMs ? (finishedAtMs || Date.now()) - startedAtMs : null;
 ```
 
 ### Step 2: Make "📋 Zadání" section collapsible
@@ -172,6 +190,7 @@ const durationMs = startedAtMs ? ((finishedAtMs || Date.now()) - startedAtMs) : 
 **Location:** Lines 68–71 (`#detail-taskfile-panel`)
 
 **Before:**
+
 ```html
 <section class="detail-panel" id="detail-taskfile-panel" style="display:none">
   <div class="detail-panel-title">📋 TASK DEFINITION</div>
@@ -180,6 +199,7 @@ const durationMs = startedAtMs ? ((finishedAtMs || Date.now()) - startedAtMs) : 
 ```
 
 **After:**
+
 ```html
 <section class="detail-panel" id="detail-taskfile-panel" style="display:none">
   <details class="detail-collapsible">
@@ -197,6 +217,7 @@ No changes needed in `app.js` for `renderTaskFile()` — it already targets `#de
 **Location:** Lines 73–76 (`#detail-plan-panel`)
 
 **Before:**
+
 ```html
 <section class="detail-panel" id="detail-plan-panel">
   <div class="detail-panel-title">PLAN / MARKDOWN</div>
@@ -205,6 +226,7 @@ No changes needed in `app.js` for `renderTaskFile()` — it already targets `#de
 ```
 
 **After:**
+
 ```html
 <section class="detail-panel" id="detail-plan-panel">
   <details class="detail-collapsible">
@@ -219,6 +241,7 @@ No changes needed in `app.js` for `renderPlan()` — same reasoning as above.
 ### Step 4 (optional cleanup): Remove dead code in renderDetail
 
 After removing the Duration and Plan file rows, these local variables in `renderDetail()` are unused:
+
 - `startedAtMs` (line 394)
 - `finishedAtMs` (line 395)
 - `durationMs` (line 396)
@@ -227,9 +250,9 @@ Remove them for cleanliness.
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `public/app.js` | Remove Duration and Plan file rows from `renderDetail()` header (lines 410–413). Remove unused variables `startedAtMs`, `finishedAtMs`, `durationMs` (lines 394–396). |
+| File                | Change                                                                                                                                                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `public/app.js`     | Remove Duration and Plan file rows from `renderDetail()` header (lines 410–413). Remove unused variables `startedAtMs`, `finishedAtMs`, `durationMs` (lines 394–396).                                   |
 | `public/index.html` | Wrap `#detail-taskfile-panel` content in `<details>/<summary>` with summary "📋 Zadání" (lines 68–71). Wrap `#detail-plan-panel` content in `<details>/<summary>` with summary "📄 Plán" (lines 73–76). |
 
 **No CSS changes needed** — the existing `.detail-collapsible` and `.detail-collapsible-summary` classes already provide the correct styling.
@@ -266,5 +289,6 @@ Remove them for cleanliness.
 - Requires a running instance with task data to test (or mock data in `opencode-tasks.json`).
 
 ---
-*Vytvořeno: 2026-03-07*
-*Status: DRAFT*
+
+_Vytvořeno: 2026-03-07_
+_Status: DRAFT_

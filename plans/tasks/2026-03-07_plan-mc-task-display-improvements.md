@@ -4,7 +4,7 @@ Use the compound-plan skill to create a detailed implementation plan for:
 
 Project: ~/Projects/openclaw-fork
 Plans output dir: ~/Projects/openclaw-fork/plans/
-External dirs with access: ~/.openclaw/workspace/**, ~/.openclaw/cron/**, ~/Projects/mission-control/**
+External dirs with access: ~/.openclaw/workspace/**, ~/.openclaw/cron/**, ~/Projects/mission-control/\*\*
 
 ## Changes needed in ~/Projects/mission-control/
 
@@ -13,6 +13,7 @@ External dirs with access: ~/.openclaw/workspace/**, ~/.openclaw/cron/**, ~/Proj
 Currently each task card shows the raw `task` field (first line of task text), which often starts with "Use the compound-plan skill...", "Implement the plan at...", etc. — all looking the same.
 
 Goal: derive a short human-readable label from the task record. Priority:
+
 1. Use `taskFile` filename if available — strip date prefix (`YYYY-MM-DD_`) and slug-decode (replace `-` with spaces, trim to ~50 chars)
 2. Fall back to the raw `task` field but strip common prefixes: "Use the compound-plan skill to create a detailed implementation plan for:", "Implement the plan at...", "Implement ", "Plan: "
 3. Capitalize first letter
@@ -22,6 +23,7 @@ Show this derived label as the primary title on task cards in the list.
 ### 2. Last-changed timestamp on each task card
 
 Show a "last changed" timestamp on each task card in the list. Derive it as:
+
 - The most recent non-null timestamp among: `finishedAt`, `implementingStartedAt`, `plannedAt`, `planningStartedAt`, `definedAt`, `startedAt`
 - Display as relative time (e.g. "2 min ago", "1 hour ago", "yesterday") with full datetime on hover (title attribute)
 

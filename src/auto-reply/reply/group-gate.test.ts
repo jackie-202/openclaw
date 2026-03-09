@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { completeSimple, type AssistantMessage } from "@mariozechner/pi-ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/config.js";
+import type { GateContext } from "./gate-context.js";
 import { _test, runGroupGate } from "./group-gate.js";
 
 const { readRecentSessionTranscript, buildGatePrompt, parseGateResponse, resolveMentionsInBody } =
@@ -583,6 +584,197 @@ describe("group-gate", () => {
         roster,
       );
       expect(result).toBe("@Alice said @Alice is here");
+    });
+  });
+
+  // ── parseGateResponse — signals extension ──────────────────────────
+
+  describe("parseGateResponse — signals", () => {
+    it("parses response with full signals object", () => {
+      const result = parseGateResponse(
+        '{"shouldRespond": true, "reason": "direct question", "signals": {"directAddress": true, "topicExpertise": false, "silenceBreaker": false, "followUp": true}}',
+      );
+      expect(result.shouldRespond).toBe(true);
+      expect(result.relevanceSignals).toEqual({
+        directAddress: true,
+        topicExpertise: false,
+        silenceBreaker: false,
+        followUp: true,
+      });
+    });
+
+    it("parses response without signals (backward compat)", () => {
+      const result = parseGateResponse('{"shouldRespond": true, "reason": "casual mention"}');
+      expect(result.shouldRespond).toBe(true);
+      expect(result.relevanceSignals).toBeUndefined();
+    });
+
+    it("handles malformed signals — non-boolean values treated as false", () => {
+      const result = parseGateResponse(
+        '{"shouldRespond": true, "reason": "test", "signals": {"directAddress": "maybe", "topicExpertise": 1, "silenceBreaker": null, "followUp": true}}',
+      );
+      expect(result.relevanceSignals).toEqual({
+        directAddress: false,
+        topicExpertise: false,
+        silenceBreaker: false,
+        followUp: true,
+      });
+    });
+
+    it("handles partial signals — missing keys default to false", () => {
+      const result = parseGateResponse(
+        '{"shouldRespond": true, "reason": "test", "signals": {"directAddress": true}}',
+      );
+      expect(result.relevanceSignals).toEqual({
+        directAddress: true,
+        topicExpertise: false,
+        silenceBreaker: false,
+        followUp: false,
+      });
+    });
+
+    it("handles empty signals object", () => {
+      const result = parseGateResponse('{"shouldRespond": false, "reason": "test", "signals": {}}');
+      expect(result.relevanceSignals).toEqual({
+        directAddress: false,
+        topicExpertise: false,
+        silenceBreaker: false,
+        followUp: false,
+      });
+    });
+
+    it("keyword fallback does not produce signals", () => {
+      const result = parseGateResponse('Sure! {"shouldRespond": true, "reason": "test"}...');
+      expect(result.shouldRespond).toBe(true);
+      expect(result.relevanceSignals).toBeUndefined();
+    });
+  });
+
+  // ── runGroupGate — GateContext path ────────────────────────────────
+
+  describe("runGroupGate — GateContext path", () => {
+    function makeGateCtx(overrides?: Partial<GateContext>): GateContext {
+      return {
+        groupId: "420123@g.us",
+        sessionKey: "test-session",
+        agentId: "default",
+        rawMessage: "Hey Jackie, what do you think?",
+        resolvedMentions: new Map([["111:2@s.whatsapp.net", "Jackie"]]),
+        groupKnowledge: "Group rule: be helpful",
+        conversationHistory: ["User: hello", "Assistant: hi there"],
+        groupMembers: [{ jid: "111@s.whatsapp.net", name: "Alice", e164: "+111" }],
+        senderName: "Michal",
+        activation: "always",
+        ...overrides,
+      };
+    }
+
+    it("uses pre-resolved context (no file system calls for transcript/knowledge)", async () => {
+      const readSpy = vi.spyOn(fs, "readFileSync");
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage(
+          '{"shouldRespond": true, "reason": "direct question", "signals": {"directAddress": true, "topicExpertise": false, "silenceBreaker": false, "followUp": false}}',
+        ),
+      );
+
+      const ctx = makeGateCtx();
+      await runGroupGate({ ctx, cfg: baseCfg });
+
+      // readFileSync should NOT be called for session JSONL or knowledge files —
+      // the GateContext path uses pre-resolved data
+      expect(readSpy).not.toHaveBeenCalled();
+      expect(completeSimple).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns relevanceSignals from model response", async () => {
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage(
+          '{"shouldRespond": true, "reason": "topic expert", "signals": {"directAddress": false, "topicExpertise": true, "silenceBreaker": false, "followUp": false}}',
+        ),
+      );
+
+      const result = await runGroupGate({ ctx: makeGateCtx(), cfg: baseCfg });
+      expect(result.shouldRespond).toBe(true);
+      expect(result.relevanceSignals).toEqual({
+        directAddress: false,
+        topicExpertise: true,
+        silenceBreaker: false,
+        followUp: false,
+      });
+    });
+
+    it("falls back to undefined signals on parse failure", async () => {
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage("I think you should respond."),
+      );
+
+      const result = await runGroupGate({ ctx: makeGateCtx(), cfg: baseCfg });
+      // Keyword fallback: "shouldrespond" not found in the format, so false
+      expect(result.relevanceSignals).toBeUndefined();
+    });
+
+    it("returns shouldRespond: true when gate is not enabled", async () => {
+      const cfg = { agents: { defaults: {} } } as OpenClawConfig;
+      const result = await runGroupGate({ ctx: makeGateCtx(), cfg });
+      expect(result).toEqual({ shouldRespond: true, reason: "gate not enabled" });
+      expect(completeSimple).not.toHaveBeenCalled();
+    });
+
+    it("returns shouldRespond: true (safe fallback) on error", async () => {
+      vi.mocked(completeSimple).mockRejectedValue(new Error("network error"));
+
+      const result = await runGroupGate({ ctx: makeGateCtx(), cfg: baseCfg });
+      expect(result.shouldRespond).toBe(true);
+      expect(result.reason).toContain("gate error");
+    });
+
+    it("resolves mentions in raw message using ctx.resolvedMentions", async () => {
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage('{"shouldRespond": true, "reason": "mentioned"}'),
+      );
+
+      const ctx = makeGateCtx({
+        rawMessage: "@111 what do you think?",
+        resolvedMentions: new Map([["111:2@s.whatsapp.net", "Jackie"]]),
+      });
+
+      await runGroupGate({ ctx, cfg: baseCfg });
+
+      const call = vi.mocked(completeSimple).mock.calls[0];
+      const promptContent = (call[1] as { messages: Array<{ content: string }> }).messages[0]
+        .content;
+      expect(promptContent).toContain("@Jackie what do you think?");
+    });
+
+    it("includes group knowledge in the gate prompt", async () => {
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage('{"shouldRespond": true, "reason": "has knowledge"}'),
+      );
+
+      const ctx = makeGateCtx({ groupKnowledge: "Important group rule" });
+      await runGroupGate({ ctx, cfg: baseCfg });
+
+      const call = vi.mocked(completeSimple).mock.calls[0];
+      const promptContent = (call[1] as { messages: Array<{ content: string }> }).messages[0]
+        .content;
+      expect(promptContent).toContain("Important group rule");
+    });
+
+    it("includes conversation history in the gate prompt", async () => {
+      vi.mocked(completeSimple).mockResolvedValue(
+        mockAssistantMessage('{"shouldRespond": true, "reason": "context"}'),
+      );
+
+      const ctx = makeGateCtx({
+        conversationHistory: ["User: first message", "Assistant: response"],
+      });
+      await runGroupGate({ ctx, cfg: baseCfg });
+
+      const call = vi.mocked(completeSimple).mock.calls[0];
+      const promptContent = (call[1] as { messages: Array<{ content: string }> }).messages[0]
+        .content;
+      expect(promptContent).toContain("User: first message");
+      expect(promptContent).toContain("Assistant: response");
     });
   });
 });
