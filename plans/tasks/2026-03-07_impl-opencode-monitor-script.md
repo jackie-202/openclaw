@@ -1,6 +1,7 @@
 Implement the plan at ~/Projects/openclaw-fork/plans/001_refactor-opencode-monitor-cron-to-python.md
 
 Summary of what to do:
+
 1. CREATE ~/.openclaw/workspace/km-system/scripts/opencode-monitor.py — standalone Python 3 script:
    - Loads state file: ~/.openclaw/workspace/km-system/state/opencode-tasks.json
    - Fixes phase/status mismatches (status=done + phase=implementing → phase=done, etc.)

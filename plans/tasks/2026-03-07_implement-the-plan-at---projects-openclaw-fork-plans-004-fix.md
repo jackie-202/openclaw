@@ -8,7 +8,7 @@ Summary of what to change in ~/.openclaw/workspace/km-system/scripts/opencode-mo
 
 2. Fix mismatch-correction logic (always apply regardless of process state):
    - status=done + phase=planning → phase=planned
-   - status=done + phase=implementing → phase=done  
+   - status=done + phase=implementing → phase=done
    - status=failed + phase=planning → phase=failed
    - status=failed + phase=implementing → phase=failed
 

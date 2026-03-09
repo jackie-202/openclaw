@@ -22,6 +22,7 @@ import {
   resolveStorePath,
 } from "../../config/sessions.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import type { GateContext } from "./gate-context.js";
 import { loadGroupKnowledgeFiles, resolveGroupKnowledgeFiles } from "./group-context-priming.js";
 
 const log = createSubsystemLogger("group-gate");
@@ -30,9 +31,29 @@ const DEFAULT_HISTORY_LIMIT = 20;
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_GATE_MODEL = "copilot/gpt-4o-mini";
 
+/**
+ * Relevance signals extracted from the gate decision.
+ * Used downstream by Voice gate to calibrate response style and length.
+ */
+export type RelevanceSignals = {
+  /** Agent was directly addressed (by name, @mention, or reply-to). */
+  directAddress: boolean;
+  /** Message is in a topic area where the agent has demonstrated expertise. */
+  topicExpertise: boolean;
+  /** Agent has been silent for many messages -- re-engagement opportunity. */
+  silenceBreaker: boolean;
+  /** This message is a follow-up to something the agent said previously. */
+  followUp: boolean;
+};
+
 export type GroupGateResult = {
   shouldRespond: boolean;
   reason: string;
+  /**
+   * Structured relevance signals for downstream stages.
+   * Undefined when gate is skipped, errors, or model omits them.
+   */
+  relevanceSignals?: RelevanceSignals;
 };
 
 type GroupGateConfig = NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>["groupGate"];
@@ -41,7 +62,7 @@ type GroupGateConfig = NonNullable<NonNullable<OpenClawConfig["agents"]>["defaul
  * Read the last N user/assistant messages from a session JSONL file and format
  * them as a readable transcript (sender: message).
  */
-function readRecentSessionTranscript(sessionFilePath: string, limit: number): string[] {
+export function readRecentSessionTranscript(sessionFilePath: string, limit: number): string[] {
   try {
     const content = fs.readFileSync(sessionFilePath, "utf-8");
     const lines = content.trim().split("\n");
@@ -137,7 +158,7 @@ When in doubt, respond. It's better to occasionally say something unnecessary th
 Specifically: if someone asks a question and Jackie has relevant information or context that others in the chat likely don't have — respond, even if the question wasn't explicitly addressed to Jackie by name. In a small group, most questions are for whoever can answer them.
 
 ## Response Format (JSON only, no other text):
-{"shouldRespond": true/false, "reason": "brief explanation"}`;
+{"shouldRespond": true/false, "reason": "brief explanation", "signals": {"directAddress": true/false, "topicExpertise": true/false, "silenceBreaker": true/false, "followUp": true/false}}`;
 }
 
 /**
@@ -152,10 +173,30 @@ function parseGateResponse(text: string): GroupGateResult {
     .trim();
 
   try {
-    const parsed = JSON.parse(cleaned) as { shouldRespond?: unknown; reason?: unknown };
+    const parsed = JSON.parse(cleaned) as {
+      shouldRespond?: unknown;
+      reason?: unknown;
+      signals?: {
+        directAddress?: unknown;
+        topicExpertise?: unknown;
+        silenceBreaker?: unknown;
+        followUp?: unknown;
+      };
+    };
+
+    const relevanceSignals: RelevanceSignals | undefined = parsed.signals
+      ? {
+          directAddress: parsed.signals.directAddress === true,
+          topicExpertise: parsed.signals.topicExpertise === true,
+          silenceBreaker: parsed.signals.silenceBreaker === true,
+          followUp: parsed.signals.followUp === true,
+        }
+      : undefined;
+
     return {
       shouldRespond: parsed.shouldRespond === true,
       reason: typeof parsed.reason === "string" ? parsed.reason : "unknown",
+      relevanceSignals,
     };
   } catch {
     // If JSON parsing fails, look for keywords as a fallback
@@ -213,7 +254,7 @@ function loadGateKnowledgeMemory(params: {
  * E.g. `@194146111357056` → `@Jackie` when the roster maps that LID to
  * "Jackie". Unresolved @-mentions are left as-is.
  */
-function resolveMentionsInBody(
+export function resolveMentionsInBody(
   body: string,
   mentionedJids: string[] | undefined,
   participantRoster: Map<string, string> | undefined,
@@ -262,21 +303,179 @@ export const _test = {
   resolveMentionsInBody,
 };
 
-export async function runGroupGate(params: {
+/**
+ * Shared gate model call logic used by both the legacy and GateContext paths.
+ * Builds the prompt, resolves the model, calls the LLM, and parses the result.
+ */
+async function callGateModel(params: {
+  cfg: OpenClawConfig;
+  transcript: string[];
+  senderName: string;
+  messageBody: string;
+  gateKnowledgeText: string | undefined;
+  gateKnowledgeMeta?: {
+    sources: string[];
+    charsBySource: Record<string, number>;
+    totalChars: number;
+  };
+}): Promise<GroupGateResult> {
+  const { cfg, transcript, senderName, messageBody, gateKnowledgeText } = params;
+  const gateConfig: GroupGateConfig = cfg.agents?.defaults?.groupGate;
+
+  if (!gateConfig?.enabled) {
+    return { shouldRespond: true, reason: "gate not enabled" };
+  }
+
+  const timeoutMs = gateConfig.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const modelString = gateConfig.model ?? DEFAULT_GATE_MODEL;
+
+  // Build the gate prompt
+  const prompt = buildGatePrompt(transcript, senderName, messageBody, gateKnowledgeText);
+  if (params.gateKnowledgeMeta) {
+    const charsBySource = Object.entries(params.gateKnowledgeMeta.charsBySource).map(
+      ([file, chars]) => `${file}:${chars}`,
+    );
+    log.debug(
+      `Gate knowledge: sources=[${params.gateKnowledgeMeta.sources.join(", ") || "none"}], charsBySource={${charsBySource.join(", ") || "none"}}, totalChars=${params.gateKnowledgeMeta.totalChars}`,
+    );
+  }
+  log.trace(`Gate prompt:\n${prompt}`);
+
+  // Resolve the gate model
+  const parsed = parseModelRef(modelString, DEFAULT_PROVIDER);
+  if (!parsed) {
+    log.warn(`Invalid gate model ref: ${modelString}; falling back to respond`);
+    return { shouldRespond: true, reason: "invalid gate model ref" };
+  }
+
+  const resolved = resolveModel(parsed.provider, parsed.model, undefined, cfg);
+  if (!resolved.model) {
+    log.warn(`Gate model not found: ${modelString}; falling back to respond`);
+    return { shouldRespond: true, reason: "gate model not found" };
+  }
+
+  const apiKey = requireApiKey(
+    await getApiKeyForModel({ model: resolved.model, cfg }),
+    parsed.provider,
+  );
+
+  // Call the gate model with a timeout
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await completeSimple(
+      resolved.model,
+      {
+        messages: [
+          {
+            role: "user" as const,
+            content: prompt,
+            timestamp: Date.now(),
+          },
+        ],
+      },
+      {
+        apiKey,
+        maxTokens: 250,
+        temperature: 0.1,
+        signal: controller.signal,
+      },
+    );
+
+    const text = res.content
+      .filter(isTextContentBlock)
+      .map((block) => block.text.trim())
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
+    if (!text) {
+      log.warn("Gate model returned empty response; falling back to respond");
+      return { shouldRespond: true, reason: "empty gate response" };
+    }
+
+    const result = parseGateResponse(text);
+    log.debug(
+      `Gate decision: shouldRespond=${result.shouldRespond}, reason="${result.reason}", signals=${result.relevanceSignals ? JSON.stringify(result.relevanceSignals) : "none"}`,
+    );
+    return result;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Run the relevance gate using pre-resolved GateContext.
+ * Eliminates duplicate context loading — transcript, knowledge, and mentions
+ * are already resolved in the GateContext.
+ */
+async function runGroupGateWithContext(
+  ctx: GateContext,
+  cfg: OpenClawConfig,
+): Promise<GroupGateResult> {
+  // Use pre-resolved context (zero re-loading)
+  const messageBody = resolveMentionsInBody(
+    ctx.rawMessage,
+    [...ctx.resolvedMentions.keys()],
+    ctx.resolvedMentions,
+  );
+
+  try {
+    return await callGateModel({
+      cfg,
+      transcript: ctx.conversationHistory,
+      senderName: ctx.senderName,
+      messageBody,
+      gateKnowledgeText: ctx.groupKnowledge,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    log.error(`Gate call failed (ctx path): ${message}; falling back to respond`);
+    return { shouldRespond: true, reason: `gate error: ${message}` };
+  }
+}
+
+// ── Overloaded runGroupGate ────────────────────────────────────────────
+
+/** Legacy params shape (backward compatibility). */
+type LegacyGateParams = {
   cfg: OpenClawConfig;
   agentId: string;
   sessionKey: string;
   senderName: string;
   messageBody: string;
-  /** Raw mentionedJids from the inbound message (WhatsApp LIDs / JIDs). */
   mentionedJids?: string[];
-  /** Group participant roster: JID → display name. */
   participantRoster?: Map<string, string>;
-  /** Channel id for group knowledge resolution (e.g. "whatsapp"). */
   channel?: string;
-  /** Group id/JID for knowledge mapping (e.g. "420...@g.us"). */
   groupId?: string;
-}): Promise<GroupGateResult> {
+};
+
+/** New GateContext-based params shape. */
+type ContextGateParams = {
+  ctx: GateContext;
+  cfg: OpenClawConfig;
+};
+
+/**
+ * Run the two-phase LLM gate for an always-on group chat.
+ *
+ * Supports two calling conventions:
+ * - **New path**: `{ ctx: GateContext, cfg }` — uses pre-resolved context
+ * - **Legacy path**: raw params — loads context internally (existing behavior)
+ *
+ * Returns `{ shouldRespond: true }` (safe fallback) on any error or if the
+ * gate is not configured.
+ */
+export async function runGroupGate(
+  params: LegacyGateParams | ContextGateParams,
+): Promise<GroupGateResult> {
+  // Dispatch: GateContext path vs legacy path
+  if ("ctx" in params) {
+    return runGroupGateWithContext(params.ctx, params.cfg);
+  }
+
+  // Legacy path: loads context internally (existing behavior)
   const { cfg, agentId, sessionKey, senderName } = params;
   const channel = params.channel?.trim().toLowerCase() ?? "whatsapp";
   const groupId = params.groupId?.trim();
@@ -296,14 +495,9 @@ export async function runGroupGate(params: {
   }
 
   const historyLimit = gateConfig.historyLimit ?? DEFAULT_HISTORY_LIMIT;
-  const timeoutMs = gateConfig.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const modelString = gateConfig.model ?? DEFAULT_GATE_MODEL;
 
   try {
-    // Resolve the session transcript file; tolerate missing/invalid session IDs
-    // (e.g. compound keys with colons or @ that haven't been persisted yet)
-    // by falling back to an empty transcript so the gate can still run with
-    // knowledge-memory constraints instead of failing open entirely.
+    // Resolve the session transcript file
     let transcript: string[] = [];
     try {
       const storePath = resolveStorePath(cfg.session?.store, { agentId });
@@ -335,76 +529,18 @@ export async function runGroupGate(params: {
           })
         : { text: undefined, sources: [], charsBySource: {}, totalChars: 0 };
 
-    // Build the gate prompt
-    const prompt = buildGatePrompt(transcript, senderName, messageBody, gateKnowledge.text);
-    const charsBySource = Object.entries(gateKnowledge.charsBySource).map(
-      ([file, chars]) => `${file}:${chars}`,
-    );
-    log.debug(
-      `Gate knowledge: sources=[${gateKnowledge.sources.join(", ") || "none"}], charsBySource={${charsBySource.join(", ") || "none"}}, totalChars=${gateKnowledge.totalChars}`,
-    );
-    log.trace(`Gate prompt:\n${prompt}`);
-
-    // Resolve the gate model
-    const parsed = parseModelRef(modelString, DEFAULT_PROVIDER);
-    if (!parsed) {
-      log.warn(`Invalid gate model ref: ${modelString}; falling back to respond`);
-      return { shouldRespond: true, reason: "invalid gate model ref" };
-    }
-
-    const resolved = resolveModel(parsed.provider, parsed.model, undefined, cfg);
-    if (!resolved.model) {
-      log.warn(`Gate model not found: ${modelString}; falling back to respond`);
-      return { shouldRespond: true, reason: "gate model not found" };
-    }
-
-    const apiKey = requireApiKey(
-      await getApiKeyForModel({ model: resolved.model, cfg }),
-      parsed.provider,
-    );
-
-    // Call the gate model with a timeout
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      const res = await completeSimple(
-        resolved.model,
-        {
-          messages: [
-            {
-              role: "user" as const,
-              content: prompt,
-              timestamp: Date.now(),
-            },
-          ],
-        },
-        {
-          apiKey,
-          maxTokens: 150,
-          temperature: 0.1,
-          signal: controller.signal,
-        },
-      );
-
-      const text = res.content
-        .filter(isTextContentBlock)
-        .map((block) => block.text.trim())
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-
-      if (!text) {
-        log.warn("Gate model returned empty response; falling back to respond");
-        return { shouldRespond: true, reason: "empty gate response" };
-      }
-
-      const result = parseGateResponse(text);
-      log.debug(`Gate decision: shouldRespond=${result.shouldRespond}, reason="${result.reason}"`);
-      return result;
-    } finally {
-      clearTimeout(timeout);
-    }
+    return await callGateModel({
+      cfg,
+      transcript,
+      senderName,
+      messageBody,
+      gateKnowledgeText: gateKnowledge.text,
+      gateKnowledgeMeta: {
+        sources: gateKnowledge.sources,
+        charsBySource: gateKnowledge.charsBySource,
+        totalChars: gateKnowledge.totalChars,
+      },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log.error(`Gate call failed: ${message}; falling back to respond`);

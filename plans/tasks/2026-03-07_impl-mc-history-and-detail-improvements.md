@@ -6,7 +6,7 @@ Summary of what to implement in ~/Projects/mission-control/:
    - Task completed only planning (phase=done, no implSessionId) → blue/cyan (--phase-planned)
    - Task completed implementation (phase=done, implSessionId set) → green (--phase-done)
    - Task failed at any phase → red (--phase-failed)
-   Apply the existing .phase-badge and phase color CSS classes to history rows.
+     Apply the existing .phase-badge and phase color CSS classes to history rows.
 
 2. Detail panel deduplication + collapsible attributes:
    - Compact header: only show task label, phase badge, status, started at, last changed, planFile link

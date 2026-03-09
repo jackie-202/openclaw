@@ -3,6 +3,8 @@ import { resolveChunkMode, resolveTextChunkLimit } from "../../../auto-reply/chu
 import { shouldComputeCommandAuthorized } from "../../../auto-reply/command-detection.js";
 import { formatInboundEnvelope } from "../../../auto-reply/envelope.js";
 import type { getReplyFromConfig } from "../../../auto-reply/reply.js";
+import type { GateContext } from "../../../auto-reply/reply/gate-context.js";
+import { scanOutboundSecurity } from "../../../auto-reply/reply/gate-security.js";
 import {
   buildHistoryContextFromEntries,
   type HistoryEntry,
@@ -151,6 +153,8 @@ export async function processMessage(params: {
   maxMediaTextChunkLimit?: number;
   groupHistory?: GroupHistoryEntry[];
   suppressGroupHistoryClear?: boolean;
+  /** Pre-resolved gate context from the pipeline (for outbound security scanning). */
+  gateCtx?: GateContext;
 }) {
   const conversationId = params.msg.conversationId ?? params.msg.from;
   const { storePath, envelopeOptions, previousTimestamp } = resolveInboundSessionEnvelopeContext({
@@ -423,8 +427,26 @@ export async function processMessage(params: {
           // web UI only; sending them here leaks chain-of-thought to end users.
           return;
         }
+
+        // Outbound security scan: check for sentinel tokens, model leaks, etc.
+        let deliverPayload = payload;
+        if (params.gateCtx && deliverPayload.text) {
+          const outboundScan = scanOutboundSecurity(deliverPayload.text, params.gateCtx);
+          if (!outboundScan.safe) {
+            whatsappOutboundLog.warn(
+              `Outbound security violations in ${conversationId}: [${outboundScan.violations.join(", ")}]`,
+            );
+            if (outboundScan.cleanedText) {
+              deliverPayload = { ...deliverPayload, text: outboundScan.cleanedText };
+            } else {
+              logVerbose("Outbound security: suppressing reply delivery");
+              return;
+            }
+          }
+        }
+
         await deliverWebReply({
-          replyResult: payload,
+          replyResult: deliverPayload,
           msg: params.msg,
           mediaLocalRoots,
           maxMediaBytes: params.maxMediaBytes,
@@ -436,18 +458,18 @@ export async function processMessage(params: {
           tableMode,
         });
         didSendReply = true;
-        const shouldLog = payload.text ? true : undefined;
-        params.rememberSentText(payload.text, {
+        const shouldLog = deliverPayload.text ? true : undefined;
+        params.rememberSentText(deliverPayload.text, {
           combinedBody,
           combinedBodySessionKey: params.route.sessionKey,
           logVerboseMessage: shouldLog,
         });
         const fromDisplay =
           params.msg.chatType === "group" ? conversationId : (params.msg.from ?? "unknown");
-        const hasMedia = Boolean(payload.mediaUrl || payload.mediaUrls?.length);
+        const hasMedia = Boolean(deliverPayload.mediaUrl || deliverPayload.mediaUrls?.length);
         whatsappOutboundLog.info(`Auto-replied to ${fromDisplay}${hasMedia ? " (media)" : ""}`);
         if (shouldLogVerbose()) {
-          const preview = payload.text != null ? elide(payload.text, 400) : "<media>";
+          const preview = deliverPayload.text != null ? elide(deliverPayload.text, 400) : "<media>";
           whatsappOutboundLog.debug(`Reply body: ${preview}${hasMedia ? " (media)" : ""}`);
         }
       },

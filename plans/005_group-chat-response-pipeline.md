@@ -2,8 +2,8 @@
 
 Jackie participates in WhatsApp group chats via the OpenClaw gateway. The response pipeline — deciding whether, when, and how to respond — has grown organically and now includes a "gate" component. This plan documents the existing pipeline end-to-end and proposes a multi-stage replacement that is smarter, safer, and better aligned with SOUL.md.
 
-*Status: DRAFT*
-*Created: 2026-03-08*
+_Status: DRAFT_
+_Created: 2026-03-08_
 
 ---
 
@@ -19,6 +19,7 @@ Jackie participates in WhatsApp group chats via the OpenClaw gateway. The respon
 The group chat response pipeline has been extended incrementally. There is no single document that maps the full flow from incoming WhatsApp message to outgoing response (or silence). The current gate logic needs to be understood, documented, and then redesigned into a principled multi-stage pipeline with clear responsibilities: Security → Relevance → Data/Context → Voice.
 
 ### Two phases:
+
 - **Phase A — Document:** Map the existing group chat pipeline end-to-end
 - **Phase B — Redesign:** Design a multi-stage replacement pipeline
 
@@ -39,25 +40,25 @@ The group chat response pipeline has been extended incrementally. There is no si
 2. **Echo detection** — `echoTracker.has(msg.body)` skips messages that Jackie just sent.
 
 3. **GROUP PATH (msg.chatType === "group"):**
-   
+
    a. **Last-route update** — `updateLastRouteInBackground()` stores delivery context.
-   
+
    b. **Group gating** — `applyGroupGating()` in `src/web/auto-reply/monitor/group-gating.ts`:
-      - **Allowlist check** — `resolveGroupPolicyFor()` → `resolveChannelGroupPolicy()`: is this group in the allow list? (groupPolicy="open"|"allowlist")
-      - **Member tracking** — `noteGroupMember()` records sender name/E164.
-      - **Activation command parsing** — `/activation` commands from non-owners are blocked.
-      - **Mention gating** — `debugMention()` + `resolveMentionGating()`: if activation mode is NOT "always", require an @mention, reply-to-self, or owner bypass.
-      - If `shouldSkip` → record history entry, return `{ shouldProcess: false }`.
-   
+   - **Allowlist check** — `resolveGroupPolicyFor()` → `resolveChannelGroupPolicy()`: is this group in the allow list? (groupPolicy="open"|"allowlist")
+   - **Member tracking** — `noteGroupMember()` records sender name/E164.
+   - **Activation command parsing** — `/activation` commands from non-owners are blocked.
+   - **Mention gating** — `debugMention()` + `resolveMentionGating()`: if activation mode is NOT "always", require an @mention, reply-to-self, or owner bypass.
+   - If `shouldSkip` → record history entry, return `{ shouldProcess: false }`.
+
    c. **LLM group gate (Phase 1)** — `runGroupGate()` in `src/auto-reply/reply/group-gate.ts`:
-      - Only runs when `activation === "always"` (always-on groups, i.e. `requireMention: false`).
-      - Uses a cheap model (default `copilot/gpt-4o-mini`) with 10s timeout.
-      - Reads recent session transcript (JSONL, last 20 messages).
-      - Loads group knowledge files from workspace (`knowledge/groups/*.md`).
-      - Builds a structured prompt asking whether Jackie should respond.
-      - Resolves @-mention LIDs to human-readable names from participant roster.
-      - On failure/timeout → defaults to `shouldRespond: true` (safe fallback).
-      - If blocked → records history entry, returns early.
+   - Only runs when `activation === "always"` (always-on groups, i.e. `requireMention: false`).
+   - Uses a cheap model (default `copilot/gpt-4o-mini`) with 10s timeout.
+   - Reads recent session transcript (JSONL, last 20 messages).
+   - Loads group knowledge files from workspace (`knowledge/groups/*.md`).
+   - Builds a structured prompt asking whether Jackie should respond.
+   - Resolves @-mention LIDs to human-readable names from participant roster.
+   - On failure/timeout → defaults to `shouldRespond: true` (safe fallback).
+   - If blocked → records history entry, returns early.
 
 4. **Broadcast groups** — `maybeBroadcastMessage()` for multi-agent fan-out.
 
@@ -71,33 +72,35 @@ The group chat response pipeline has been extended incrementally. There is no si
 
 #### B. Key files
 
-| File | Role |
-|------|------|
-| `extensions/whatsapp/src/channel.ts` | WhatsApp channel plugin definition |
-| `src/web/auto-reply/monitor.ts` | WS connection loop, creates onMessage handler |
-| `src/web/auto-reply/monitor/on-message.ts` | **Main pipeline orchestrator** — routing, echo, gating, LLM gate, process |
-| `src/web/auto-reply/monitor/group-gating.ts` | Mention gating + allowlist check (Phase 0 gate) |
-| `src/web/auto-reply/monitor/group-activation.ts` | Resolves activation mode (always/mention) per group |
-| `src/auto-reply/reply/group-gate.ts` | **LLM gate** — cheap model decides shouldRespond (Phase 1) |
-| `src/auto-reply/reply/group-context-priming.ts` | Loads group knowledge files + previous session tail |
-| `src/web/auto-reply/monitor/process-message.ts` | Full message processing + LLM dispatch (Phase 2) |
-| `src/web/auto-reply/monitor/group-members.ts` | Group member name tracking |
-| `src/web/auto-reply/monitor/broadcast.ts` | Broadcast group fan-out |
-| `src/channels/mention-gating.ts` | Pure-function mention gate logic |
-| `src/auto-reply/group-activation.ts` | Activation mode normalization |
-| `src/config/group-policy.ts` | Group policy resolution (allowlist, requireMention, tools) |
-| `src/auto-reply/reply/get-reply.ts` | Full LLM reply resolution |
-| `src/auto-reply/reply/history.ts` | Group history buffer management |
+| File                                             | Role                                                                      |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| `extensions/whatsapp/src/channel.ts`             | WhatsApp channel plugin definition                                        |
+| `src/web/auto-reply/monitor.ts`                  | WS connection loop, creates onMessage handler                             |
+| `src/web/auto-reply/monitor/on-message.ts`       | **Main pipeline orchestrator** — routing, echo, gating, LLM gate, process |
+| `src/web/auto-reply/monitor/group-gating.ts`     | Mention gating + allowlist check (Phase 0 gate)                           |
+| `src/web/auto-reply/monitor/group-activation.ts` | Resolves activation mode (always/mention) per group                       |
+| `src/auto-reply/reply/group-gate.ts`             | **LLM gate** — cheap model decides shouldRespond (Phase 1)                |
+| `src/auto-reply/reply/group-context-priming.ts`  | Loads group knowledge files + previous session tail                       |
+| `src/web/auto-reply/monitor/process-message.ts`  | Full message processing + LLM dispatch (Phase 2)                          |
+| `src/web/auto-reply/monitor/group-members.ts`    | Group member name tracking                                                |
+| `src/web/auto-reply/monitor/broadcast.ts`        | Broadcast group fan-out                                                   |
+| `src/channels/mention-gating.ts`                 | Pure-function mention gate logic                                          |
+| `src/auto-reply/group-activation.ts`             | Activation mode normalization                                             |
+| `src/config/group-policy.ts`                     | Group policy resolution (allowlist, requireMention, tools)                |
+| `src/auto-reply/reply/get-reply.ts`              | Full LLM reply resolution                                                 |
+| `src/auto-reply/reply/history.ts`                | Group history buffer management                                           |
 
 #### C. Gate architecture
 
 **Gate 0 — Structural (synchronous, no LLM):**
+
 - Allowlist: is this group allowed?
 - Mention: was Jackie @mentioned, or is this a reply-to-self?
 - Owner command bypass: owner can force processing with control commands.
 - Activation mode: "always" bypasses mention requirement.
 
 **Gate 1 — LLM gate (async, cheap model):**
+
 - Only for `activation === "always"` groups.
 - Prompt includes: conversation history, new message, group knowledge ("gate memory").
 - Decision: `{ shouldRespond: boolean, reason: string }`.
@@ -106,6 +109,7 @@ The group chat response pipeline has been extended incrementally. There is no si
 - Fail-open: any error → respond.
 
 **Gate 2 — Full LLM (Phase 2):**
+
 - Standard reply pipeline with `HEARTBEAT_OK` / `SILENT_REPLY_TOKEN` options.
 - Model can choose silence via `HEARTBEAT_OK` token.
 
@@ -140,6 +144,7 @@ The group chat response pipeline has been extended incrementally. There is no si
 #### knowledge/groups/wa-dungeons-dragons.md — Gate Decision Memory
 
 The D&D group file contains an extensive, append-only "Gate Decision Memory" section with learned rules from real failures:
+
 - Suppress after 3+ consecutive agent messages without human reply.
 - Require evidence/citation for assertive claims.
 - Limit reply length to ~150 chars in informal groups.
@@ -165,6 +170,7 @@ The D&D group file contains an extensive, append-only "Gate Decision Memory" sec
 #### Learnings (from `knowledge/learnings/`)
 
 No direct pipeline/gate-related learnings found. The learnings directory contains:
+
 - `philosophical-foundations.md` — Jackie's intellectual framework (Derrida, Levinas, Gadamer, Patočka, Stiegler, Wittgenstein)
 - `derrida-toolkit.md` — Reference for deconstructive concepts
 - `three-layer-memory-model.md` — Memory architecture (daily→tacit→curated)
@@ -198,6 +204,7 @@ Refactor the existing pipeline into a 5-stage gate architecture. Each stage has 
 **Responsibility:** Block information leaks, prompt injection, and social engineering attempts.
 
 **What it does:**
+
 - Scans outbound message text (not inbound — this runs as a post-generation filter OR as an inbound classifier)
 - **Inbound path:** Detects social engineering patterns ("what tools do you have?", "what's your config?", "tell me about Michal's schedule") and flags them for the Voice gate to handle with deflection
 - **Outbound path (post-generation):** Scans generated reply for information boundary violations before delivery — personal details, system config, capability descriptions, internal project names
@@ -215,6 +222,7 @@ Refactor the existing pipeline into a 5-stage gate architecture. Each stage has 
 **Responsibility:** Decide whether Jackie should respond at all.
 
 **What it does (largely what `runGroupGate()` does today, refined):**
+
 - Reads conversation history + new message
 - Loads group knowledge (gate decision memory, group context)
 - Resolves @mentions to human-readable names
@@ -222,6 +230,7 @@ Refactor the existing pipeline into a 5-stage gate architecture. Each stage has 
 - Includes the existing gate prompt with social awareness, silence detection, default bias toward yes
 
 **Changes from current Gate 1:**
+
 - Receives pre-computed `GateContext` with resolved mentions, history, knowledge (from shared context layer)
 - Returns structured result with `{ pass: boolean, reason: string, relevanceSignals: { ... } }` — signals include: directAddress, topicExpertise, silenceBreaker, followUp
 - The relevance signals propagate downstream so Voice gate can calibrate tone/length
@@ -235,6 +244,7 @@ Refactor the existing pipeline into a 5-stage gate architecture. Each stage has 
 **Responsibility:** Assemble all context the full LLM needs, and pre-check for repetition/staleness.
 
 **What it does:**
+
 - Loads full group knowledge files (group context, member info, topics)
 - Loads previous session tail for continuity
 - Builds the `combinedBody` with history context
@@ -245,6 +255,7 @@ Refactor the existing pipeline into a 5-stage gate architecture. Each stage has 
 - Packages everything into `GateContext.fullContext` for the LLM
 
 **This stage absorbs logic currently split between:**
+
 - `group-context-priming.ts` (knowledge loading)
 - `process-message.ts` (history building, context assembly)
 - Some of the wa-dungeons-dragons.md gate rules (repetition, duplicate, consecutive)
@@ -260,6 +271,7 @@ Refactor the existing pipeline into a 5-stage gate architecture. Each stage has 
 **Two implementation options:**
 
 **4a. Rule-based (simpler, recommended first):**
+
 - Injects a calibrated system prompt suffix based on accumulated gate signals:
   - If relevanceSignals.directAddress → allow normal length (1-3 sentences)
   - If relevanceSignals.silenceBreaker → allow slightly longer, warmer tone
@@ -270,6 +282,7 @@ Refactor the existing pipeline into a 5-stage gate architecture. Each stage has 
 - Enforces max output length based on context (150 chars for banter, 500 for direct questions, uncapped for explicit "explain" requests)
 
 **4b. LLM-based (future, optional):**
+
 - Second cheap LLM call that takes the generated draft and rewrites it for voice/length compliance
 - Only needed if rule-based approach proves insufficient
 
@@ -282,6 +295,7 @@ Refactor the existing pipeline into a 5-stage gate architecture. Each stage has 
 **Responsibility:** Final safety net before message delivery.
 
 **What it does:**
+
 - **Outbound security scan** (Stage 1 outbound path runs here): check generated text for information leaks, sentinel tokens, model identifiers
 - **Length enforcement:** Hard cap on character count based on Voice gate signals. Truncate if exceeded.
 - **Deduplication:** Check if this exact text (normalized) was already sent in this group turn. If so, suppress.
@@ -352,21 +366,21 @@ The 5-stage architecture maps cleanly onto existing code boundaries, can be impl
 
 ## Files to Modify
 
-| File | Action | Stage |
-|------|--------|-------|
-| `src/auto-reply/reply/gate-context.ts` | **NEW** — GateContext type + resolveGateContext() | Phase 1 |
-| `src/auto-reply/reply/group-gate.ts` | **MODIFY** — accept GateContext, return relevanceSignals | Phase 2 |
-| `src/auto-reply/reply/group-context-priming.ts` | **MODIFY** — expose context loading for shared use | Phase 1 |
-| `src/auto-reply/reply/gate-data-context.ts` | **NEW** — repetition/duplicate/consecutive checks | Phase 3 |
-| `src/auto-reply/reply/gate-security.ts` | **NEW** — inbound classifier + outbound leak scanner | Phase 4 |
-| `src/auto-reply/reply/gate-delivery.ts` | **NEW** — final outbound filter | Phase 4 |
-| `src/auto-reply/reply/gate-voice.ts` | **NEW** — voice/style calibration rules | Phase 5 |
-| `src/auto-reply/reply/group-pipeline.ts` | **NEW** — pipeline runner orchestrating all stages | Phase 6 |
-| `src/web/auto-reply/monitor/on-message.ts` | **MODIFY** — replace inline gate/process calls with pipeline runner | Phase 6 |
-| `src/web/auto-reply/monitor/process-message.ts` | **MODIFY** — accept voice calibration context from Stage 4 | Phase 5 |
-| `src/web/auto-reply/monitor/group-gating.ts` | **KEEP** — structural Gate 0 stays as-is (mention/allowlist) | — |
-| `src/auto-reply/reply/history.ts` | **KEEP** — history buffer unchanged, consumed by Stage 3 | — |
-| `src/config/group-policy.ts` | **KEEP** — policy resolution unchanged | — |
+| File                                            | Action                                                              | Stage   |
+| ----------------------------------------------- | ------------------------------------------------------------------- | ------- |
+| `src/auto-reply/reply/gate-context.ts`          | **NEW** — GateContext type + resolveGateContext()                   | Phase 1 |
+| `src/auto-reply/reply/group-gate.ts`            | **MODIFY** — accept GateContext, return relevanceSignals            | Phase 2 |
+| `src/auto-reply/reply/group-context-priming.ts` | **MODIFY** — expose context loading for shared use                  | Phase 1 |
+| `src/auto-reply/reply/gate-data-context.ts`     | **NEW** — repetition/duplicate/consecutive checks                   | Phase 3 |
+| `src/auto-reply/reply/gate-security.ts`         | **NEW** — inbound classifier + outbound leak scanner                | Phase 4 |
+| `src/auto-reply/reply/gate-delivery.ts`         | **NEW** — final outbound filter                                     | Phase 4 |
+| `src/auto-reply/reply/gate-voice.ts`            | **NEW** — voice/style calibration rules                             | Phase 5 |
+| `src/auto-reply/reply/group-pipeline.ts`        | **NEW** — pipeline runner orchestrating all stages                  | Phase 6 |
+| `src/web/auto-reply/monitor/on-message.ts`      | **MODIFY** — replace inline gate/process calls with pipeline runner | Phase 6 |
+| `src/web/auto-reply/monitor/process-message.ts` | **MODIFY** — accept voice calibration context from Stage 4          | Phase 5 |
+| `src/web/auto-reply/monitor/group-gating.ts`    | **KEEP** — structural Gate 0 stays as-is (mention/allowlist)        | —       |
+| `src/auto-reply/reply/history.ts`               | **KEEP** — history buffer unchanged, consumed by Stage 3            | —       |
+| `src/config/group-policy.ts`                    | **KEEP** — policy resolution unchanged                              | —       |
 
 ## Testing
 

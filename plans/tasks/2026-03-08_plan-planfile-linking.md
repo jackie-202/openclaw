@@ -13,6 +13,7 @@ The current workaround — manually scanning `plans/` for the newest file — is
 A robust way to link the correct plan file to each task after the planning session finishes.
 
 The solution must work even when:
+
 - Multiple tasks are planned in parallel
 - The monitor runs and detects orphaned tasks without per-session knowledge
 - The task-state record already has phase=planned and status=done when linking happens

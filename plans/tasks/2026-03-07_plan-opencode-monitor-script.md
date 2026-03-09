@@ -27,7 +27,15 @@ Create a Python script `~/.openclaw/workspace/km-system/scripts/opencode-monitor
    ```json
    {
      "active_count": 0,
-     "fixed": [{"id": "...", "old_phase": "implementing", "new_phase": "done", "old_status": "done", "new_status": "done"}],
+     "fixed": [
+       {
+         "id": "...",
+         "old_phase": "implementing",
+         "new_phase": "done",
+         "old_status": "done",
+         "new_status": "done"
+       }
+     ],
      "needs_deploy": ["task-id-that-was-running-and-is-now-done"],
      "nothing_to_do": true
    }
@@ -37,6 +45,7 @@ Create a Python script `~/.openclaw/workspace/km-system/scripts/opencode-monitor
 ## Updated cron job prompt
 
 After the script exists, update the `opencode-monitor` cron job payload message to:
+
 1. Run: `python3 ~/.openclaw/workspace/km-system/scripts/opencode-monitor.py`
 2. Parse the JSON output
 3. If `nothing_to_do: true` → reply NO_REPLY
