@@ -104,7 +104,7 @@ const CAPABILITY_PROBING: PatternCategory = {
     /what (?:tools?|capabilities?|functions?|skills?) (?:do|can|have) you/i,
     /(?:list|show|tell me) (?:your|all) (?:tools?|capabilities?|functions?|commands?)/i,
     /what can you (?:do|access|see|read|run|execute)/i,
-    /(?:can|do) you (?:access|read|write|run|execute) (?:files?|commands?|code)/i,
+    /(?:can|do) you (?:access|read|write|run|execute) (?:(?:my|our|the) )?(?:files?|commands?|code)/i,
     /show me your (?:system prompt|instructions|rules|guidelines)/i,
     // Czech variants
     /co (?:um\u00ed\u0161|dok\u00e1\u017ee\u0161|zvl\u00e1dne\u0161)/i,

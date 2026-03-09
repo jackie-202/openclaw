@@ -177,6 +177,12 @@ function buildResolvedMentions(
  * Returns undefined if the JID doesn't look like a phone-based JID.
  */
 function extractE164FromJid(jid: string): string | undefined {
+  // LID/device-scoped IDs include a colon suffix before '@' (e.g. "123:2@...")
+  // and are not stable phone identifiers.
+  if (jid.includes(":")) {
+    return undefined;
+  }
+
   const userPart = jid.split(/[:@]/)[0];
   if (!userPart) {
     return undefined;
