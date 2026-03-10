@@ -416,6 +416,7 @@ export async function run(state: CronServiceState, id: string, mode?: "due" | "f
     emit(state, {
       jobId: job.id,
       action: "finished",
+      trigger: "manual",
       status: coreResult.status,
       error: coreResult.error,
       summary: coreResult.summary,

@@ -40,6 +40,7 @@ export type CronFailureDestination = {
 export type CronDeliveryPatch = Partial<CronDelivery>;
 
 export type CronRunStatus = "ok" | "error" | "skipped";
+export type CronRunTrigger = "manual" | "scheduled";
 export type CronDeliveryStatus = "delivered" | "not-delivered" | "unknown" | "not-requested";
 
 export type CronUsageSummary = {

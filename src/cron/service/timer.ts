@@ -1171,6 +1171,7 @@ function emitJobFinished(
   emit(state, {
     jobId: job.id,
     action: "finished",
+    trigger: "scheduled",
     status: result.status,
     error: result.error,
     summary: result.summary,

@@ -28,6 +28,7 @@ const CronRunStatusSchema = Type.Union([
   Type.Literal("error"),
   Type.Literal("skipped"),
 ]);
+const CronRunTriggerSchema = Type.Union([Type.Literal("manual"), Type.Literal("scheduled")]);
 const CronSortDirSchema = Type.Union([Type.Literal("asc"), Type.Literal("desc")]);
 const CronJobsEnabledFilterSchema = Type.Union([
   Type.Literal("all"),
@@ -329,6 +330,7 @@ export const CronRunLogEntrySchema = Type.Object(
     ts: Type.Integer({ minimum: 0 }),
     jobId: NonEmptyString,
     action: Type.Literal("finished"),
+    trigger: Type.Optional(CronRunTriggerSchema),
     status: Type.Optional(CronRunStatusSchema),
     error: Type.Optional(Type.String()),
     summary: Type.Optional(Type.String()),

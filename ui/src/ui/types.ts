@@ -517,11 +517,13 @@ export type CronRunsStatusFilter = "all" | "ok" | "error" | "skipped";
 export type CronRunsStatusValue = "ok" | "error" | "skipped";
 export type CronDeliveryStatus = "delivered" | "not-delivered" | "unknown" | "not-requested";
 export type CronRunScope = "job" | "all";
+export type CronRunTrigger = "manual" | "scheduled";
 
 export type CronRunLogEntry = {
   ts: number;
   jobId: string;
   jobName?: string;
+  trigger?: CronRunTrigger;
   status?: CronRunsStatusValue;
   durationMs?: number;
   error?: string;

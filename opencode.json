@@ -5,6 +5,7 @@
       "~/Projects/mission-control/**": "allow",
       "~/Projects/mission-control-data/**": "allow",
       "~/.openclaw/workspace/**": "allow",
+      "/Users/michal/.openclaw/workspace/**": "allow",
       "~/.openclaw/cron/**": "allow",
       "~/.openclaw/openclaw.json": "allow",
       "~/Projects/openclaw-fork/plans/**": "allow"

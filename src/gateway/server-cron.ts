@@ -478,6 +478,7 @@ export function buildGatewayCronService(params: {
             ts: Date.now(),
             jobId: evt.jobId,
             action: "finished",
+            trigger: evt.trigger,
             status: evt.status,
             error: evt.error,
             summary: evt.summary,
