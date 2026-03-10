@@ -46,6 +46,8 @@ type TimedCronRunOutcome = CronRunOutcome &
     jobId: string;
     delivered?: boolean;
     deliveryAttempted?: boolean;
+    deliveryDeferred?: boolean;
+    deliveryErrorLast?: string;
     startedAt: number;
     endedAt: number;
   };
@@ -149,7 +151,14 @@ function resolveRetryConfig(cronConfig?: CronConfig) {
   };
 }
 
-function resolveDeliveryStatus(params: { job: CronJob; delivered?: boolean }): CronDeliveryStatus {
+function resolveDeliveryStatus(params: {
+  job: CronJob;
+  delivered?: boolean;
+  deliveryDeferred?: boolean;
+}): CronDeliveryStatus {
+  if (params.deliveryDeferred === true) {
+    return "deferred";
+  }
   if (params.delivered === true) {
     return "delivered";
   }
@@ -287,6 +296,8 @@ export function applyJobResult(
     status: CronRunStatus;
     error?: string;
     delivered?: boolean;
+    deliveryDeferred?: boolean;
+    deliveryErrorLast?: string;
     startedAt: number;
     endedAt: number;
   },
@@ -312,10 +323,16 @@ export function applyJobResult(
   job.state.lastDurationMs = Math.max(0, result.endedAt - result.startedAt);
   job.state.lastError = result.error;
   job.state.lastDelivered = result.delivered;
-  const deliveryStatus = resolveDeliveryStatus({ job, delivered: result.delivered });
+  const deliveryStatus = resolveDeliveryStatus({
+    job,
+    delivered: result.delivered,
+    deliveryDeferred: result.deliveryDeferred,
+  });
   job.state.lastDeliveryStatus = deliveryStatus;
   job.state.lastDeliveryError =
     deliveryStatus === "not-delivered" && result.error ? result.error : undefined;
+  job.state.lastDeliveryDeferred = result.deliveryDeferred;
+  job.state.lastDeliveryErrorLast = result.deliveryErrorLast;
   job.updatedAtMs = result.endedAt;
 
   // Track consecutive errors for backoff / auto-disable.
@@ -476,6 +493,8 @@ function applyOutcomeToStoredJob(state: CronServiceState, result: TimedCronRunOu
     status: result.status,
     error: result.error,
     delivered: result.delivered,
+    deliveryDeferred: result.deliveryDeferred,
+    deliveryErrorLast: result.deliveryErrorLast,
     startedAt: result.startedAt,
     endedAt: result.endedAt,
   });
@@ -874,6 +893,8 @@ export async function runMissedJobs(
         delivered: result.delivered,
         sessionId: result.sessionId,
         sessionKey: result.sessionKey,
+        deliveryDeferred: result.deliveryDeferred,
+        deliveryErrorLast: result.deliveryErrorLast,
         model: result.model,
         provider: result.provider,
         usage: result.usage,
@@ -925,7 +946,13 @@ export async function executeJobCore(
   job: CronJob,
   abortSignal?: AbortSignal,
 ): Promise<
-  CronRunOutcome & CronRunTelemetry & { delivered?: boolean; deliveryAttempted?: boolean }
+  CronRunOutcome &
+    CronRunTelemetry & {
+      delivered?: boolean;
+      deliveryAttempted?: boolean;
+      deliveryDeferred?: boolean;
+      deliveryErrorLast?: string;
+    }
 > {
   const resolveAbortError = () => ({
     status: "error" as const,
@@ -1104,6 +1131,8 @@ export async function executeJobCore(
     summary: res.summary,
     delivered: res.delivered,
     deliveryAttempted: res.deliveryAttempted,
+    deliveryDeferred: res.deliveryDeferred,
+    deliveryErrorLast: res.deliveryErrorLast,
     sessionId: res.sessionId,
     sessionKey: res.sessionKey,
     model: res.model,
@@ -1133,6 +1162,8 @@ export async function executeJob(
   let coreResult: {
     status: CronRunStatus;
     delivered?: boolean;
+    deliveryDeferred?: boolean;
+    deliveryErrorLast?: string;
   } & CronRunOutcome &
     CronRunTelemetry;
   try {
@@ -1146,6 +1177,8 @@ export async function executeJob(
     status: coreResult.status,
     error: coreResult.error,
     delivered: coreResult.delivered,
+    deliveryDeferred: coreResult.deliveryDeferred,
+    deliveryErrorLast: coreResult.deliveryErrorLast,
     startedAt,
     endedAt,
   });
@@ -1164,6 +1197,8 @@ function emitJobFinished(
   result: {
     status: CronRunStatus;
     delivered?: boolean;
+    deliveryDeferred?: boolean;
+    deliveryErrorLast?: string;
   } & CronRunOutcome &
     CronRunTelemetry,
   runAtMs: number,
@@ -1176,6 +1211,8 @@ function emitJobFinished(
     error: result.error,
     summary: result.summary,
     delivered: result.delivered,
+    deliveryDeferred: result.deliveryDeferred,
+    deliveryErrorLast: result.deliveryErrorLast,
     deliveryStatus: job.state.lastDeliveryStatus,
     deliveryError: job.state.lastDeliveryError,
     sessionId: result.sessionId,

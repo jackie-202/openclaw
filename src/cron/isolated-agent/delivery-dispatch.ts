@@ -154,6 +154,8 @@ export type DispatchCronDeliveryState = {
   result?: RunCronAgentTurnResult;
   delivered: boolean;
   deliveryAttempted: boolean;
+  deliveryDeferred?: boolean;
+  deliveryErrorLast?: string;
   summary?: string;
   outputText?: string;
   synthesizedText?: string;
@@ -172,6 +174,8 @@ export async function dispatchCronDelivery(
   // Keep this strict so timer fallback can safely decide whether to wake main.
   let delivered = params.skipMessagingToolDelivery;
   let deliveryAttempted = params.skipMessagingToolDelivery;
+  let deliveryDeferred = false;
+  let deliveryErrorLast: string | undefined;
   // Tracks whether `runSubagentAnnounceFlow` was actually called.  Early
   // returns from `deliverViaAnnounce` (active subagents, interim suppression,
   // SILENT_REPLY_TOKEN) are intentional suppressions — not delivery failures —
@@ -368,6 +372,7 @@ export async function dispatchCronDelivery(
       }
       deliveryAttempted = true;
       announceDeliveryWasAttempted = true;
+      const announceState: { deferred?: boolean; errorLast?: string } = {};
       const didAnnounce = await runSubagentAnnounceFlow({
         childSessionKey: params.agentSessionKey,
         childRunId: `${params.job.id}:${params.runSessionId}:${params.runStartedAt}`,
@@ -396,9 +401,14 @@ export async function dispatchCronDelivery(
         outcome: { status: "ok" },
         announceType: "cron job",
         signal: params.abortSignal,
+        deliveryState: announceState,
       });
       if (didAnnounce) {
         delivered = true;
+        if (announceState.deferred) {
+          deliveryDeferred = true;
+          deliveryErrorLast = announceState.errorLast;
+        }
       } else {
         // Announce delivery failed but the agent execution itself succeeded.
         // Return ok so the job isn't penalized for a transient delivery issue
@@ -545,6 +555,8 @@ export async function dispatchCronDelivery(
   return {
     delivered,
     deliveryAttempted,
+    deliveryDeferred,
+    deliveryErrorLast,
     summary,
     outputText,
     synthesizedText,

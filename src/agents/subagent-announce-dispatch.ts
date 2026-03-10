@@ -5,6 +5,7 @@ export type SubagentAnnounceQueueOutcome = "steered" | "queued" | "none";
 export type SubagentAnnounceDeliveryResult = {
   delivered: boolean;
   path: SubagentDeliveryPath;
+  deferred?: boolean;
   error?: string;
   phases?: SubagentAnnounceDispatchPhaseResult[];
 };
@@ -25,12 +26,14 @@ export function mapQueueOutcomeToDeliveryResult(
     return {
       delivered: true,
       path: "steered",
+      deferred: true,
     };
   }
   if (outcome === "queued") {
     return {
       delivered: true,
       path: "queued",
+      deferred: true,
     };
   }
   return {

@@ -41,7 +41,12 @@ export type CronDeliveryPatch = Partial<CronDelivery>;
 
 export type CronRunStatus = "ok" | "error" | "skipped";
 export type CronRunTrigger = "manual" | "scheduled";
-export type CronDeliveryStatus = "delivered" | "not-delivered" | "unknown" | "not-requested";
+export type CronDeliveryStatus =
+  | "delivered"
+  | "not-delivered"
+  | "unknown"
+  | "not-requested"
+  | "deferred";
 
 export type CronUsageSummary = {
   input_tokens?: number;
@@ -127,6 +132,10 @@ export type CronJobState = {
   lastDeliveryStatus?: CronDeliveryStatus;
   /** Delivery-specific error text when available. */
   lastDeliveryError?: string;
+  /** True when run accepted delivery for async queue retry. */
+  lastDeliveryDeferred?: boolean;
+  /** Last queued delivery error text when available. */
+  lastDeliveryErrorLast?: string;
   /** Whether the last run's output was delivered to the target channel. */
   lastDelivered?: boolean;
 };

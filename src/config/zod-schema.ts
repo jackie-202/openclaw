@@ -666,6 +666,22 @@ export const OpenClawSchema = z
           })
           .strict()
           .optional(),
+        eventLoopGuard: z
+          .object({
+            enabled: z.boolean().optional(),
+            sampleIntervalMs: z.number().int().positive().optional(),
+            warnLagMs: z.number().positive().optional(),
+            severeLagMs: z.number().positive().optional(),
+          })
+          .strict()
+          .optional(),
+        announceDelivery: z
+          .object({
+            maxInBandMs: z.number().int().positive().optional(),
+            workerConcurrency: z.number().int().positive().optional(),
+          })
+          .strict()
+          .optional(),
         channelHealthCheckMinutes: z.number().int().min(0).optional(),
         tailscale: z
           .object({

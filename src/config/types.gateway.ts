@@ -352,6 +352,18 @@ export type GatewayToolsConfig = {
   allow?: string[];
 };
 
+export type GatewayEventLoopGuardConfig = {
+  enabled?: boolean;
+  sampleIntervalMs?: number;
+  warnLagMs?: number;
+  severeLagMs?: number;
+};
+
+export type GatewayAnnounceDeliveryConfig = {
+  maxInBandMs?: number;
+  workerConcurrency?: number;
+};
+
 export type GatewayConfig = {
   /** Single multiplexed port for Gateway WS + HTTP (default: 18789). */
   port?: number;
@@ -393,6 +405,8 @@ export type GatewayConfig = {
   allowRealIpFallback?: boolean;
   /** Tool access restrictions for HTTP /tools/invoke endpoint. */
   tools?: GatewayToolsConfig;
+  eventLoopGuard?: GatewayEventLoopGuardConfig;
+  announceDelivery?: GatewayAnnounceDeliveryConfig;
   /**
    * Channel health monitor interval in minutes.
    * Periodically checks channel health and restarts unhealthy channels.

@@ -485,6 +485,8 @@ export function buildGatewayCronService(params: {
             delivered: evt.delivered,
             deliveryStatus: evt.deliveryStatus,
             deliveryError: evt.deliveryError,
+            deliveryDeferred: evt.deliveryDeferred,
+            deliveryErrorLast: evt.deliveryErrorLast,
             sessionId: evt.sessionId,
             sessionKey: evt.sessionKey,
             runAtMs: evt.runAtMs,

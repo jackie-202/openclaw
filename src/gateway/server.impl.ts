@@ -2,6 +2,7 @@ import path from "node:path";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { getActiveEmbeddedRunCount } from "../agents/pi-embedded-runner/runs.js";
 import { registerSkillsChangeListener } from "../agents/skills/refresh.js";
+import { startSubagentAnnounceDeliveryWorker } from "../agents/subagent-announce-worker.js";
 import { initSubagentRegistry } from "../agents/subagent-registry.js";
 import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import type { CanvasHostServer } from "../canvas-host/server.js";
@@ -67,6 +68,7 @@ import { createAuthRateLimiter, type AuthRateLimiter } from "./auth-rate-limit.j
 import { startChannelHealthMonitor } from "./channel-health-monitor.js";
 import { startGatewayConfigReloader } from "./config-reload.js";
 import type { ControlUiRootState } from "./control-ui.js";
+import { startEventLoopGuard } from "./event-loop-guard.js";
 import {
   GATEWAY_EVENT_UPDATE_AVAILABLE,
   type GatewayUpdateAvailableEventPayload,
@@ -662,6 +664,22 @@ export async function startGatewayServer(
     bonjourStop = discovery.bonjourStop;
   }
 
+  const eventLoopGuard = minimalTestGateway
+    ? { stop: () => {} }
+    : startEventLoopGuard({
+        log,
+        enabled: cfgAtStart.gateway?.eventLoopGuard?.enabled,
+        sampleIntervalMs: cfgAtStart.gateway?.eventLoopGuard?.sampleIntervalMs,
+        warnLagMs: cfgAtStart.gateway?.eventLoopGuard?.warnLagMs,
+        severeLagMs: cfgAtStart.gateway?.eventLoopGuard?.severeLagMs,
+      });
+
+  const announceWorker = minimalTestGateway
+    ? { stop: async () => {} }
+    : startSubagentAnnounceDeliveryWorker({
+        log: log.child("announce-worker"),
+      });
+
   if (!minimalTestGateway) {
     setSkillsRemoteRegistry(nodeRegistry);
     void primeRemoteSkillsCache();
@@ -1048,6 +1066,8 @@ export async function startGatewayServer(
       authRateLimiter?.dispose();
       browserAuthRateLimiter.dispose();
       channelHealthMonitor?.stop();
+      eventLoopGuard.stop();
+      await announceWorker.stop();
       clearSecretsRuntimeSnapshot();
       await close(opts);
     },

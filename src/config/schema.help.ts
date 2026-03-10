@@ -99,6 +99,22 @@ export const FIELD_HELP: Record<string, string> = {
     "Explicit gateway-level tool allowlist when you want a narrow set of tools available at runtime. Use this for locked-down environments where tool scope must be tightly controlled.",
   "gateway.tools.deny":
     "Explicit gateway-level tool denylist to block risky tools even if lower-level policies allow them. Use deny rules for emergency response and defense-in-depth hardening.",
+  "gateway.eventLoopGuard":
+    "Gateway event-loop lag watchdog settings used to detect and log stall conditions under load. Keep enabled in production so blocked-loop incidents are visible without manual probing.",
+  "gateway.eventLoopGuard.enabled":
+    "Enable periodic event-loop lag sampling in the gateway process. Disable only when investigating monitor overhead in constrained environments.",
+  "gateway.eventLoopGuard.sampleIntervalMs":
+    "Sampling interval in milliseconds for event-loop lag snapshots. Lower values detect spikes faster but add more logging/measurement overhead.",
+  "gateway.eventLoopGuard.warnLagMs":
+    "Warn threshold in milliseconds for high event-loop lag (p99-based). Tune upward if your environment has expected periodic pauses.",
+  "gateway.eventLoopGuard.severeLagMs":
+    "Severe threshold in milliseconds for max event-loop lag spikes that should emit error-level logs.",
+  "gateway.announceDelivery":
+    "Settings for durable async announce delivery and in-band completion send budget. Use these controls to avoid cron timeout coupling under gateway load.",
+  "gateway.announceDelivery.maxInBandMs":
+    "Maximum in-band time budget in milliseconds for direct completion announce attempts before deferring to durable queue retry.",
+  "gateway.announceDelivery.workerConcurrency":
+    "Concurrency for background queued announce delivery workers. Keep low (default 1) to protect gateway event loop during recovery bursts.",
   "gateway.channelHealthCheckMinutes":
     "Interval in minutes for automatic channel health probing and status updates. Use lower intervals for faster detection, or higher intervals to reduce periodic probe noise.",
   "gateway.tailscale":

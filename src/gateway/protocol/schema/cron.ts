@@ -56,6 +56,7 @@ const CronDeliveryStatusSchema = Type.Union([
   Type.Literal("not-delivered"),
   Type.Literal("unknown"),
   Type.Literal("not-requested"),
+  Type.Literal("deferred"),
 ]);
 const CronCommonOptionalFields = {
   agentId: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
@@ -225,6 +226,8 @@ export const CronJobStateSchema = Type.Object(
     lastDelivered: Type.Optional(Type.Boolean()),
     lastDeliveryStatus: Type.Optional(CronDeliveryStatusSchema),
     lastDeliveryError: Type.Optional(Type.String()),
+    lastDeliveryDeferred: Type.Optional(Type.Boolean()),
+    lastDeliveryErrorLast: Type.Optional(Type.String()),
     lastFailureAlertAtMs: Type.Optional(Type.Integer({ minimum: 0 })),
   },
   { additionalProperties: false },
@@ -316,7 +319,7 @@ export const CronRunsParamsSchema = Type.Object(
     statuses: Type.Optional(Type.Array(CronRunsStatusValueSchema, { minItems: 1, maxItems: 3 })),
     status: Type.Optional(CronRunsStatusFilterSchema),
     deliveryStatuses: Type.Optional(
-      Type.Array(CronDeliveryStatusSchema, { minItems: 1, maxItems: 4 }),
+      Type.Array(CronDeliveryStatusSchema, { minItems: 1, maxItems: 5 }),
     ),
     deliveryStatus: Type.Optional(CronDeliveryStatusSchema),
     query: Type.Optional(Type.String()),
@@ -337,6 +340,8 @@ export const CronRunLogEntrySchema = Type.Object(
     delivered: Type.Optional(Type.Boolean()),
     deliveryStatus: Type.Optional(CronDeliveryStatusSchema),
     deliveryError: Type.Optional(Type.String()),
+    deliveryDeferred: Type.Optional(Type.Boolean()),
+    deliveryErrorLast: Type.Optional(Type.String()),
     sessionId: Type.Optional(NonEmptyString),
     sessionKey: Type.Optional(NonEmptyString),
     runAtMs: Type.Optional(Type.Integer({ minimum: 0 })),

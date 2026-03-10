@@ -9,6 +9,7 @@ describe("mapQueueOutcomeToDeliveryResult", () => {
     expect(mapQueueOutcomeToDeliveryResult("steered")).toEqual({
       delivered: true,
       path: "steered",
+      deferred: true,
     });
   });
 
@@ -16,6 +17,7 @@ describe("mapQueueOutcomeToDeliveryResult", () => {
     expect(mapQueueOutcomeToDeliveryResult("queued")).toEqual({
       delivered: true,
       path: "queued",
+      deferred: true,
     });
   });
 

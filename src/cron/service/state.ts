@@ -25,6 +25,8 @@ export type CronEvent = {
   delivered?: boolean;
   deliveryStatus?: CronDeliveryStatus;
   deliveryError?: string;
+  deliveryDeferred?: boolean;
+  deliveryErrorLast?: string;
   sessionId?: string;
   sessionKey?: string;
   nextRunAtMs?: number;
@@ -90,6 +92,8 @@ export type CronServiceDeps = {
        * if the final per-message ack status is uncertain.
        */
       deliveryAttempted?: boolean;
+      deliveryDeferred?: boolean;
+      deliveryErrorLast?: string;
     } & CronRunOutcome &
       CronRunTelemetry
   >;
