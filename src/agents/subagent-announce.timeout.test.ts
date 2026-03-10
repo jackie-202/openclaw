@@ -150,7 +150,7 @@ describe("subagent announce timeout config", () => {
     expect(directAgentCall?.timeoutMs).toBe(90_000);
   });
 
-  it("honors configured announce timeout for completion direct agent call", async () => {
+  it("caps completion direct announce timeout to in-band budget", async () => {
     setConfiguredAnnounceTimeout(90_000);
     await runAnnounceFlowForTest("run-config-timeout-send", {
       requesterOrigin: {
@@ -163,7 +163,7 @@ describe("subagent announce timeout config", () => {
     const completionDirectAgentCall = findGatewayCall(
       (call) => call.method === "agent" && call.expectFinal === true,
     );
-    expect(completionDirectAgentCall?.timeoutMs).toBe(90_000);
+    expect(completionDirectAgentCall?.timeoutMs).toBe(15_000);
   });
 
   it("regression, skips parent announce while descendants are still pending", async () => {

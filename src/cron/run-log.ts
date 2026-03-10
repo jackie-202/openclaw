@@ -20,6 +20,8 @@ export type CronRunLogEntry = {
   delivered?: boolean;
   deliveryStatus?: CronDeliveryStatus;
   deliveryError?: string;
+  deliveryDeferred?: boolean;
+  deliveryErrorLast?: string;
   sessionId?: string;
   sessionKey?: string;
   runAtMs?: number;
@@ -227,7 +229,8 @@ function normalizeDeliveryStatuses(opts?: {
         status === "delivered" ||
         status === "not-delivered" ||
         status === "unknown" ||
-        status === "not-requested",
+        status === "not-requested" ||
+        status === "deferred",
     );
     if (filtered.length > 0) {
       return Array.from(new Set(filtered));
@@ -237,7 +240,8 @@ function normalizeDeliveryStatuses(opts?: {
     opts?.deliveryStatus === "delivered" ||
     opts?.deliveryStatus === "not-delivered" ||
     opts?.deliveryStatus === "unknown" ||
-    opts?.deliveryStatus === "not-requested"
+    opts?.deliveryStatus === "not-requested" ||
+    opts?.deliveryStatus === "deferred"
   ) {
     return [opts.deliveryStatus];
   }
@@ -311,12 +315,19 @@ function parseAllRunLogEntries(raw: string, opts?: { jobId?: string }): CronRunL
         obj.deliveryStatus === "delivered" ||
         obj.deliveryStatus === "not-delivered" ||
         obj.deliveryStatus === "unknown" ||
-        obj.deliveryStatus === "not-requested"
+        obj.deliveryStatus === "not-requested" ||
+        obj.deliveryStatus === "deferred"
       ) {
         entry.deliveryStatus = obj.deliveryStatus;
       }
       if (typeof obj.deliveryError === "string") {
         entry.deliveryError = obj.deliveryError;
+      }
+      if (typeof obj.deliveryDeferred === "boolean") {
+        entry.deliveryDeferred = obj.deliveryDeferred;
+      }
+      if (typeof obj.deliveryErrorLast === "string") {
+        entry.deliveryErrorLast = obj.deliveryErrorLast;
       }
       if (typeof obj.sessionId === "string" && obj.sessionId.trim().length > 0) {
         entry.sessionId = obj.sessionId;

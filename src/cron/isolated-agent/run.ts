@@ -91,6 +91,8 @@ export type RunCronAgentTurnResult = {
    * cannot guarantee a final delivery ack synchronously.
    */
   deliveryAttempted?: boolean;
+  deliveryDeferred?: boolean;
+  deliveryErrorLast?: string;
 } & CronRunOutcome &
   CronRunTelemetry;
 
@@ -802,7 +804,12 @@ export async function runCronIsolatedAgentTurn(params: {
   const embeddedRunError = hasFatalErrorPayload
     ? (lastErrorPayloadText ?? "cron isolated run returned an error payload")
     : undefined;
-  const resolveRunOutcome = (params?: { delivered?: boolean; deliveryAttempted?: boolean }) =>
+  const resolveRunOutcome = (params?: {
+    delivered?: boolean;
+    deliveryAttempted?: boolean;
+    deliveryDeferred?: boolean;
+    deliveryErrorLast?: string;
+  }) =>
     withRunSession({
       status: hasFatalErrorPayload ? "error" : "ok",
       ...(hasFatalErrorPayload
@@ -812,6 +819,8 @@ export async function runCronIsolatedAgentTurn(params: {
       outputText,
       delivered: params?.delivered,
       deliveryAttempted: params?.deliveryAttempted,
+      deliveryDeferred: params?.deliveryDeferred,
+      deliveryErrorLast: params?.deliveryErrorLast,
       ...telemetry,
     });
 
@@ -861,6 +870,8 @@ export async function runCronIsolatedAgentTurn(params: {
       ...deliveryResult.result,
       deliveryAttempted:
         deliveryResult.result.deliveryAttempted ?? deliveryResult.deliveryAttempted,
+      deliveryDeferred: deliveryResult.deliveryDeferred,
+      deliveryErrorLast: deliveryResult.deliveryErrorLast,
     };
     if (!hasFatalErrorPayload || deliveryResult.result.status !== "ok") {
       return resultWithDeliveryMeta;
@@ -868,12 +879,16 @@ export async function runCronIsolatedAgentTurn(params: {
     return resolveRunOutcome({
       delivered: deliveryResult.result.delivered,
       deliveryAttempted: resultWithDeliveryMeta.deliveryAttempted,
+      deliveryDeferred: resultWithDeliveryMeta.deliveryDeferred,
+      deliveryErrorLast: resultWithDeliveryMeta.deliveryErrorLast,
     });
   }
   const delivered = deliveryResult.delivered;
   const deliveryAttempted = deliveryResult.deliveryAttempted;
+  const deliveryDeferred = deliveryResult.deliveryDeferred;
+  const deliveryErrorLast = deliveryResult.deliveryErrorLast;
   summary = deliveryResult.summary;
   outputText = deliveryResult.outputText;
 
-  return resolveRunOutcome({ delivered, deliveryAttempted });
+  return resolveRunOutcome({ delivered, deliveryAttempted, deliveryDeferred, deliveryErrorLast });
 }

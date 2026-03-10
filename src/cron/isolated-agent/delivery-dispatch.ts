@@ -103,6 +103,8 @@ export type DispatchCronDeliveryState = {
   result?: RunCronAgentTurnResult;
   delivered: boolean;
   deliveryAttempted: boolean;
+  deliveryDeferred?: boolean;
+  deliveryErrorLast?: string;
   summary?: string;
   outputText?: string;
   synthesizedText?: string;
@@ -205,6 +207,14 @@ export async function dispatchCronDelivery(
   // remains the only source of delivered state.
   let delivered = skipMessagingToolDelivery;
   let deliveryAttempted = skipMessagingToolDelivery;
+  let deliveryDeferred = false;
+  let deliveryErrorLast: string | undefined;
+  // Tracks whether `runSubagentAnnounceFlow` was actually called.  Early
+  // returns from `deliverViaAnnounce` (active subagents, interim suppression,
+  // SILENT_REPLY_TOKEN) are intentional suppressions — not delivery failures —
+  // so the direct-delivery fallback must only fire when the announce send was
+  // actually attempted and failed.
+  let announceDeliveryWasAttempted = false;
   const failDeliveryTarget = (error: string) =>
     params.withRunSession({
       status: "error",
@@ -482,6 +492,8 @@ export async function dispatchCronDelivery(
   return {
     delivered,
     deliveryAttempted,
+    deliveryDeferred,
+    deliveryErrorLast,
     summary,
     outputText,
     synthesizedText,
