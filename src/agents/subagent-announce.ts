@@ -15,6 +15,7 @@ import type { ConversationRef } from "../infra/outbound/session-binding-service.
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { normalizeAccountId, normalizeMainKey } from "../routing/session-key.js";
 import { defaultRuntime } from "../runtime.js";
+import { isCronSessionKey } from "../sessions/session-key-utils.js";
 import { extractTextFromChatContent } from "../shared/chat-content.js";
 import {
   type DeliveryContext,
@@ -82,6 +83,10 @@ function resolveSubagentAnnounceTimeoutMs(cfg: ReturnType<typeof loadConfig>): n
     return DEFAULT_SUBAGENT_ANNOUNCE_TIMEOUT_MS;
   }
   return Math.min(Math.max(1, Math.floor(configured)), MAX_TIMER_SAFE_TIMEOUT_MS);
+}
+
+function isInternalAnnounceRequesterSession(sessionKey: string | undefined): boolean {
+  return getSubagentDepthFromSessionStore(sessionKey) >= 1 || isCronSessionKey(sessionKey);
 }
 
 function summarizeDeliveryError(error: unknown): string {
@@ -586,8 +591,7 @@ async function resolveSubagentCompletionOrigin(params: {
 async function sendAnnounce(item: AnnounceQueueItem) {
   const cfg = loadConfig();
   const announceTimeoutMs = resolveSubagentAnnounceTimeoutMs(cfg);
-  const requesterDepth = getSubagentDepthFromSessionStore(item.sessionKey);
-  const requesterIsSubagent = requesterDepth >= 1;
+  const requesterIsSubagent = isInternalAnnounceRequesterSession(item.sessionKey);
   const origin = item.origin;
   const threadId =
     origin?.threadId != null && origin.threadId !== "" ? String(origin.threadId) : undefined;
@@ -1256,6 +1260,8 @@ export async function runSubagentAnnounceFlow(params: {
     }
 
     let requesterDepth = getSubagentDepthFromSessionStore(targetRequesterSessionKey);
+    const requesterIsInternalSession = () =>
+      requesterDepth >= 1 || isCronSessionKey(targetRequesterSessionKey);
 
     let childCompletionFindings: string | undefined;
     let subagentRegistryRuntime:
@@ -1379,7 +1385,7 @@ export async function runSubagentAnnounceFlow(params: {
     const announceSessionId = childSessionId || "unknown";
     const findings = childCompletionFindings || reply || "(no output)";
 
-    let requesterIsSubagent = requesterDepth >= 1;
+    let requesterIsSubagent = requesterIsInternalSession();
     if (requesterIsSubagent) {
       const {
         isSubagentSessionRunActive,
@@ -1403,7 +1409,7 @@ export async function runSubagentAnnounceFlow(params: {
           targetRequesterOrigin =
             normalizeDeliveryContext(fallback.requesterOrigin) ?? targetRequesterOrigin;
           requesterDepth = getSubagentDepthFromSessionStore(targetRequesterSessionKey);
-          requesterIsSubagent = requesterDepth >= 1;
+          requesterIsSubagent = requesterIsInternalSession();
         }
       }
     }
