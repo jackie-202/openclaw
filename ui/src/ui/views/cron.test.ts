@@ -250,6 +250,37 @@ describe("cron view", () => {
     expect(container.textContent).not.toContain("Next 13");
   });
 
+  it("renders run trigger chips for manual and scheduled entries", () => {
+    const container = document.createElement("div");
+    render(
+      renderCron(
+        createProps({
+          runsScope: "all",
+          runs: [
+            {
+              ts: Date.now(),
+              jobId: "job-manual",
+              trigger: "manual",
+              status: "ok",
+              summary: "manual run",
+            },
+            {
+              ts: Date.now() - 1,
+              jobId: "job-scheduled",
+              trigger: "scheduled",
+              status: "ok",
+              summary: "scheduled run",
+            },
+          ],
+        }),
+      ),
+      container,
+    );
+
+    expect(container.textContent).toContain("Manual");
+    expect(container.textContent).toContain("Scheduled");
+  });
+
   it("calls onJobsFiltersChange when schedule filter changes", () => {
     const container = document.createElement("div");
     const onJobsFiltersChange = vi.fn();

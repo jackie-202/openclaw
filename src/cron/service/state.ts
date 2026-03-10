@@ -9,12 +9,14 @@ import type {
   CronRunOutcome,
   CronRunStatus,
   CronRunTelemetry,
+  CronRunTrigger,
   CronStoreFile,
 } from "../types.js";
 
 export type CronEvent = {
   jobId: string;
   action: "added" | "updated" | "removed" | "started" | "finished";
+  trigger?: CronRunTrigger;
   runAtMs?: number;
   durationMs?: number;
   status?: CronRunStatus;

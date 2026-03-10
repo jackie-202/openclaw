@@ -1707,6 +1707,10 @@ function runDeliveryLabel(value: string): string {
   }
 }
 
+function runTriggerLabel(value?: "manual" | "scheduled") {
+  return value === "manual" ? "Manual" : "Scheduled";
+}
+
 function renderRun(entry: CronRunLogEntry, basePath: string) {
   const chatUrl =
     typeof entry.sessionKey === "string" && entry.sessionKey.trim().length > 0
@@ -1730,6 +1734,7 @@ function renderRun(entry: CronRunLogEntry, basePath: string) {
         </div>
         <div class="list-sub cron-run-entry__summary">${entry.summary ?? entry.error ?? t("cron.runEntry.noSummary")}</div>
         <div class="chip-row" style="margin-top: 6px;">
+          <span class="chip">${runTriggerLabel(entry.trigger)}</span>
           <span class="chip">${delivery}</span>
           ${entry.model ? html`<span class="chip">${entry.model}</span>` : nothing}
           ${entry.provider ? html`<span class="chip">${entry.provider}</span>` : nothing}

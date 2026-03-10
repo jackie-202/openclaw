@@ -2,12 +2,18 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { parseByteSize } from "../cli/parse-bytes.js";
 import type { CronConfig } from "../config/types.cron.js";
-import type { CronDeliveryStatus, CronRunStatus, CronRunTelemetry } from "./types.js";
+import type {
+  CronDeliveryStatus,
+  CronRunStatus,
+  CronRunTelemetry,
+  CronRunTrigger,
+} from "./types.js";
 
 export type CronRunLogEntry = {
   ts: number;
   jobId: string;
   action: "finished";
+  trigger?: CronRunTrigger;
   status?: CronRunStatus;
   error?: string;
   summary?: string;
@@ -275,6 +281,7 @@ function parseAllRunLogEntries(raw: string, opts?: { jobId?: string }): CronRunL
         ts: obj.ts,
         jobId: obj.jobId,
         action: "finished",
+        trigger: obj.trigger === "manual" || obj.trigger === "scheduled" ? obj.trigger : undefined,
         status: obj.status,
         error: obj.error,
         summary: obj.summary,

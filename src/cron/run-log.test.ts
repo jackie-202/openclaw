@@ -159,6 +159,7 @@ describe("cron run log", () => {
         ts: 3,
         jobId: "a",
         action: "finished",
+        trigger: "manual",
         status: "skipped",
         sessionId: "run-123",
         sessionKey: "agent:main:cron:a:run:run-123",
@@ -175,6 +176,7 @@ describe("cron run log", () => {
 
       const lastOne = await readCronRunLogEntries(logPathA, { limit: 1 });
       expect(lastOne.map((e) => e.ts)).toEqual([3]);
+      expect(lastOne[0]?.trigger).toBe("manual");
       expect(lastOne[0]?.sessionId).toBe("run-123");
       expect(lastOne[0]?.sessionKey).toBe("agent:main:cron:a:run:run-123");
 
@@ -270,6 +272,26 @@ describe("cron run log", () => {
       expect(entries[1]?.model).toBeUndefined();
       expect(entries[1]?.provider).toBeUndefined();
       expect(entries[1]?.usage?.input_tokens).toBeUndefined();
+    });
+  });
+
+  it("parses trigger when valid and ignores unknown values", async () => {
+    await withRunLogDir("openclaw-cron-log-trigger-", async (dir) => {
+      const logPath = path.join(dir, "runs", "job-1.jsonl");
+      await fs.mkdir(path.dirname(logPath), { recursive: true });
+      await fs.writeFile(
+        logPath,
+        [
+          JSON.stringify({ ts: 1, jobId: "job-1", action: "finished", trigger: "manual" }),
+          JSON.stringify({ ts: 2, jobId: "job-1", action: "finished", trigger: "unknown" }),
+        ].join("\n") + "\n",
+        "utf-8",
+      );
+
+      const entries = await readCronRunLogEntries(logPath, { limit: 10, jobId: "job-1" });
+      expect(entries).toHaveLength(2);
+      expect(entries[0]?.trigger).toBe("manual");
+      expect(entries[1]?.trigger).toBeUndefined();
     });
   });
 

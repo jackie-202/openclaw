@@ -468,6 +468,7 @@ async function finishPreparedManualRun(
     emit(state, {
       jobId: job.id,
       action: "finished",
+      trigger: "manual",
       status: coreResult.status,
       error: coreResult.error,
       summary: coreResult.summary,
