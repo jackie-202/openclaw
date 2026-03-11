@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const diagnosticMocks = vi.hoisted(() => ({
   logLaneEnqueue: vi.fn(),
   logLaneDequeue: vi.fn(),
+  logLaneWaitExceeded: vi.fn(),
   diag: {
     debug: vi.fn(),
     warn: vi.fn(),
@@ -13,6 +14,7 @@ const diagnosticMocks = vi.hoisted(() => ({
 vi.mock("../logging/diagnostic.js", () => ({
   logLaneEnqueue: diagnosticMocks.logLaneEnqueue,
   logLaneDequeue: diagnosticMocks.logLaneDequeue,
+  logLaneWaitExceeded: diagnosticMocks.logLaneWaitExceeded,
   diagnosticLogger: diagnosticMocks.diag,
 }));
 
@@ -57,6 +59,7 @@ describe("command queue", () => {
     resetAllLanes();
     diagnosticMocks.logLaneEnqueue.mockClear();
     diagnosticMocks.logLaneDequeue.mockClear();
+    diagnosticMocks.logLaneWaitExceeded.mockClear();
     diagnosticMocks.diag.debug.mockClear();
     diagnosticMocks.diag.warn.mockClear();
     diagnosticMocks.diag.error.mockClear();
@@ -132,9 +135,83 @@ describe("command queue", () => {
       expect(waited).not.toBeNull();
       expect(waited as unknown as number).toBeGreaterThanOrEqual(5);
       expect(queuedAhead).toBe(0);
+      expect(diagnosticMocks.logLaneWaitExceeded).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lane: "main",
+          queueAhead: 0,
+          interactiveAhead: 0,
+          backgroundAhead: 0,
+        }),
+      );
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("runs queued interactive tasks before queued background tasks", async () => {
+    const lane = `priority-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const order: string[] = [];
+    const deferred = createDeferred();
+
+    const first = enqueueCommandInLane(
+      lane,
+      async () => {
+        order.push("active-background");
+        await deferred.promise;
+      },
+      { priority: "background" },
+    );
+
+    await vi.waitFor(() => {
+      expect(getActiveTaskCount()).toBeGreaterThanOrEqual(1);
+    });
+
+    const queuedBackground = enqueueCommandInLane(
+      lane,
+      async () => {
+        order.push("queued-background");
+      },
+      { priority: "background" },
+    );
+    const queuedInteractive = enqueueCommandInLane(
+      lane,
+      async () => {
+        order.push("queued-interactive");
+      },
+      { priority: "interactive" },
+    );
+
+    deferred.resolve();
+    await Promise.all([first, queuedBackground, queuedInteractive]);
+
+    expect(order).toEqual(["active-background", "queued-interactive", "queued-background"]);
+  });
+
+  it("clearCommandLane clears both interactive and background queues", async () => {
+    const lane = `clear-priority-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const deferred = createDeferred();
+    const active = enqueueCommandInLane(lane, async () => {
+      await deferred.promise;
+      return "active";
+    });
+
+    await vi.waitFor(() => {
+      expect(getActiveTaskCount()).toBeGreaterThanOrEqual(1);
+    });
+
+    const background = enqueueCommandInLane(lane, async () => "background", {
+      priority: "background",
+    });
+    const interactive = enqueueCommandInLane(lane, async () => "interactive", {
+      priority: "interactive",
+    });
+
+    expect(clearCommandLane(lane)).toBe(2);
+    await expect(background).rejects.toBeInstanceOf(CommandLaneClearedError);
+    await expect(interactive).rejects.toBeInstanceOf(CommandLaneClearedError);
+
+    deferred.resolve();
+    await expect(active).resolves.toBe("active");
   });
 
   it("getActiveTaskCount returns count of currently executing tasks", async () => {

@@ -26,6 +26,7 @@ describe("resolveDeferredCleanupDecision", () => {
       activeDescendantRuns: 2,
       announceExpiryMs: 5 * 60_000,
       announceCompletionHardExpiryMs: 30 * 60_000,
+      maxAnnounceTotalRetryWindowMs: 30_000,
       maxAnnounceRetryCount: 3,
       deferDescendantDelayMs: 1_000,
       resolveAnnounceRetryDelayMs: () => 2_000,
@@ -41,6 +42,7 @@ describe("resolveDeferredCleanupDecision", () => {
       activeDescendantRuns: 1,
       announceExpiryMs: 5 * 60_000,
       announceCompletionHardExpiryMs: 30 * 60_000,
+      maxAnnounceTotalRetryWindowMs: 30_000,
       maxAnnounceRetryCount: 3,
       deferDescendantDelayMs: 1_000,
       resolveAnnounceRetryDelayMs: () => 2_000,
@@ -56,6 +58,7 @@ describe("resolveDeferredCleanupDecision", () => {
       activeDescendantRuns: 0,
       announceExpiryMs: 5 * 60_000,
       announceCompletionHardExpiryMs: 30 * 60_000,
+      maxAnnounceTotalRetryWindowMs: 30_000,
       maxAnnounceRetryCount: 3,
       deferDescendantDelayMs: 1_000,
       resolveAnnounceRetryDelayMs: () => 2_000,
@@ -71,11 +74,31 @@ describe("resolveDeferredCleanupDecision", () => {
       activeDescendantRuns: 0,
       announceExpiryMs: 5 * 60_000,
       announceCompletionHardExpiryMs: 30 * 60_000,
+      maxAnnounceTotalRetryWindowMs: 30_000,
       maxAnnounceRetryCount: 3,
       deferDescendantDelayMs: 1_000,
       resolveAnnounceRetryDelayMs: (retryCount) => retryCount * 1_000,
     });
 
     expect(decision).toEqual({ kind: "retry", retryCount: 2, resumeDelayMs: 2_000 });
+  });
+
+  it("expires completion-message retries once the total retry window is exhausted", () => {
+    const decision = resolveDeferredCleanupDecision({
+      entry: makeEntry({
+        expectsCompletionMessage: true,
+        firstAnnounceAttemptAt: now - 30_001,
+      }),
+      now,
+      activeDescendantRuns: 0,
+      announceExpiryMs: 5 * 60_000,
+      announceCompletionHardExpiryMs: 30 * 60_000,
+      maxAnnounceTotalRetryWindowMs: 30_000,
+      maxAnnounceRetryCount: 3,
+      deferDescendantDelayMs: 1_000,
+      resolveAnnounceRetryDelayMs: () => 2_000,
+    });
+
+    expect(decision).toEqual({ kind: "give-up", reason: "expiry", retryCount: 1 });
   });
 });

@@ -1,4 +1,5 @@
 import { Type } from "@sinclair/typebox";
+import { COMMAND_PRIORITY_VALUES } from "../../../process/command-priority.js";
 import { INPUT_PROVENANCE_KIND_VALUES } from "../../../sessions/input-provenance.js";
 import { NonEmptyString, SessionLabelString } from "./primitives.js";
 
@@ -94,6 +95,7 @@ export const AgentParamsSchema = Type.Object(
     timeout: Type.Optional(Type.Integer({ minimum: 0 })),
     bestEffortDeliver: Type.Optional(Type.Boolean()),
     lane: Type.Optional(Type.String()),
+    queuePriority: Type.Optional(Type.String({ enum: [...COMMAND_PRIORITY_VALUES] })),
     extraSystemPrompt: Type.Optional(Type.String()),
     internalEvents: Type.Optional(Type.Array(AgentInternalEventSchema)),
     inputProvenance: Type.Optional(

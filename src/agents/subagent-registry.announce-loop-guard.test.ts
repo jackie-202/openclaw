@@ -95,14 +95,14 @@ describe("announce loop guard (#18264)", () => {
       createdAt: now - 60_000,
       startedAt: now - 55_000,
       endedAt: now - 50_000,
-      announceRetryCount: 3,
+      announceRetryCount: 2,
       lastAnnounceRetryAt: now - 10_000,
     });
 
     const runs = registry.listSubagentRunsForRequester("agent:main:main");
     const entry = runs.find((r) => r.runId === "test-loop-guard");
     expect(entry).toBeDefined();
-    expect(entry!.announceRetryCount).toBe(3);
+    expect(entry!.announceRetryCount).toBe(2);
     expect(entry!.lastAnnounceRetryAt).toBeDefined();
   });
 
@@ -120,7 +120,7 @@ describe("announce loop guard (#18264)", () => {
         createdAt: now - 15 * 60_000,
         startedAt: now - 14 * 60_000,
         endedAt: now - 10 * 60_000,
-        announceRetryCount: 3,
+        announceRetryCount: 2,
         lastAnnounceRetryAt: now - 9 * 60_000,
       }),
     },
@@ -136,7 +136,7 @@ describe("announce loop guard (#18264)", () => {
         createdAt: now - 2 * 60_000,
         startedAt: now - 90_000,
         endedAt: now - 60_000,
-        announceRetryCount: 3,
+        announceRetryCount: 2,
         lastAnnounceRetryAt: now - 30_000,
       }),
     },
@@ -156,7 +156,7 @@ describe("announce loop guard (#18264)", () => {
     expect(stored?.cleanupCompletedAt).toBeDefined();
   });
 
-  test("expired completion-message entries are still resumed for announce", async () => {
+  test("completion-message entries inside the retry window are still resumed for announce", async () => {
     announceFn.mockReset();
     announceFn.mockResolvedValueOnce(true);
     registry.resetSubagentRegistryForTests();
@@ -174,11 +174,12 @@ describe("announce loop guard (#18264)", () => {
             requesterDisplayKey: "agent:main:main",
             task: "completion announce after long descendants",
             cleanup: "keep" as const,
-            createdAt: now - 20 * 60_000,
-            startedAt: now - 19 * 60_000,
-            endedAt: now - 10 * 60_000,
+            createdAt: now - 20_000,
+            startedAt: now - 19_000,
+            endedAt: now - 10_000,
             cleanupHandled: false,
             expectsCompletionMessage: true,
+            firstAnnounceAttemptAt: now - 10_000,
           },
         ],
       ]),
@@ -189,6 +190,42 @@ describe("announce loop guard (#18264)", () => {
     await Promise.resolve();
 
     expect(announceFn).toHaveBeenCalledTimes(1);
+  });
+
+  test("completion-message entries past the retry window give up without resuming", async () => {
+    announceFn.mockReset();
+    registry.resetSubagentRegistryForTests();
+
+    const now = Date.now();
+    const runId = "test-expired-completion-window";
+    loadSubagentRegistryFromDisk.mockReturnValue(
+      new Map([
+        [
+          runId,
+          {
+            runId,
+            childSessionKey: "agent:main:subagent:child-1",
+            requesterSessionKey: "agent:main:main",
+            requesterDisplayKey: "agent:main:main",
+            task: "expired completion retry window",
+            cleanup: "keep" as const,
+            createdAt: now - 60_000,
+            startedAt: now - 55_000,
+            endedAt: now - 40_000,
+            cleanupHandled: false,
+            expectsCompletionMessage: true,
+            firstAnnounceAttemptAt: now - 40_000,
+          },
+        ],
+      ]),
+    );
+
+    registry.initSubagentRegistry();
+
+    expect(announceFn).not.toHaveBeenCalled();
+    const runs = registry.listSubagentRunsForRequester("agent:main:main");
+    const stored = runs.find((run) => run.runId === runId);
+    expect(stored?.cleanupCompletedAt).toBeDefined();
   });
 
   test("announce rejection resets cleanupHandled so retries can resume", async () => {

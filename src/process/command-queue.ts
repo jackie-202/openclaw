@@ -1,4 +1,10 @@
-import { diagnosticLogger as diag, logLaneDequeue, logLaneEnqueue } from "../logging/diagnostic.js";
+import {
+  diagnosticLogger as diag,
+  logLaneDequeue,
+  logLaneEnqueue,
+  logLaneWaitExceeded,
+} from "../logging/diagnostic.js";
+import type { CommandPriority } from "./command-priority.js";
 import { CommandLane } from "./lanes.js";
 /**
  * Dedicated error type thrown when a queued command is rejected because
@@ -38,11 +44,13 @@ type QueueEntry = {
   enqueuedAt: number;
   warnAfterMs: number;
   onWait?: (waitMs: number, queuedAhead: number) => void;
+  priority: CommandPriority;
 };
 
 type LaneState = {
   lane: string;
-  queue: QueueEntry[];
+  interactiveQueue: QueueEntry[];
+  backgroundQueue: QueueEntry[];
   activeTaskIds: Set<number>;
   maxConcurrent: number;
   draining: boolean;
@@ -59,7 +67,8 @@ function getLaneState(lane: string): LaneState {
   }
   const created: LaneState = {
     lane,
-    queue: [],
+    interactiveQueue: [],
+    backgroundQueue: [],
     activeTaskIds: new Set(),
     maxConcurrent: 1,
     draining: false,
@@ -77,13 +86,32 @@ function completeTask(state: LaneState, taskId: number, taskGeneration: number):
   return true;
 }
 
+function getQueuedCount(state: LaneState): number {
+  return state.interactiveQueue.length + state.backgroundQueue.length;
+}
+
+function getLaneDepth(state: LaneState): number {
+  return getQueuedCount(state) + state.activeTaskIds.size;
+}
+
+function enqueueEntry(state: LaneState, entry: QueueEntry): void {
+  if (entry.priority === "background") {
+    state.backgroundQueue.push(entry);
+    return;
+  }
+  state.interactiveQueue.push(entry);
+}
+
+function dequeueEntry(state: LaneState): QueueEntry | undefined {
+  return state.interactiveQueue.shift() ?? state.backgroundQueue.shift();
+}
+
 function drainLane(lane: string) {
   const state = getLaneState(lane);
   if (state.draining) {
-    if (state.activeTaskIds.size === 0 && state.queue.length > 0) {
-      diag.warn(
-        `drainLane blocked: lane=${lane} draining=true active=0 queue=${state.queue.length}`,
-      );
+    const queued = getQueuedCount(state);
+    if (state.activeTaskIds.size === 0 && queued > 0) {
+      diag.warn(`drainLane blocked: lane=${lane} draining=true active=0 queue=${queued}`);
     }
     return;
   }
@@ -91,20 +119,33 @@ function drainLane(lane: string) {
 
   const pump = () => {
     try {
-      while (state.activeTaskIds.size < state.maxConcurrent && state.queue.length > 0) {
-        const entry = state.queue.shift() as QueueEntry;
+      while (state.activeTaskIds.size < state.maxConcurrent && getQueuedCount(state) > 0) {
+        const entry = dequeueEntry(state);
+        if (!entry) {
+          break;
+        }
         const waitedMs = Date.now() - entry.enqueuedAt;
+        const interactiveAhead = state.interactiveQueue.length;
+        const backgroundAhead = state.backgroundQueue.length;
+        const queuedAhead = interactiveAhead + backgroundAhead;
         if (waitedMs >= entry.warnAfterMs) {
           try {
-            entry.onWait?.(waitedMs, state.queue.length);
+            entry.onWait?.(waitedMs, queuedAhead);
           } catch (err) {
             diag.error(`lane onWait callback failed: lane=${lane} error="${String(err)}"`);
           }
+          logLaneWaitExceeded({
+            lane,
+            waitedMs,
+            queueAhead: queuedAhead,
+            interactiveAhead,
+            backgroundAhead,
+          });
           diag.warn(
-            `lane wait exceeded: lane=${lane} waitedMs=${waitedMs} queueAhead=${state.queue.length}`,
+            `lane wait exceeded: lane=${lane} waitedMs=${waitedMs} queueAhead=${queuedAhead} interactiveAhead=${interactiveAhead} backgroundAhead=${backgroundAhead}`,
           );
         }
-        logLaneDequeue(lane, waitedMs, state.queue.length);
+        logLaneDequeue(lane, waitedMs, queuedAhead);
         const taskId = nextTaskId++;
         const taskGeneration = state.generation;
         state.activeTaskIds.add(taskId);
@@ -115,7 +156,7 @@ function drainLane(lane: string) {
             const completedCurrentGeneration = completeTask(state, taskId, taskGeneration);
             if (completedCurrentGeneration) {
               diag.debug(
-                `lane task done: lane=${lane} durationMs=${Date.now() - startTime} active=${state.activeTaskIds.size} queued=${state.queue.length}`,
+                `lane task done: lane=${lane} durationMs=${Date.now() - startTime} active=${state.activeTaskIds.size} queued=${getQueuedCount(state)}`,
               );
               pump();
             }
@@ -164,6 +205,7 @@ export function enqueueCommandInLane<T>(
   opts?: {
     warnAfterMs?: number;
     onWait?: (waitMs: number, queuedAhead: number) => void;
+    priority?: CommandPriority;
   },
 ): Promise<T> {
   if (gatewayDraining) {
@@ -172,16 +214,18 @@ export function enqueueCommandInLane<T>(
   const cleaned = lane.trim() || CommandLane.Main;
   const warnAfterMs = opts?.warnAfterMs ?? 2_000;
   const state = getLaneState(cleaned);
+  const priority = opts?.priority ?? "interactive";
   return new Promise<T>((resolve, reject) => {
-    state.queue.push({
+    enqueueEntry(state, {
       task: () => task(),
       resolve: (value) => resolve(value as T),
       reject,
       enqueuedAt: Date.now(),
       warnAfterMs,
       onWait: opts?.onWait,
+      priority,
     });
-    logLaneEnqueue(cleaned, state.queue.length + state.activeTaskIds.size);
+    logLaneEnqueue(cleaned, getLaneDepth(state));
     drainLane(cleaned);
   });
 }
@@ -191,6 +235,7 @@ export function enqueueCommand<T>(
   opts?: {
     warnAfterMs?: number;
     onWait?: (waitMs: number, queuedAhead: number) => void;
+    priority?: CommandPriority;
   },
 ): Promise<T> {
   return enqueueCommandInLane(CommandLane.Main, task, opts);
@@ -202,13 +247,13 @@ export function getQueueSize(lane: string = CommandLane.Main) {
   if (!state) {
     return 0;
   }
-  return state.queue.length + state.activeTaskIds.size;
+  return getLaneDepth(state);
 }
 
 export function getTotalQueueSize() {
   let total = 0;
   for (const s of lanes.values()) {
-    total += s.queue.length + s.activeTaskIds.size;
+    total += getLaneDepth(s);
   }
   return total;
 }
@@ -219,8 +264,10 @@ export function clearCommandLane(lane: string = CommandLane.Main) {
   if (!state) {
     return 0;
   }
-  const removed = state.queue.length;
-  const pending = state.queue.splice(0);
+  const pending = [...state.interactiveQueue, ...state.backgroundQueue];
+  const removed = pending.length;
+  state.interactiveQueue.length = 0;
+  state.backgroundQueue.length = 0;
   for (const entry of pending) {
     entry.reject(new CommandLaneClearedError(cleaned));
   }
@@ -248,7 +295,7 @@ export function resetAllLanes(): void {
     state.generation += 1;
     state.activeTaskIds.clear();
     state.draining = false;
-    if (state.queue.length > 0) {
+    if (getQueuedCount(state) > 0) {
       lanesToDrain.push(state.lane);
     }
   }
@@ -322,3 +369,5 @@ export function waitForActiveTasks(timeoutMs: number): Promise<{ drained: boolea
     check();
   });
 }
+
+export type { CommandPriority } from "./command-priority.js";

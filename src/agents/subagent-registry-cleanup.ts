@@ -36,16 +36,23 @@ export function resolveDeferredCleanupDecision(params: {
   activeDescendantRuns: number;
   announceExpiryMs: number;
   announceCompletionHardExpiryMs: number;
+  maxAnnounceTotalRetryWindowMs: number;
   maxAnnounceRetryCount: number;
   deferDescendantDelayMs: number;
   resolveAnnounceRetryDelayMs: (retryCount: number) => number;
 }): DeferredCleanupDecision {
   const endedAgo = resolveEndedAgoMs(params.entry, params.now);
   const isCompletionMessageFlow = params.entry.expectsCompletionMessage === true;
+  const retryWindowStartedAt =
+    params.entry.firstAnnounceAttemptAt ?? params.entry.lastAnnounceRetryAt ?? params.entry.endedAt;
+  const retryWindowExpired =
+    isCompletionMessageFlow &&
+    typeof retryWindowStartedAt === "number" &&
+    params.now - retryWindowStartedAt > params.maxAnnounceTotalRetryWindowMs;
   const completionHardExpiryExceeded =
     isCompletionMessageFlow && endedAgo > params.announceCompletionHardExpiryMs;
   if (isCompletionMessageFlow && params.activeDescendantRuns > 0) {
-    if (completionHardExpiryExceeded) {
+    if (completionHardExpiryExceeded || retryWindowExpired) {
       return { kind: "give-up", reason: "expiry" };
     }
     return { kind: "defer-descendants", delayMs: params.deferDescendantDelayMs };
@@ -53,7 +60,7 @@ export function resolveDeferredCleanupDecision(params: {
 
   const retryCount = (params.entry.announceRetryCount ?? 0) + 1;
   const expiryExceeded = isCompletionMessageFlow
-    ? completionHardExpiryExceeded
+    ? completionHardExpiryExceeded || retryWindowExpired
     : endedAgo > params.announceExpiryMs;
   if (retryCount >= params.maxAnnounceRetryCount || expiryExceeded) {
     return {

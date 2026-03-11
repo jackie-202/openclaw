@@ -103,6 +103,8 @@ export type DispatchCronDeliveryState = {
   result?: RunCronAgentTurnResult;
   delivered: boolean;
   deliveryAttempted: boolean;
+  deliveryDeferred?: boolean;
+  deliveryErrorLast?: string;
   summary?: string;
   outputText?: string;
   synthesizedText?: string;

@@ -614,6 +614,7 @@ export async function runCronIsolatedAgentTurn(params: {
             skillsSnapshot,
             prompt: promptText,
             lane: resolveNestedAgentLane(params.lane),
+            queuePriority: "background",
             provider: providerOverride,
             model: modelOverride,
             authProfileId,
