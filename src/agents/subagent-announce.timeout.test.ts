@@ -131,13 +131,13 @@ describe("subagent announce timeout config", () => {
     fallbackRequesterResolution = null;
   });
 
-  it("uses 60s timeout by default for direct announce agent call", async () => {
+  it("uses 15s timeout by default for direct announce agent call", async () => {
     await runAnnounceFlowForTest("run-default-timeout");
 
     const directAgentCall = findGatewayCall(
       (call) => call.method === "agent" && call.expectFinal === true,
     );
-    expect(directAgentCall?.timeoutMs).toBe(60_000);
+    expect(directAgentCall?.timeoutMs).toBe(15_000);
   });
 
   it("honors configured announce timeout for direct announce agent call", async () => {
@@ -211,6 +211,7 @@ describe("subagent announce timeout config", () => {
     );
     expect(directAgentCall?.params?.sessionKey).toBe(cronSessionKey);
     expect(directAgentCall?.params?.deliver).toBe(false);
+    expect(directAgentCall?.params?.queuePriority).toBe("background");
     expect(directAgentCall?.params?.channel).toBeUndefined();
     expect(directAgentCall?.params?.to).toBeUndefined();
     expect(directAgentCall?.params?.accountId).toBeUndefined();
@@ -240,6 +241,7 @@ describe("subagent announce timeout config", () => {
     );
     expect(directAgentCall?.params?.sessionKey).toBe(parentSessionKey);
     expect(directAgentCall?.params?.deliver).toBe(false);
+    expect(directAgentCall?.params?.queuePriority).toBe("background");
   });
 
   it("regression, falls back to grandparent only when parent subagent session is missing", async () => {

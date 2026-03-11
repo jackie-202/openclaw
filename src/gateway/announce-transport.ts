@@ -1,3 +1,4 @@
+import type { CommandPriority } from "../process/command-priority.js";
 import { callGateway } from "./call.js";
 
 export type AnnounceTransportRequest = {
@@ -16,6 +17,7 @@ export type AnnounceTransportRequest = {
     sourceChannel?: string;
     sourceTool?: string;
   };
+  queuePriority?: CommandPriority;
   idempotencyKey: string;
 };
 

@@ -28,6 +28,8 @@ export type SubagentRunRecord = {
   expectsCompletionMessage?: boolean;
   /** Number of announce delivery attempts that returned false (deferred). */
   announceRetryCount?: number;
+  /** Timestamp of the first completion announce attempt in the current retry window. */
+  firstAnnounceAttemptAt?: number;
   /** Timestamp of the last announce retry attempt (for backoff). */
   lastAnnounceRetryAt?: number;
   /** Terminal lifecycle reason recorded when the run finishes. */

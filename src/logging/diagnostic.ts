@@ -265,6 +265,24 @@ export function logLaneDequeue(lane: string, waitMs: number, queueSize: number) 
   markActivity();
 }
 
+export function logLaneWaitExceeded(params: {
+  lane: string;
+  waitedMs: number;
+  queueAhead: number;
+  interactiveAhead: number;
+  backgroundAhead: number;
+}) {
+  emitDiagnosticEvent({
+    type: "queue.lane.wait_exceeded",
+    lane: params.lane,
+    waitedMs: params.waitedMs,
+    queueAhead: params.queueAhead,
+    interactiveAhead: params.interactiveAhead,
+    backgroundAhead: params.backgroundAhead,
+  });
+  markActivity();
+}
+
 export function logRunAttempt(params: SessionRef & { runId: string; attempt: number }) {
   diag.debug(
     `run attempt: sessionId=${params.sessionId ?? "unknown"} sessionKey=${

@@ -81,6 +81,7 @@ import {
 } from "../infra/agent-events.js";
 import { buildOutboundSessionContext } from "../infra/outbound/session-context.js";
 import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
+import type { CommandPriority } from "../process/command-priority.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
@@ -235,6 +236,22 @@ function createAcpVisibleTextAccumulator() {
       return visibleText;
     },
   };
+}
+
+function resolveQueuePriority(opts: Pick<AgentCommandOpts, "inputProvenance" | "queuePriority">) {
+  if (opts.queuePriority) {
+    return opts.queuePriority;
+  }
+  if (opts.inputProvenance?.kind === "external_user") {
+    return "interactive" satisfies CommandPriority;
+  }
+  if (opts.inputProvenance?.kind === "inter_session") {
+    return "background" satisfies CommandPriority;
+  }
+  if (opts.inputProvenance?.kind === "internal_system") {
+    return "background" satisfies CommandPriority;
+  }
+  return "interactive" satisfies CommandPriority;
 }
 
 const ACP_TRANSCRIPT_USAGE = {
@@ -455,6 +472,7 @@ function runAgentAttempt(params: {
     params.providerOverride === params.primaryProvider
       ? params.sessionEntry?.authProfileOverride
       : undefined;
+  const queuePriority = resolveQueuePriority(params.opts);
   return runEmbeddedPiAgent({
     sessionId: params.sessionId,
     sessionKey: params.sessionKey,
@@ -489,6 +507,7 @@ function runAgentAttempt(params: {
     timeoutMs: params.timeoutMs,
     runId: params.runId,
     lane: params.opts.lane,
+    queuePriority,
     abortSignal: params.opts.abortSignal,
     extraSystemPrompt: params.opts.extraSystemPrompt,
     inputProvenance: params.opts.inputProvenance,

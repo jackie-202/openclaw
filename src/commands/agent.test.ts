@@ -418,6 +418,39 @@ describe("agentCommand", () => {
     });
   });
 
+  it("defaults direct user runs to interactive queue priority", async () => {
+    const callArgs = await runEmbeddedWithTempConfig({ args: { message: "hi", to: "+1555" } });
+    expect(callArgs?.queuePriority).toBe("interactive");
+  });
+
+  it("marks inter-session ingress runs as background queue priority", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+      await agentCommandFromIngress(
+        {
+          message: "hi",
+          to: "+1555",
+          senderIsOwner: false,
+          inputProvenance: {
+            kind: "inter_session",
+            sourceSessionKey: "agent:main:subagent:child",
+            sourceTool: "subagent_announce",
+          },
+        },
+        runtime,
+      );
+      expect(getLastEmbeddedCall()?.queuePriority).toBe("background");
+    });
+  });
+
+  it("honors explicit queue priority overrides", async () => {
+    const callArgs = await runEmbeddedWithTempConfig({
+      args: { message: "hi", to: "+1555", queuePriority: "background" },
+    });
+    expect(callArgs?.queuePriority).toBe("background");
+  });
+
   it("resumes when session-id is provided", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");

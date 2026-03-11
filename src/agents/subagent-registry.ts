@@ -68,7 +68,7 @@ let listenerStarted = false;
 let listenerStop: (() => void) | null = null;
 // Use var to avoid TDZ when init runs across circular imports during bootstrap.
 var restoreAttempted = false;
-const SUBAGENT_ANNOUNCE_TIMEOUT_MS = 120_000;
+const SUBAGENT_ANNOUNCE_TIMEOUT_MS = 15_000;
 const MIN_ANNOUNCE_RETRY_DELAY_MS = 1_000;
 const MAX_ANNOUNCE_RETRY_DELAY_MS = 8_000;
 /**
@@ -76,7 +76,8 @@ const MAX_ANNOUNCE_RETRY_DELAY_MS = 8_000;
  * Prevents infinite retry loops when `runSubagentAnnounceFlow` repeatedly
  * returns `false` due to stale state or transient conditions (#18264).
  */
-const MAX_ANNOUNCE_RETRY_COUNT = 3;
+const MAX_ANNOUNCE_RETRY_COUNT = 2;
+const MAX_ANNOUNCE_TOTAL_RETRY_WINDOW_MS = 30_000;
 /**
  * Non-completion announce entries older than this are force-expired even if
  * delivery never succeeded.
@@ -533,6 +534,10 @@ function startSubagentAnnounceCleanupFlow(runId: string, entry: SubagentRunRecor
   if (!beginSubagentCleanup(runId)) {
     return false;
   }
+  if (entry.firstAnnounceAttemptAt == null) {
+    entry.firstAnnounceAttemptAt = Date.now();
+    persistSubagentRuns();
+  }
   const requesterOrigin = normalizeDeliveryContext(entry.requesterOrigin);
   void runSubagentAnnounceFlow({
     childSessionKey: entry.childSessionKey,
@@ -592,8 +597,14 @@ function resumeSubagentRun(runId: string) {
     return;
   }
   // Skip entries that have exhausted their retry budget or expired (#18264).
-  if ((entry.announceRetryCount ?? 0) >= MAX_ANNOUNCE_RETRY_COUNT) {
-    logAnnounceGiveUp(entry, "retry-limit");
+  const retryWindowStartedAt =
+    entry.firstAnnounceAttemptAt ?? entry.lastAnnounceRetryAt ?? entry.endedAt ?? 0;
+  const retryWindowExpired =
+    entry.expectsCompletionMessage === true &&
+    retryWindowStartedAt > 0 &&
+    Date.now() - retryWindowStartedAt > MAX_ANNOUNCE_TOTAL_RETRY_WINDOW_MS;
+  if ((entry.announceRetryCount ?? 0) >= MAX_ANNOUNCE_RETRY_COUNT || retryWindowExpired) {
+    logAnnounceGiveUp(entry, retryWindowExpired ? "expiry" : "retry-limit");
     entry.cleanupCompletedAt = Date.now();
     persistSubagentRuns();
     return;
@@ -886,6 +897,7 @@ async function finalizeSubagentCleanup(
     activeDescendantRuns: Math.max(0, countPendingDescendantRuns(entry.childSessionKey)),
     announceExpiryMs: ANNOUNCE_EXPIRY_MS,
     announceCompletionHardExpiryMs: ANNOUNCE_COMPLETION_HARD_EXPIRY_MS,
+    maxAnnounceTotalRetryWindowMs: MAX_ANNOUNCE_TOTAL_RETRY_WINDOW_MS,
     maxAnnounceRetryCount: MAX_ANNOUNCE_RETRY_COUNT,
     deferDescendantDelayMs: MIN_ANNOUNCE_RETRY_DELAY_MS,
     resolveAnnounceRetryDelayMs,
@@ -905,6 +917,7 @@ async function finalizeSubagentCleanup(
 
   if (deferredDecision.retryCount != null) {
     entry.announceRetryCount = deferredDecision.retryCount;
+    entry.firstAnnounceAttemptAt ??= now;
     entry.lastAnnounceRetryAt = now;
   }
 
@@ -1128,6 +1141,7 @@ export function replaceSubagentRunAfterSteer(params: {
     cleanupHandled: false,
     suppressAnnounceReason: undefined,
     announceRetryCount: undefined,
+    firstAnnounceAttemptAt: undefined,
     lastAnnounceRetryAt: undefined,
     spawnMode,
     archiveAtMs,

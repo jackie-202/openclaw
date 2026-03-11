@@ -8,7 +8,7 @@ import {
   type QueuedAnnounce,
 } from "./subagent-announce-delivery-queue.js";
 
-const MAX_RETRIES = 8;
+const MAX_RETRIES = 4;
 
 function waitMs(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -72,9 +72,10 @@ export function startSubagentAnnounceDeliveryWorker(params: {
             sourceChannel: entry.sourceChannel,
             sourceTool: entry.sourceTool,
           },
+          queuePriority: "background",
           idempotencyKey: entry.idempotencyKey,
         },
-        { timeoutMs: 30_000 },
+        { timeoutMs: 15_000 },
       );
       await ackAnnounceDelivery(entry.id);
       log.info(`announce worker delivered queued completion ${entry.id}`);

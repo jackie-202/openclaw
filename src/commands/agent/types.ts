@@ -2,6 +2,7 @@ import type { AgentInternalEvent } from "../../agents/internal-events.js";
 import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
 import type { SpawnedRunMetadata } from "../../agents/spawned-context.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
+import type { CommandPriority } from "../../process/command-priority.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 
 /** Image content block for Claude API multimodal messages. */
@@ -72,6 +73,7 @@ export type AgentCommandOpts = {
   bestEffortDeliver?: boolean;
   abortSignal?: AbortSignal;
   lane?: string;
+  queuePriority?: CommandPriority;
   runId?: string;
   extraSystemPrompt?: string;
   internalEvents?: AgentInternalEvent[];
