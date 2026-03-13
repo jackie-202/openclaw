@@ -546,16 +546,20 @@ export async function runEmbeddedPiAgent(
                 if (copilotRefreshCancelled) {
                   return;
                 }
-                refreshCopilotToken("scheduled-retry")
-                  .then(() => scheduleCopilotRefresh())
-                  .catch(() => undefined);
-              }, COPILOT_REFRESH_RETRY_MS);
-              copilotTokenState.refreshTimer = retryTimer;
-              if (copilotRefreshCancelled) {
-                clearTimeout(retryTimer);
-                copilotTokenState.refreshTimer = undefined;
-              }
-            });
+                const retryTimer = setTimeout(() => {
+                  if (copilotRefreshCancelled) {
+                    return;
+                  }
+                  refreshCopilotToken("scheduled-retry")
+                    .then(() => scheduleCopilotRefresh())
+                    .catch(() => undefined);
+                }, COPILOT_REFRESH_RETRY_MS);
+                copilotTokenState.refreshTimer = retryTimer;
+                if (copilotRefreshCancelled) {
+                  clearTimeout(retryTimer);
+                  copilotTokenState.refreshTimer = undefined;
+                }
+              });
         }, delayMs);
         copilotTokenState.refreshTimer = timer;
         if (copilotRefreshCancelled) {
