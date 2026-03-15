@@ -8,7 +8,6 @@ import {
   resolveMainSessionKey,
   resolveStorePath,
 } from "../config/sessions.js";
-import { getGlobalAnnounceTransport } from "../gateway/announce-transport.js";
 import { callGateway } from "../gateway/call.js";
 import { createBoundDeliveryRouter } from "../infra/outbound/bound-delivery-router.js";
 import type { ConversationRef } from "../infra/outbound/session-binding-service.js";
@@ -39,7 +38,6 @@ import {
   queueEmbeddedPiMessage,
   waitForEmbeddedPiRunEnd,
 } from "./pi-embedded.js";
-import { enqueueCompletionAnnounce } from "./subagent-announce-delivery-queue.js";
 import {
   runSubagentAnnounceDispatch,
   type SubagentAnnounceDeliveryResult,
@@ -53,8 +51,9 @@ import { isAnnounceSkip } from "./tools/sessions-send-helpers.js";
 
 const FAST_TEST_MODE = process.env.OPENCLAW_TEST_FAST === "1";
 const FAST_TEST_RETRY_INTERVAL_MS = 8;
-const DEFAULT_SUBAGENT_ANNOUNCE_TIMEOUT_MS = 15_000;
+const DEFAULT_SUBAGENT_ANNOUNCE_TIMEOUT_MS = 90_000;
 const MAX_TIMER_SAFE_TIMEOUT_MS = 2_147_000_000;
+const GATEWAY_TIMEOUT_PATTERN = /gateway timeout/i;
 let subagentRegistryRuntimePromise: Promise<
   typeof import("./subagent-registry-runtime.js")
 > | null = null;
@@ -67,10 +66,6 @@ function loadSubagentRegistryRuntime() {
 const DIRECT_ANNOUNCE_TRANSIENT_RETRY_DELAYS_MS = FAST_TEST_MODE
   ? ([8, 16, 32] as const)
   : ([5_000, 10_000, 20_000] as const);
-const DIRECT_ANNOUNCE_FAST_RETRY_DELAYS_MS = FAST_TEST_MODE
-  ? ([8, 16, 32] as const)
-  : ([750, 2_000, 5_000] as const);
-const DIRECT_ANNOUNCE_MAX_IN_BAND_MS = 15_000;
 
 type ToolResultMessage = {
   role?: unknown;
@@ -113,7 +108,7 @@ const TRANSIENT_ANNOUNCE_DELIVERY_ERROR_PATTERNS: readonly RegExp[] = [
   /no active .* listener/i,
   /gateway not connected/i,
   /gateway closed \(1006/i,
-  /gateway timeout/i,
+  GATEWAY_TIMEOUT_PATTERN,
   /\b(econnreset|econnrefused|etimedout|enotfound|ehostunreach|network error)\b/i,
 ];
 
@@ -137,6 +132,11 @@ function isTransientAnnounceDeliveryError(error: unknown): boolean {
     return false;
   }
   return TRANSIENT_ANNOUNCE_DELIVERY_ERROR_PATTERNS.some((re) => re.test(message));
+}
+
+function isGatewayTimeoutError(error: unknown): boolean {
+  const message = summarizeDeliveryError(error);
+  return Boolean(message) && GATEWAY_TIMEOUT_PATTERN.test(message);
 }
 
 async function waitForAnnounceRetryDelay(ms: number, signal?: AbortSignal): Promise<void> {
@@ -166,6 +166,7 @@ async function waitForAnnounceRetryDelay(ms: number, signal?: AbortSignal): Prom
 
 async function runAnnounceDeliveryWithRetry<T>(params: {
   operation: string;
+  noRetryOnGatewayTimeout?: boolean;
   signal?: AbortSignal;
   run: () => Promise<T>;
 }): Promise<T> {
@@ -177,6 +178,9 @@ async function runAnnounceDeliveryWithRetry<T>(params: {
     try {
       return await params.run();
     } catch (err) {
+      if (params.noRetryOnGatewayTimeout && isGatewayTimeoutError(err)) {
+        throw err;
+      }
       const delayMs = DIRECT_ANNOUNCE_TRANSIENT_RETRY_DELAYS_MS[retryIndex];
       if (delayMs == null || !isTransientAnnounceDeliveryError(err) || params.signal?.aborted) {
         throw err;
@@ -619,7 +623,6 @@ async function sendAnnounce(item: AnnounceQueueItem) {
         sourceChannel: item.sourceChannel ?? INTERNAL_MESSAGE_CHANNEL,
         sourceTool: item.sourceTool ?? "subagent_announce",
       },
-      queuePriority: "background",
       idempotencyKey,
     },
     timeoutMs: announceTimeoutMs,
@@ -792,14 +795,16 @@ async function sendSubagentAnnounceDirectly(params: {
         path: "none",
       };
     }
-    const transport = getGlobalAnnounceTransport();
-    transport.start();
-    const startedAt = Date.now();
-    let retryIndex = 0;
-    for (;;) {
-      try {
-        await transport.sendAgentRequest(
-          {
+    await runAnnounceDeliveryWithRetry({
+      operation: params.expectsCompletionMessage
+        ? "completion direct announce agent call"
+        : "direct announce agent call",
+      noRetryOnGatewayTimeout: params.expectsCompletionMessage && shouldDeliverExternally,
+      signal: params.signal,
+      run: async () =>
+        await callGateway({
+          method: "agent",
+          params: {
             sessionKey: canonicalRequesterSessionKey,
             message: params.triggerMessage,
             deliver: shouldDeliverExternally,
@@ -815,47 +820,12 @@ async function sendSubagentAnnounceDirectly(params: {
               sourceChannel: params.sourceChannel ?? INTERNAL_MESSAGE_CHANNEL,
               sourceTool: params.sourceTool ?? "subagent_announce",
             },
-            queuePriority: "background",
             idempotencyKey: params.directIdempotencyKey,
           },
-          {
-            timeoutMs: params.expectsCompletionMessage
-              ? Math.min(announceTimeoutMs, DIRECT_ANNOUNCE_MAX_IN_BAND_MS)
-              : announceTimeoutMs,
-          },
-        );
-        break;
-      } catch (err) {
-        const nextDelay = DIRECT_ANNOUNCE_FAST_RETRY_DELAYS_MS[retryIndex];
-        const transient = isTransientAnnounceDeliveryError(err);
-        const outOfBudget = Date.now() - startedAt >= DIRECT_ANNOUNCE_MAX_IN_BAND_MS;
-        if (!transient || nextDelay == null || outOfBudget || params.signal?.aborted) {
-          if (params.expectsCompletionMessage) {
-            await enqueueCompletionAnnounce({
-              requesterSessionKey: canonicalRequesterSessionKey,
-              triggerMessage: params.triggerMessage,
-              directOrigin,
-              completionDirectOrigin,
-              idempotencyKey: params.directIdempotencyKey,
-              bestEffortDeliver: params.bestEffortDeliver,
-              internalEvents: params.internalEvents,
-              sourceSessionKey: params.sourceSessionKey,
-              sourceChannel: params.sourceChannel ?? INTERNAL_MESSAGE_CHANNEL,
-              sourceTool: params.sourceTool ?? "subagent_announce",
-              lastError: summarizeDeliveryError(err),
-            });
-            return {
-              delivered: true,
-              path: "queued",
-              deferred: true,
-            };
-          }
-          throw err;
-        }
-        retryIndex += 1;
-        await waitForAnnounceRetryDelay(nextDelay, params.signal);
-      }
-    }
+          expectFinal: true,
+          timeoutMs: announceTimeoutMs,
+        }),
+    });
 
     return {
       delivered: true,
@@ -1152,7 +1122,6 @@ async function wakeSubagentRunAfterDescendants(params: {
               sourceChannel: INTERNAL_MESSAGE_CHANNEL,
               sourceTool: "subagent_announce",
             },
-            queuePriority: "background",
             idempotencyKey: buildAnnounceIdempotencyKey(`${params.announceId}:wake`),
           },
           timeoutMs: announceTimeoutMs,
@@ -1201,7 +1170,6 @@ export async function runSubagentAnnounceFlow(params: {
   wakeOnDescendantSettle?: boolean;
   signal?: AbortSignal;
   bestEffortDeliver?: boolean;
-  deliveryState?: { deferred?: boolean; errorLast?: string };
 }): Promise<boolean> {
   let didAnnounce = false;
   const expectsCompletionMessage = params.expectsCompletionMessage === true;
@@ -1487,12 +1455,6 @@ export async function runSubagentAnnounceFlow(params: {
       signal: params.signal,
     });
     didAnnounce = delivery.delivered;
-    if (delivery.deferred) {
-      if (params.deliveryState) {
-        params.deliveryState.deferred = true;
-        params.deliveryState.errorLast = delivery.error;
-      }
-    }
     if (!delivery.delivered && delivery.path === "direct" && delivery.error) {
       defaultRuntime.error?.(
         `Subagent completion direct announce failed for run ${params.childRunId}: ${delivery.error}`,

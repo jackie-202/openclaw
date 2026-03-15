@@ -1,5 +1,5 @@
 import type { GatewayBrowserClient } from "../gateway.ts";
-import type { ConfigSnapshot, CronJob, CronJobsListResult } from "../types.ts";
+import type { ConfigSnapshot, CronJob, CronJobsListResult, ModelCatalogEntry } from "../types.ts";
 
 const DEFAULT_CRON_PAGE_LIMIT = 200;
 const MAX_CRON_PAGES = 20;
@@ -391,4 +391,16 @@ function buildModelsDashboardData(params: {
     providers,
     allowedModels,
   };
+}
+
+/**
+ * Fetch the model catalog from the gateway.
+ */
+export async function loadModels(client: GatewayBrowserClient): Promise<ModelCatalogEntry[]> {
+  try {
+    const result = await client.request<{ models: ModelCatalogEntry[] }>("models.list", {});
+    return result?.models ?? [];
+  } catch {
+    return [];
+  }
 }

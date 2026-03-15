@@ -8,6 +8,12 @@ type GatewayCall = {
 };
 
 const gatewayCalls: GatewayCall[] = [];
+let callGatewayImpl: (request: GatewayCall) => Promise<unknown> = async (request) => {
+  if (request.method === "chat.history") {
+    return { messages: [] };
+  }
+  return {};
+};
 let sessionStore: Record<string, Record<string, unknown>> = {};
 let configOverride: ReturnType<(typeof import("../config/config.js"))["loadConfig"]> = {
   session: {
@@ -27,10 +33,7 @@ let fallbackRequesterResolution: {
 vi.mock("../gateway/call.js", () => ({
   callGateway: vi.fn(async (request: GatewayCall) => {
     gatewayCalls.push(request);
-    if (request.method === "chat.history") {
-      return { messages: [] };
-    }
-    return {};
+    return await callGatewayImpl(request);
   }),
 }));
 
@@ -117,9 +120,30 @@ function findGatewayCall(predicate: (call: GatewayCall) => boolean): GatewayCall
   return gatewayCalls.find(predicate);
 }
 
+function findFinalDirectAgentCall(): GatewayCall | undefined {
+  return findGatewayCall((call) => call.method === "agent" && call.expectFinal === true);
+}
+
+function setupParentSessionFallback(parentSessionKey: string): void {
+  requesterDepthResolver = (sessionKey?: string) =>
+    sessionKey === parentSessionKey ? 1 : sessionKey?.includes(":subagent:") ? 1 : 0;
+  subagentSessionRunActive = false;
+  shouldIgnorePostCompletion = false;
+  fallbackRequesterResolution = {
+    requesterSessionKey: "agent:main:main",
+    requesterOrigin: { channel: "discord", to: "chan-main", accountId: "acct-main" },
+  };
+}
+
 describe("subagent announce timeout config", () => {
   beforeEach(() => {
     gatewayCalls.length = 0;
+    callGatewayImpl = async (request) => {
+      if (request.method === "chat.history") {
+        return { messages: [] };
+      }
+      return {};
+    };
     sessionStore = {};
     configOverride = {
       session: defaultSessionConfig,
@@ -131,13 +155,13 @@ describe("subagent announce timeout config", () => {
     fallbackRequesterResolution = null;
   });
 
-  it("uses 15s timeout by default for direct announce agent call", async () => {
+  it("uses 90s timeout by default for direct announce agent call", async () => {
     await runAnnounceFlowForTest("run-default-timeout");
 
     const directAgentCall = findGatewayCall(
       (call) => call.method === "agent" && call.expectFinal === true,
     );
-    expect(directAgentCall?.timeoutMs).toBe(15_000);
+    expect(directAgentCall?.timeoutMs).toBe(90_000);
   });
 
   it("honors configured announce timeout for direct announce agent call", async () => {
@@ -150,7 +174,7 @@ describe("subagent announce timeout config", () => {
     expect(directAgentCall?.timeoutMs).toBe(90_000);
   });
 
-  it("caps completion direct announce timeout to in-band budget", async () => {
+  it("honors configured announce timeout for completion direct agent call", async () => {
     setConfiguredAnnounceTimeout(90_000);
     await runAnnounceFlowForTest("run-config-timeout-send", {
       requesterOrigin: {
@@ -163,7 +187,36 @@ describe("subagent announce timeout config", () => {
     const completionDirectAgentCall = findGatewayCall(
       (call) => call.method === "agent" && call.expectFinal === true,
     );
-    expect(completionDirectAgentCall?.timeoutMs).toBe(15_000);
+    expect(completionDirectAgentCall?.timeoutMs).toBe(90_000);
+  });
+
+  it("does not retry gateway timeout for externally delivered completion announces", async () => {
+    vi.useFakeTimers();
+    try {
+      callGatewayImpl = async (request) => {
+        if (request.method === "chat.history") {
+          return { messages: [] };
+        }
+        throw new Error("gateway timeout after 90000ms");
+      };
+
+      await expect(
+        runAnnounceFlowForTest("run-completion-timeout-no-retry", {
+          requesterOrigin: {
+            channel: "telegram",
+            to: "12345",
+          },
+          expectsCompletionMessage: true,
+        }),
+      ).resolves.toBe(false);
+
+      const directAgentCalls = gatewayCalls.filter(
+        (call) => call.method === "agent" && call.expectFinal === true,
+      );
+      expect(directAgentCalls).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("regression, skips parent announce while descendants are still pending", async () => {
@@ -206,12 +259,9 @@ describe("subagent announce timeout config", () => {
       requesterOrigin: { channel: "discord", to: "channel:cron-results", accountId: "acct-1" },
     });
 
-    const directAgentCall = findGatewayCall(
-      (call) => call.method === "agent" && call.expectFinal === true,
-    );
+    const directAgentCall = findFinalDirectAgentCall();
     expect(directAgentCall?.params?.sessionKey).toBe(cronSessionKey);
     expect(directAgentCall?.params?.deliver).toBe(false);
-    expect(directAgentCall?.params?.queuePriority).toBe("background");
     expect(directAgentCall?.params?.channel).toBeUndefined();
     expect(directAgentCall?.params?.to).toBeUndefined();
     expect(directAgentCall?.params?.accountId).toBeUndefined();
@@ -219,14 +269,7 @@ describe("subagent announce timeout config", () => {
 
   it("regression, routes child announce to parent session instead of grandparent when parent session still exists", async () => {
     const parentSessionKey = "agent:main:subagent:parent";
-    requesterDepthResolver = (sessionKey?: string) =>
-      sessionKey === parentSessionKey ? 1 : sessionKey?.includes(":subagent:") ? 1 : 0;
-    subagentSessionRunActive = false;
-    shouldIgnorePostCompletion = false;
-    fallbackRequesterResolution = {
-      requesterSessionKey: "agent:main:main",
-      requesterOrigin: { channel: "discord", to: "chan-main", accountId: "acct-main" },
-    };
+    setupParentSessionFallback(parentSessionKey);
     // No sessionId on purpose: existence in store should still count as alive.
     sessionStore[parentSessionKey] = { updatedAt: Date.now() };
 
@@ -236,24 +279,14 @@ describe("subagent announce timeout config", () => {
       childSessionKey: `${parentSessionKey}:subagent:child`,
     });
 
-    const directAgentCall = findGatewayCall(
-      (call) => call.method === "agent" && call.expectFinal === true,
-    );
+    const directAgentCall = findFinalDirectAgentCall();
     expect(directAgentCall?.params?.sessionKey).toBe(parentSessionKey);
     expect(directAgentCall?.params?.deliver).toBe(false);
-    expect(directAgentCall?.params?.queuePriority).toBe("background");
   });
 
   it("regression, falls back to grandparent only when parent subagent session is missing", async () => {
     const parentSessionKey = "agent:main:subagent:parent-missing";
-    requesterDepthResolver = (sessionKey?: string) =>
-      sessionKey === parentSessionKey ? 1 : sessionKey?.includes(":subagent:") ? 1 : 0;
-    subagentSessionRunActive = false;
-    shouldIgnorePostCompletion = false;
-    fallbackRequesterResolution = {
-      requesterSessionKey: "agent:main:main",
-      requesterOrigin: { channel: "discord", to: "chan-main", accountId: "acct-main" },
-    };
+    setupParentSessionFallback(parentSessionKey);
 
     await runAnnounceFlowForTest("run-parent-fallback", {
       requesterSessionKey: parentSessionKey,
@@ -261,9 +294,7 @@ describe("subagent announce timeout config", () => {
       childSessionKey: `${parentSessionKey}:subagent:child`,
     });
 
-    const directAgentCall = findGatewayCall(
-      (call) => call.method === "agent" && call.expectFinal === true,
-    );
+    const directAgentCall = findFinalDirectAgentCall();
     expect(directAgentCall?.params?.sessionKey).toBe("agent:main:main");
     expect(directAgentCall?.params?.deliver).toBe(true);
     expect(directAgentCall?.params?.channel).toBe("discord");
