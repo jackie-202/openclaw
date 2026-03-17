@@ -396,7 +396,7 @@ function buildModelsDashboardData(params: {
 /**
  * Fetch the model catalog from the gateway.
  */
-export async function loadModels(client: GatewayBrowserClient): Promise<ModelCatalogEntry[]> {
+export async function loadModelCatalog(client: GatewayBrowserClient): Promise<ModelCatalogEntry[]> {
   try {
     const result = await client.request<{ models: ModelCatalogEntry[] }>("models.list", {});
     return result?.models ?? [];
