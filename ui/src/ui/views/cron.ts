@@ -1710,19 +1710,15 @@ function runDeliveryLabel(value: string): string {
   }
 }
 
-<<<<<<< HEAD
 function runTriggerLabel(value?: "manual" | "scheduled") {
   return value === "manual" ? "Manual" : "Scheduled";
 }
 
-function renderRun(entry: CronRunLogEntry, basePath: string) {
-=======
 function renderRun(
   entry: CronRunLogEntry,
   basePath: string,
   onNavigateToChat?: (sessionKey: string) => void,
 ) {
->>>>>>> upstream/main
   const chatUrl =
     typeof entry.sessionKey === "string" && entry.sessionKey.trim().length > 0
       ? `${pathForTab("chat", basePath)}?session=${encodeURIComponent(entry.sessionKey)}`

@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-import { resolveIdentityNamePrefix } from "../../../../../src/agents/identity.js";
-import { resolveChunkMode, resolveTextChunkLimit } from "../../../../../src/auto-reply/chunk.js";
-import { shouldComputeCommandAuthorized } from "../../../../../src/auto-reply/command-detection.js";
-import { formatInboundEnvelope } from "../../../../../src/auto-reply/envelope.js";
-import type { getReplyFromConfig } from "../../../../../src/auto-reply/reply.js";
-import type { GateContext } from "../../../../../src/auto-reply/reply/gate-context.js";
-import { scanOutboundSecurity } from "../../../../../src/auto-reply/reply/gate-security.js";
-=======
 import { resolveIdentityNamePrefix } from "openclaw/plugin-sdk/agent-runtime";
 import { toLocationContext } from "openclaw/plugin-sdk/channel-runtime";
 import { createReplyPrefixOptions } from "openclaw/plugin-sdk/channel-runtime";
@@ -19,7 +10,8 @@ import { resolveChunkMode, resolveTextChunkLimit } from "openclaw/plugin-sdk/rep
 import { shouldComputeCommandAuthorized } from "openclaw/plugin-sdk/reply-runtime";
 import { formatInboundEnvelope } from "openclaw/plugin-sdk/reply-runtime";
 import type { getReplyFromConfig } from "openclaw/plugin-sdk/reply-runtime";
->>>>>>> upstream/main
+import type { GateContext } from "../../../../../src/auto-reply/reply/gate-context.js";
+import { scanOutboundSecurity } from "../../../../../src/auto-reply/reply/gate-security.js";
 import {
   buildHistoryContextFromEntries,
   type HistoryEntry,
