@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import type { AgentInternalEvent } from "../../agents/internal-events.js";
 import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
 import type { SpawnedRunMetadata } from "../../agents/spawned-context.js";
@@ -90,3 +91,6 @@ export type AgentCommandIngressOpts = Omit<AgentCommandOpts, "senderIsOwner"> & 
   /** Ingress callsites must always pass explicit owner authorization state. */
   senderIsOwner: boolean;
 };
+=======
+export * from "../../agents/command/types.js";
+>>>>>>> upstream/main

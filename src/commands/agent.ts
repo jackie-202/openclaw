@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import fs from "node:fs/promises";
 import { SessionManager } from "@mariozechner/pi-coding-agent";
 import { getAcpSessionManager } from "../acp/control-plane/manager.js";
@@ -1274,3 +1275,6 @@ export async function agentCommandFromIngress(
     deps,
   );
 }
+=======
+export * from "../agents/agent-command.js";
+>>>>>>> upstream/main
