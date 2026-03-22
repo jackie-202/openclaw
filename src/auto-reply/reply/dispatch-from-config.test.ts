@@ -4895,7 +4895,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(hookContext?.conversationId).toBe("telegram:999");
   });
 
-  it("does not broadcast inbound claims without a core-owned plugin binding", async () => {
+  it("broadcasts inbound claims and short-circuits when a plugin claims", async () => {
     setNoAbort();
     hookMocks.runner.hasHooks.mockImplementation(
       ((hookName?: string) =>
@@ -4926,38 +4926,44 @@ describe("dispatchReplyFromConfig", () => {
 
     const result = await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
 
-    expect(result).toEqual({ queuedFinal: true, counts: { tool: 0, block: 0, final: 0 } });
-    expect(hookMocks.runner.runInboundClaim).not.toHaveBeenCalled();
-    const [event, hookContext] = firstMockCall(
-      hookMocks.runner.runMessageReceived,
-      "message received hook",
-    ) as
-      | [
-          { content?: unknown; from?: unknown; metadata?: Record<string, unknown> },
-          { accountId?: unknown; channelId?: unknown; conversationId?: unknown },
-        ]
-      | [];
-    expect(event?.from).toBe(ctx.From);
-    expect(event?.content).toBe("who are you");
-    expect(event?.metadata?.messageId).toBe("msg-claim-1");
-    expect(event?.metadata?.originatingChannel).toBe("telegram");
-    expect(event?.metadata?.originatingTo).toBe("telegram:-10099");
-    expect(event?.metadata?.senderId).toBe("user-9");
-    expect(event?.metadata?.senderUsername).toBe("ada");
-    expect(event?.metadata?.threadId).toBe(77);
-    expect(hookContext?.channelId).toBe("telegram");
-    expect(hookContext?.accountId).toBe("default");
-    expect(hookContext?.conversationId).toBe("telegram:-10099");
-    const internalHookEvent = (
-      internalHookMocks.triggerInternalHook.mock.calls as unknown as Array<
-        [{ action?: unknown; sessionKey?: unknown; type?: unknown }]
-      >
-    )[0]?.[0];
-    expect(internalHookEvent?.type).toBe("message");
-    expect(internalHookEvent?.action).toBe("received");
-    expect(internalHookEvent?.sessionKey).toBe("agent:main:hook-test");
-    expect(replyResolver).toHaveBeenCalledTimes(1);
-    expect(firstFinalReplyPayload(dispatcher)?.text).toBe("core reply");
+    expect(result).toEqual({ queuedFinal: false, counts: { tool: 0, block: 0, final: 0 } });
+    expect(hookMocks.runner.runInboundClaim).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: "telegram",
+        accountId: "default",
+        conversationId: "-10099:topic:77",
+        parentConversationId: "-10099",
+        content: "who are you",
+      }),
+      expect.objectContaining({
+        channelId: "telegram",
+        accountId: "default",
+        conversationId: "-10099:topic:77",
+        parentConversationId: "-10099",
+      }),
+    );
+    expect(hookMocks.runner.runMessageReceived).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: ctx.From,
+        content: "who are you",
+        metadata: expect.objectContaining({
+          messageId: "msg-claim-1",
+          originatingChannel: "telegram",
+          originatingTo: "telegram:-10099",
+          senderId: "user-9",
+          senderUsername: "ada",
+          threadId: 77,
+        }),
+      }),
+      expect.objectContaining({
+        channelId: "telegram",
+        accountId: "default",
+        conversationId: "telegram:-10099",
+      }),
+    );
+    expect(internalHookMocks.triggerInternalHook).not.toHaveBeenCalled();
+    expect(replyResolver).not.toHaveBeenCalled();
+    expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
   it("emits internal message:received hook when a session key is available", async () => {
@@ -6009,7 +6015,7 @@ describe("dispatchReplyFromConfig", () => {
       .calls[0]?.[0] as ReplyPayload | undefined;
     expect(firstNotice?.text).toContain("is not currently loaded.");
     expect(replyResolver).toHaveBeenCalledTimes(1);
-    expect(hookMocks.runner.runInboundClaim).not.toHaveBeenCalled();
+    expect(hookMocks.runner.runInboundClaim).toHaveBeenCalledTimes(1);
 
     replyResolver.mockClear();
     hookMocks.runner.runInboundClaim.mockClear();
@@ -6036,7 +6042,7 @@ describe("dispatchReplyFromConfig", () => {
 
     expect(secondDispatcher.sendToolResult).not.toHaveBeenCalled();
     expect(replyResolver).toHaveBeenCalledTimes(1);
-    expect(hookMocks.runner.runInboundClaim).not.toHaveBeenCalled();
+    expect(hookMocks.runner.runInboundClaim).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to OpenClaw when the bound plugin is loaded but has no inbound_claim handler", async () => {
@@ -6096,7 +6102,7 @@ describe("dispatchReplyFromConfig", () => {
     ) as ReplyPayload | undefined;
     expect(notice?.text).toContain("is not currently loaded.");
     expect(replyResolver).toHaveBeenCalledTimes(1);
-    expect(hookMocks.runner.runInboundClaim).not.toHaveBeenCalled();
+    expect(hookMocks.runner.runInboundClaim).toHaveBeenCalledTimes(1);
   });
 
   it("notifies the user when a bound plugin declines the turn and keeps the binding attached", async () => {
