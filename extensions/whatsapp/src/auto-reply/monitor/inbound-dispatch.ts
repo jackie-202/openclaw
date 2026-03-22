@@ -1,5 +1,6 @@
 import type { WebInboundMsg } from "../types.js";
 import { formatGroupMembers } from "./group-members.js";
+import { resolveGroupDeliveryPolicyFor } from "./group-activation.js";
 import type { GroupHistoryEntry } from "./inbound-context.js";
 import {
   createChannelReplyPipeline,
@@ -277,6 +278,12 @@ export async function dispatchWhatsAppBufferedReply(params: {
       },
       deliver: async (payload: ReplyPayload, info: { kind: ReplyLifecycleKind }) => {
         if (shouldSuppressWhatsAppPayload(payload, info)) {
+          return;
+        }
+        if (
+          params.msg.chatType === "group" &&
+          resolveGroupDeliveryPolicyFor(params.cfg, params.conversationId) === "plugin-only"
+        ) {
           return;
         }
         await params.deliverReply({

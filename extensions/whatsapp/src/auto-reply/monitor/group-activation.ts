@@ -45,6 +45,23 @@ export function resolveGroupRequireMentionFor(
   });
 }
 
+export function resolveGroupDeliveryPolicyFor(
+  cfg: ReturnType<typeof loadConfig>,
+  conversationId: string,
+): "auto-reply" | "plugin-only" {
+  const groupId = resolveGroupSessionKey({
+    From: conversationId,
+    ChatType: "group",
+    Provider: "whatsapp",
+  })?.id;
+  const { groupConfig, defaultConfig } = resolveChannelGroupPolicy({
+    cfg,
+    channel: "whatsapp",
+    groupId: groupId ?? conversationId,
+  });
+  return groupConfig?.deliveryPolicy ?? defaultConfig?.deliveryPolicy ?? "auto-reply";
+}
+
 export function resolveGroupActivationFor(params: {
   cfg: ReturnType<LoadConfigFn>;
   agentId: string;

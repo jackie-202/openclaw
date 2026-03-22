@@ -23,6 +23,7 @@ export type WhatsAppReactionLevel = ReactionLevel;
 
 export type WhatsAppGroupConfig = {
   requireMention?: boolean;
+  deliveryPolicy?: "auto-reply" | "plugin-only";
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
 };
