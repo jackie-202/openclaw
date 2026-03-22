@@ -1900,6 +1900,34 @@ export async function dispatchReplyFromConfig(
     }
   }
 
+  // Broadcast inbound_claim to all plugins - allows any plugin to claim an
+  // inbound message before commands / agent dispatch. The existing targeted
+  // claim (pluginOwnedBinding path above) handles conversation-bound plugins;
+  // this covers stateless / channel-scoped plugins that need to intercept
+  // messages without owning a binding.
+  if (hookRunner?.runInboundClaim) {
+    const broadcastClaimResult = await hookRunner.runInboundClaim(
+      inboundClaimEvent,
+      inboundClaimContext,
+    );
+    if (broadcastClaimResult?.handled) {
+      // Plugin claimed the message - fire message_received anyway (observability)
+      // but skip agent dispatch.
+      if (hookRunner.hasHooks("message_received")) {
+        fireAndForgetHook(
+          hookRunner.runMessageReceived(
+            toPluginMessageReceivedEvent(hookContext),
+            toPluginMessageContext(hookContext),
+          ),
+          "dispatch-from-config: message_received plugin hook failed (post-claim)",
+        );
+      }
+      markIdle("plugin_broadcast_claim");
+      recordProcessed("completed", { reason: "plugin-broadcast-claimed" });
+      return { queuedFinal: false, counts: dispatcher.getQueuedCounts() };
+    }
+  }
+
   // Trigger plugin hooks (fire-and-forget)
   if (hookRunner?.hasHooks("message_received")) {
     fireAndForgetHook(
