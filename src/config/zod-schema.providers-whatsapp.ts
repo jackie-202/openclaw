@@ -17,6 +17,7 @@ const ToolPolicyBySenderSchema = z.record(z.string(), ToolPolicySchema).optional
 const WhatsAppGroupEntrySchema = z
   .object({
     requireMention: z.boolean().optional(),
+    deliveryPolicy: z.enum(["auto-reply", "plugin-only"]).optional(),
     tools: ToolPolicySchema,
     toolsBySender: ToolPolicyBySenderSchema,
   })

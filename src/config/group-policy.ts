@@ -13,6 +13,7 @@ export type GroupPolicyChannel = ChannelId;
 
 export type ChannelGroupConfig = {
   requireMention?: boolean;
+  deliveryPolicy?: "auto-reply" | "plugin-only";
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
 };

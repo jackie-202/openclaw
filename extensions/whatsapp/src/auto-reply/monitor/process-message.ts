@@ -46,6 +46,7 @@ import { whatsappInboundLog, whatsappOutboundLog } from "../loggers.js";
 import type { WebInboundMsg } from "../types.js";
 import { elide } from "../util.js";
 import { maybeSendAckReaction } from "./ack-reaction.js";
+import { resolveGroupDeliveryPolicyFor } from "./group-activation.js";
 import { formatGroupMembers } from "./group-members.js";
 import { trackBackgroundTask, updateLastRouteInBackground } from "./last-route.js";
 import { buildInboundLine } from "./message-line.js";
@@ -417,6 +418,12 @@ export async function processMessage(params: {
           // Only deliver final replies to external messaging channels (WhatsApp).
           // Block (reasoning/thinking) and tool updates are meant for the internal
           // web UI only; sending them here leaks chain-of-thought to end users.
+          return;
+        }
+        if (
+          params.msg.chatType === "group" &&
+          resolveGroupDeliveryPolicyFor(params.cfg, conversationId) === "plugin-only"
+        ) {
           return;
         }
         await deliverWebReply({

@@ -309,6 +309,51 @@ describe("web processMessage inbound context", () => {
     expect(rememberSentText).toHaveBeenCalledTimes(1);
   });
 
+  it("suppresses final WA delivery for plugin-only groups while keeping dispatch active", async () => {
+    const rememberSentText = vi.fn();
+    await processMessage(
+      makeProcessMessageArgs({
+        routeSessionKey: "agent:main:whatsapp:group:123@g.us",
+        groupHistoryKey: "123@g.us",
+        rememberSentText,
+        cfg: {
+          channels: {
+            whatsapp: {
+              groups: {
+                "123@g.us": {
+                  deliveryPolicy: "plugin-only",
+                },
+              },
+            },
+          },
+          messages: {},
+          session: { store: sessionStorePath },
+        } as unknown as ReturnType<typeof import("../../../../../src/config/config.js").loadConfig>,
+        msg: {
+          id: "g-plugin-only",
+          from: "123@g.us",
+          conversationId: "123@g.us",
+          to: "+2000",
+          chatType: "group",
+          body: "hello",
+          senderName: "Alice",
+          senderE164: "+111",
+        },
+      }),
+    );
+
+    expect(capturedCtx).toBeTruthy();
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const deliver = (capturedDispatchParams as any)?.dispatcherOptions?.deliver as
+      | ((payload: { text?: string }, info: { kind: "tool" | "block" | "final" }) => Promise<void>)
+      | undefined;
+    expect(deliver).toBeTypeOf("function");
+
+    await deliver?.({ text: "final payload" }, { kind: "final" });
+    expect(deliverWebReplyMock).not.toHaveBeenCalled();
+    expect(rememberSentText).not.toHaveBeenCalled();
+  });
+
   it("forces disableBlockStreaming for WhatsApp dispatch", async () => {
     await processMessage(createWhatsAppDirectStreamingArgs());
 
