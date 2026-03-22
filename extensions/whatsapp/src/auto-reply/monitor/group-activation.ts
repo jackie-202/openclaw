@@ -28,6 +28,19 @@ function isActivationOnlyEntry(
   );
 }
 
+
+export function resolveGroupDeliveryPolicyFor(params: {
+  cfg: OpenClawConfig;
+  accountId?: string | null;
+  conversationId: string;
+}): "auto-reply" | "plugin-only" {
+  const groupPolicy = resolveWhatsAppInboundPolicy({
+    cfg: params.cfg,
+    accountId: params.accountId,
+  }).resolveConversationGroupPolicy(params.conversationId);
+  return groupPolicy.groupConfig?.deliveryPolicy ?? groupPolicy.defaultConfig?.deliveryPolicy ?? "auto-reply";
+}
+
 export async function resolveGroupActivationFor(params: {
   cfg: OpenClawConfig;
   accountId?: string | null;

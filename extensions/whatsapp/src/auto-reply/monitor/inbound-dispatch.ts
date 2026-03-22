@@ -683,6 +683,16 @@ export async function dispatchWhatsAppBufferedReply(params: {
         if (!reply.hasMedia && !reply.text.trim()) {
           return whatsAppReplyDeliveryVisibility(false);
         }
+        if (
+          params.msg.chatType === "group" &&
+          resolveGroupDeliveryPolicyFor({
+            cfg: params.cfg,
+            accountId: params.route.accountId,
+            conversationId: params.conversationId,
+          }) === "plugin-only"
+        ) {
+          return whatsAppReplyDeliveryVisibility(false);
+        }
         if (!reply.hasMedia) {
           const flushResult = await mediaOnlyCoalescer.flushAll();
           logWhatsAppMediaOnlyFlushResult(flushResult);
