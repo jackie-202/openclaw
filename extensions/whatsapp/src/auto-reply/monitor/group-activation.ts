@@ -46,7 +46,7 @@ export function resolveGroupRequireMentionFor(
 }
 
 export function resolveGroupDeliveryPolicyFor(
-  cfg: ReturnType<typeof loadConfig>,
+  cfg: ReturnType<LoadConfigFn>,
   conversationId: string,
 ): "auto-reply" | "plugin-only" {
   const groupId = resolveGroupSessionKey({
