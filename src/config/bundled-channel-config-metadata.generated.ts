@@ -14921,6 +14921,10 @@ export const GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA = [
               requireMention: {
                 type: "boolean",
               },
+              deliveryPolicy: {
+                type: "string",
+                enum: ["auto-reply", "plugin-only"],
+              },
               tools: {
                 type: "object",
                 properties: {
@@ -15173,6 +15177,10 @@ export const GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA = [
                   properties: {
                     requireMention: {
                       type: "boolean",
+                    },
+                    deliveryPolicy: {
+                      type: "string",
+                      enum: ["auto-reply", "plugin-only"],
                     },
                     tools: {
                       type: "object",
