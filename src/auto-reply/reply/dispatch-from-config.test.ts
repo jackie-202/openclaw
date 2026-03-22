@@ -2943,15 +2943,16 @@ describe("dispatchReplyFromConfig", () => {
       expect.objectContaining({
         channel: "telegram",
         accountId: "default",
-        conversationId: "-10099:topic:77",
-        parentConversationId: "-10099",
         content: "who are you",
+        body: "who are you",
+        commandAuthorized: true,
+        isGroup: false,
+        messageId: "msg-claim-1",
       }),
       expect.objectContaining({
         channelId: "telegram",
         accountId: "default",
-        conversationId: "-10099:topic:77",
-        parentConversationId: "-10099",
+        messageId: "msg-claim-1",
       }),
     );
     expect(hookMocks.runner.runMessageReceived).toHaveBeenCalledWith(
