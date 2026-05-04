@@ -1708,6 +1708,7 @@ export async function runEmbeddedAgent(
             silentExpected: params.silentExpected,
             bootstrapContextMode: params.bootstrapContextMode,
             bootstrapContextRunKind: params.bootstrapContextRunKind,
+            trajectoryEnabled: params.trajectoryEnabled,
             jobId: params.jobId,
             toolsAllow: params.toolsAllow,
             disableMessageTool: params.disableMessageTool,

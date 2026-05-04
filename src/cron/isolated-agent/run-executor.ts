@@ -134,6 +134,8 @@ export function createCronPromptExecutor(params: {
   timeoutMs: number;
   /** Set when the cron payload's `timeoutSeconds` was explicitly configured. */
   runTimeoutOverrideMs?: number;
+  trajectoryEnabled: boolean;
+  messageChannel: string | undefined;
   suppressExecNotifyOnExit: boolean;
   resolvedDelivery: {
     channel?: string;
@@ -315,6 +317,7 @@ export function createCronPromptExecutor(params: {
           verboseLevel: params.resolvedVerboseLevel,
           timeoutMs: params.timeoutMs,
           runTimeoutOverrideMs: params.runTimeoutOverrideMs,
+          trajectoryEnabled: params.trajectoryEnabled,
           bootstrapContextMode,
           bootstrapContextRunKind: "cron",
           toolsAllow: params.agentPayload?.toolsAllow,
@@ -403,6 +406,7 @@ export async function executeCronRun(params: {
   timeoutMs: number;
   /** Set when the cron payload's `timeoutSeconds` was explicitly configured. */
   runTimeoutOverrideMs?: number;
+  trajectoryEnabled: boolean;
   suppressExecNotifyOnExit: boolean;
   runStartedAt?: number;
 }): Promise<CronExecutionResult> {
@@ -429,6 +433,8 @@ export async function executeCronRun(params: {
     thinkLevel: params.thinkLevel,
     timeoutMs: params.timeoutMs,
     runTimeoutOverrideMs: params.runTimeoutOverrideMs,
+    trajectoryEnabled: params.trajectoryEnabled,
+    messageChannel: params.resolvedDelivery.channel,
     suppressExecNotifyOnExit: params.suppressExecNotifyOnExit,
     resolvedDelivery: params.resolvedDelivery,
     deliveryRequested: params.deliveryRequested,
