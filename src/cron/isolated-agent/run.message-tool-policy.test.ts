@@ -272,6 +272,7 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
       cronSession: makeCronSession() as MutableCronSession,
       abortReason: () => "aborted",
       ...overrides,
+      trajectoryEnabled: overrides.trajectoryEnabled ?? true,
       resolvedDelivery,
     });
   }

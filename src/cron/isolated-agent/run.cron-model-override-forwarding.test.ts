@@ -150,6 +150,50 @@ describe("runCronIsolatedAgentTurn — cron model override forwarding (#58065)",
     expect(embeddedCall?.model).toBe("gemini-2.0-flash");
   });
 
+  it("passes cron payload trajectory=false to the embedded agent runner", async () => {
+    runWithModelFallbackMock.mockImplementation(async ({ provider, model, run }) => {
+      const result = await run(provider, model);
+      return { result, provider, model, attempts: [] };
+    });
+    runEmbeddedPiAgentMock.mockResolvedValue({
+      payloads: [{ text: "summary done" }],
+      meta: { agentMeta: { usage: { input: 10, output: 20 } } },
+    });
+
+    const result = await runCronIsolatedAgentTurn(
+      makeParams({
+        job: makeJob({
+          payload: { kind: "agentTurn", message: "summarize", trajectory: false },
+        }),
+      }),
+    );
+
+    expect(result.status).toBe("ok");
+    const embeddedCall = runEmbeddedPiAgentMock.mock.calls[0]?.[0] as
+      | { trajectoryEnabled?: boolean }
+      | undefined;
+    expect(embeddedCall?.trajectoryEnabled).toBe(false);
+  });
+
+  it("defaults omitted cron payload trajectory to enabled", async () => {
+    runWithModelFallbackMock.mockImplementation(async ({ provider, model, run }) => {
+      const result = await run(provider, model);
+      return { result, provider, model, attempts: [] };
+    });
+    runEmbeddedPiAgentMock.mockResolvedValue({
+      payloads: [{ text: "summary done" }],
+      meta: { agentMeta: { usage: { input: 10, output: 20 } } },
+    });
+
+    const result = await runCronIsolatedAgentTurn(makeParams());
+
+    expect(result.status).toBe("ok");
+    const embeddedCall = runEmbeddedPiAgentMock.mock.calls[0]?.[0] as
+      | { trajectoryEnabled?: boolean }
+      | undefined;
+    expect(embeddedCall?.trajectoryEnabled).toBe(true);
+  });
+
   it("validates cron thinking with catalog reasoning metadata", async () => {
     resolveAllowedModelRefMock.mockImplementation(() => ({
       ref: { provider: "ollama", model: "qwen3:0.6b" },

@@ -278,6 +278,9 @@ export const GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA = [
         blockStreaming: {
           type: "boolean",
         },
+        replyContextApiFallback: {
+          type: "boolean",
+        },
         groups: {
           type: "object",
           properties: {},
@@ -593,6 +596,9 @@ export const GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA = [
                 additionalProperties: false,
               },
               blockStreaming: {
+                type: "boolean",
+              },
+              replyContextApiFallback: {
                 type: "boolean",
               },
               groups: {

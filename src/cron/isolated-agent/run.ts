@@ -459,6 +459,7 @@ type PreparedCronRunContext = {
   liveSelection: CronLiveSelection;
   thinkLevel: ThinkLevel | undefined;
   timeoutMs: number;
+  trajectoryEnabled: boolean;
 };
 
 type CronPreparationResult =
@@ -647,6 +648,7 @@ async function prepareCronRunContext(params: {
       input.job.payload.kind === "agentTurn" ? input.job.payload.timeoutSeconds : undefined,
   });
   const agentPayload = input.job.payload.kind === "agentTurn" ? input.job.payload : null;
+  const trajectoryEnabled = agentPayload?.trajectory ?? true;
   const { deliveryPlan, deliveryRequested, resolvedDelivery, toolPolicy } =
     await resolveCronDeliveryContext({
       cfg: cfgWithAgentDefaults,
@@ -789,6 +791,7 @@ async function prepareCronRunContext(params: {
       liveSelection,
       thinkLevel,
       timeoutMs,
+      trajectoryEnabled,
     },
   };
 }
@@ -1117,6 +1120,7 @@ export async function runCronIsolatedAgentTurn(params: {
       isAborted,
       thinkLevel: prepared.context.thinkLevel,
       timeoutMs: prepared.context.timeoutMs,
+      trajectoryEnabled: prepared.context.trajectoryEnabled,
       suppressExecNotifyOnExit: prepared.context.suppressExecNotifyOnExit,
     });
     if (isAborted()) {

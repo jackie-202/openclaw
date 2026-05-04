@@ -20,6 +20,7 @@ import {
   prependSystemPromptAddition,
   remapInjectedContextFilesToWorkspace,
   resetEmbeddedAgentBaseStreamFnCacheForTest,
+  resolveAttemptTrajectoryRecorder,
   resolveEmbeddedAgentBaseStreamFn,
   resolveAttemptFsWorkspaceOnly,
   resolveEmbeddedAgentStreamFn,
@@ -215,6 +216,38 @@ describe("shouldRunLlmOutputHooksForAttempt", () => {
     );
     expect(shouldRunLlmOutputHooksForAttempt({ promptErrorSource: "prompt" })).toBe(true);
     expect(shouldRunLlmOutputHooksForAttempt({ promptErrorSource: null })).toBe(true);
+  });
+});
+
+describe("resolveAttemptTrajectoryRecorder", () => {
+  it("does not call the recorder factory when trajectory is disabled for this run", () => {
+    const createRecorder = vi.fn(() => ({
+      enabled: true as const,
+      filePath: "/tmp/trajectory.jsonl",
+      recordEvent: vi.fn(),
+      flush: vi.fn(async () => undefined),
+    }));
+
+    expect(
+      resolveAttemptTrajectoryRecorder({ trajectoryEnabled: false, createRecorder }),
+    ).toBeNull();
+    expect(createRecorder).not.toHaveBeenCalled();
+  });
+
+  it("keeps default and explicit true on the existing recorder factory path", () => {
+    const recorder = {
+      enabled: true as const,
+      filePath: "/tmp/trajectory.jsonl",
+      recordEvent: vi.fn(),
+      flush: vi.fn(async () => undefined),
+    };
+    const createRecorder = vi.fn(() => recorder);
+
+    expect(resolveAttemptTrajectoryRecorder({ createRecorder })).toBe(recorder);
+    expect(resolveAttemptTrajectoryRecorder({ trajectoryEnabled: true, createRecorder })).toBe(
+      recorder,
+    );
+    expect(createRecorder).toHaveBeenCalledTimes(2);
   });
 });
 

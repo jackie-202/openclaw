@@ -1249,6 +1249,7 @@ export async function runEmbeddedPiAgent(
             silentExpected: params.silentExpected,
             bootstrapContextMode: params.bootstrapContextMode,
             bootstrapContextRunKind: params.bootstrapContextRunKind,
+            trajectoryEnabled: params.trajectoryEnabled,
             jobId: params.jobId,
             toolsAllow: params.toolsAllow,
             ownerOnlyToolAllowlist: params.ownerOnlyToolAllowlist,

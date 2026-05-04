@@ -82,6 +82,7 @@ export function createCronPromptExecutor(params: {
   resolvedVerboseLevel: VerboseLevel;
   thinkLevel: ThinkLevel | undefined;
   timeoutMs: number;
+  trajectoryEnabled: boolean;
   messageChannel: string | undefined;
   suppressExecNotifyOnExit: boolean;
   resolvedDelivery: {
@@ -225,6 +226,7 @@ export function createCronPromptExecutor(params: {
           }).enabled,
           verboseLevel: params.resolvedVerboseLevel,
           timeoutMs: params.timeoutMs,
+          trajectoryEnabled: params.trajectoryEnabled,
           bootstrapContextMode: params.agentPayload?.lightContext ? "lightweight" : undefined,
           bootstrapContextRunKind: "cron",
           toolsAllow: params.agentPayload?.toolsAllow,
@@ -304,6 +306,7 @@ export async function executeCronRun(params: {
   onExecutionStarted?: () => void;
   thinkLevel: ThinkLevel | undefined;
   timeoutMs: number;
+  trajectoryEnabled: boolean;
   suppressExecNotifyOnExit: boolean;
   runStartedAt?: number;
 }): Promise<CronExecutionResult> {
@@ -328,6 +331,7 @@ export async function executeCronRun(params: {
     resolvedVerboseLevel,
     thinkLevel: params.thinkLevel,
     timeoutMs: params.timeoutMs,
+    trajectoryEnabled: params.trajectoryEnabled,
     messageChannel: params.resolvedDelivery.channel,
     suppressExecNotifyOnExit: params.suppressExecNotifyOnExit,
     resolvedDelivery: params.resolvedDelivery,
