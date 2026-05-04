@@ -1,12 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { sanitizeDiagnosticPayload } from "../agents/payload-redaction.js";
-import { getQueuedFileWriter, type QueuedFileWriter } from "../agents/queued-file-writer.js";
+import {
+  evictOldestWritersToCap,
+  getQueuedFileWriter,
+  isClosableWriter,
+  type QueuedFileWriter,
+} from "../agents/queued-file-writer.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { parseBooleanValue } from "../utils/boolean.js";
 import { safeJsonStringify } from "../utils/safe-json.js";
 import {
-  TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES,
   TRAJECTORY_RUNTIME_EVENT_MAX_BYTES,
   TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
   resolveTrajectoryFilePath,
@@ -16,7 +20,6 @@ import {
 import type { TrajectoryEvent, TrajectoryToolDefinition } from "./types.js";
 
 export {
-  TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES,
   TRAJECTORY_RUNTIME_EVENT_MAX_BYTES,
   TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
   resolveTrajectoryFilePath,
@@ -28,7 +31,6 @@ export {
 type TrajectoryRuntimeInit = {
   cfg?: OpenClawConfig;
   env?: NodeJS.ProcessEnv;
-  maxRuntimeFileBytes?: number;
   runId?: string;
   sessionId: string;
   sessionKey?: string;
@@ -49,11 +51,6 @@ type TrajectoryRuntimeRecorder = {
 
 const writers = new Map<string, QueuedFileWriter>();
 const MAX_TRAJECTORY_WRITERS = 100;
-const TRAJECTORY_RUNTIME_TRUNCATION_SENTINEL_RESERVE_BYTES = 2048;
-const TRAJECTORY_RUNTIME_DATA_STRING_MAX_CHARS = 32_768;
-const TRAJECTORY_RUNTIME_DATA_ARRAY_MAX_ITEMS = 64;
-const TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS = 64;
-const TRAJECTORY_RUNTIME_DATA_MAX_DEPTH = 6;
 
 function writeTrajectoryPointerBestEffort(params: {
   filePath: string;
@@ -104,13 +101,10 @@ function writeTrajectoryPointerBestEffort(params: {
 }
 
 function trimTrajectoryWriterCache(): void {
-  while (writers.size >= MAX_TRAJECTORY_WRITERS) {
-    const oldestKey = writers.keys().next().value;
-    if (!oldestKey) {
-      return;
-    }
-    writers.delete(oldestKey);
-  }
+  // Defense in depth against runaway sessions or callers that never flush.
+  // Evicts oldest writers and asynchronously closes their handles (batched
+  // writers only — legacy writers have nothing to release).
+  evictOldestWritersToCap(writers, MAX_TRAJECTORY_WRITERS);
 }
 
 function truncateOversizedTrajectoryEvent(
@@ -136,75 +130,6 @@ function truncateOversizedTrajectoryEvent(
   return undefined;
 }
 
-function truncatedTrajectoryValue(reason: string, details: Record<string, unknown> = {}): unknown {
-  return {
-    truncated: true,
-    reason,
-    ...details,
-  };
-}
-
-function limitTrajectoryPayloadValue(
-  value: unknown,
-  depth = 0,
-  seen: WeakSet<object> = new WeakSet(),
-): unknown {
-  if (typeof value === "string") {
-    if (value.length > TRAJECTORY_RUNTIME_DATA_STRING_MAX_CHARS) {
-      return truncatedTrajectoryValue("trajectory-field-size-limit", {
-        originalChars: value.length,
-        limitChars: TRAJECTORY_RUNTIME_DATA_STRING_MAX_CHARS,
-      });
-    }
-    return value;
-  }
-  if (typeof value !== "object" || value === null) {
-    return value;
-  }
-  if (seen.has(value)) {
-    return truncatedTrajectoryValue("trajectory-circular-reference");
-  }
-  if (depth >= TRAJECTORY_RUNTIME_DATA_MAX_DEPTH) {
-    return truncatedTrajectoryValue("trajectory-depth-limit", {
-      limitDepth: TRAJECTORY_RUNTIME_DATA_MAX_DEPTH,
-    });
-  }
-  seen.add(value);
-  if (Array.isArray(value)) {
-    const limited = value
-      .slice(0, TRAJECTORY_RUNTIME_DATA_ARRAY_MAX_ITEMS)
-      .map((item) => limitTrajectoryPayloadValue(item, depth + 1, seen));
-    if (value.length > TRAJECTORY_RUNTIME_DATA_ARRAY_MAX_ITEMS) {
-      limited.push(
-        truncatedTrajectoryValue("trajectory-array-size-limit", {
-          originalLength: value.length,
-          limitItems: TRAJECTORY_RUNTIME_DATA_ARRAY_MAX_ITEMS,
-        }),
-      );
-    }
-    seen.delete(value);
-    return limited;
-  }
-  const record = value as Record<string, unknown>;
-  const keys = Object.keys(record);
-  const limited: Record<string, unknown> = {};
-  for (const key of keys.slice(0, TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS)) {
-    limited[key] = limitTrajectoryPayloadValue(record[key], depth + 1, seen);
-  }
-  if (keys.length > TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS) {
-    limited._truncated = truncatedTrajectoryValue("trajectory-object-size-limit", {
-      originalKeys: keys.length,
-      limitKeys: TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS,
-    });
-  }
-  seen.delete(value);
-  return limited;
-}
-
-function sanitizeTrajectoryPayload(data: Record<string, unknown>): Record<string, unknown> {
-  return sanitizeDiagnosticPayload(limitTrajectoryPayloadValue(data)) as Record<string, unknown>;
-}
-
 export function toTrajectoryToolDefinitions(
   tools: ReadonlyArray<{ name?: string; description?: string; parameters?: unknown }>,
 ): TrajectoryToolDefinition[] {
@@ -218,11 +143,31 @@ export function toTrajectoryToolDefinitions(
         {
           name,
           description: tool.description,
-          parameters: sanitizeDiagnosticPayload(limitTrajectoryPayloadValue(tool.parameters)),
+          parameters: sanitizeDiagnosticPayload(tool.parameters),
         },
       ];
     })
     .toSorted((left, right) => left.name.localeCompare(right.name));
+}
+
+/**
+ * Event types that must hit disk promptly to preserve post-mortem reconstruction
+ * even when the gateway crashes mid-run. Critical events bypass the batched
+ * debounce window by triggering an immediate flush.
+ *
+ * Keep this list small; expanding it erodes the throughput win from batching.
+ */
+const CRITICAL_TRAJECTORY_EVENT_TYPES: ReadonlySet<string> = new Set([
+  "session.started",
+  "session.ended",
+]);
+
+function isCriticalTrajectoryEvent(type: string, data?: Record<string, unknown>): boolean {
+  if (CRITICAL_TRAJECTORY_EVENT_TYPES.has(type)) {
+    return true;
+  }
+  // Allow callers to opt-in per-event without touching this list.
+  return data?.critical === true;
 }
 
 export function createTrajectoryRuntimeRecorder(
@@ -244,16 +189,10 @@ export function createTrajectoryRuntimeRecorder(
   if (!params.writer) {
     trimTrajectoryWriterCache();
   }
-  const maxRuntimeFileBytes = Math.max(
-    1,
-    Math.floor(params.maxRuntimeFileBytes ?? TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES),
-  );
   const writer =
     params.writer ??
     getQueuedFileWriter(writers, filePath, {
-      maxFileBytes: maxRuntimeFileBytes,
-      maxQueuedBytes: maxRuntimeFileBytes,
-      yieldBeforeWrite: true,
+      maxFileBytes: TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
     });
   writeTrajectoryPointerBestEffort({
     filePath,
@@ -262,100 +201,55 @@ export function createTrajectoryRuntimeRecorder(
   });
   let seq = 0;
   const traceId = params.sessionId;
-  const sentinelReserveBytes = Math.min(
-    TRAJECTORY_RUNTIME_TRUNCATION_SENTINEL_RESERVE_BYTES,
-    Math.floor(maxRuntimeFileBytes / 2),
-  );
-  const normalEventLimitBytes = Math.max(1, maxRuntimeFileBytes - sentinelReserveBytes);
-  let acceptedRuntimeBytes = 0;
-  let droppedEvents = 0;
-  let droppedEventBytes = 0;
-  let captureStopped = false;
-
-  const writeBoundedLine = (line: string, options: { reserveSentinel: boolean }): boolean => {
-    const jsonlLine = `${line}\n`;
-    const lineBytes = Buffer.byteLength(jsonlLine, "utf8");
-    const limitBytes = options.reserveSentinel ? normalEventLimitBytes : maxRuntimeFileBytes;
-    if (acceptedRuntimeBytes + lineBytes > limitBytes) {
-      captureStopped = true;
-      droppedEvents += 1;
-      droppedEventBytes += lineBytes;
-      return false;
-    }
-    const result = writer.write(jsonlLine);
-    if (result === "dropped") {
-      captureStopped = true;
-      droppedEvents += 1;
-      droppedEventBytes += lineBytes;
-      return false;
-    }
-    acceptedRuntimeBytes += lineBytes;
-    return true;
-  };
-
-  const buildEventLine = (type: string, data?: Record<string, unknown>): string | undefined => {
-    const nextSeq = seq + 1;
-    const event: TrajectoryEvent = {
-      traceSchema: "openclaw-trajectory",
-      schemaVersion: 1,
-      traceId,
-      source: "runtime",
-      type,
-      ts: new Date().toISOString(),
-      seq: nextSeq,
-      sourceSeq: nextSeq,
-      sessionId: params.sessionId,
-      sessionKey: params.sessionKey,
-      runId: params.runId,
-      workspaceDir: params.workspaceDir,
-      provider: params.provider,
-      modelId: params.modelId,
-      modelApi: params.modelApi,
-      data: data ? sanitizeTrajectoryPayload(data) : undefined,
-    };
-    const line = safeJsonStringify(event);
-    if (!line) {
-      return undefined;
-    }
-    const boundedLine = truncateOversizedTrajectoryEvent(event, line);
-    if (!boundedLine) {
-      return undefined;
-    }
-    seq = nextSeq;
-    return boundedLine;
-  };
 
   return {
     enabled: true,
     filePath,
     recordEvent: (type, data) => {
-      if (captureStopped) {
-        droppedEvents += 1;
-        return;
-      }
-      const line = buildEventLine(type, data);
+      const event: TrajectoryEvent = {
+        traceSchema: "openclaw-trajectory",
+        schemaVersion: 1,
+        traceId,
+        source: "runtime",
+        type,
+        ts: new Date().toISOString(),
+        seq: (seq += 1),
+        sourceSeq: seq,
+        sessionId: params.sessionId,
+        sessionKey: params.sessionKey,
+        runId: params.runId,
+        workspaceDir: params.workspaceDir,
+        provider: params.provider,
+        modelId: params.modelId,
+        modelApi: params.modelApi,
+        data: data ? (sanitizeDiagnosticPayload(data) as Record<string, unknown>) : undefined,
+      };
+      const line = safeJsonStringify(event);
       if (!line) {
         return;
       }
-      writeBoundedLine(line, { reserveSentinel: true });
+      const boundedLine = truncateOversizedTrajectoryEvent(event, line);
+      if (!boundedLine) {
+        return;
+      }
+      writer.write(`${boundedLine}\n`);
+      // Bypass debounce for events whose loss would prevent post-mortem
+      // reconstruction. Fire-and-forget: we do not block recordEvent on disk I/O.
+      if (isCriticalTrajectoryEvent(type, event.data) && isClosableWriter(writer)) {
+        void writer.flushNow().catch(() => undefined);
+      }
     },
     flush: async () => {
-      if (droppedEvents > 0) {
-        const line = buildEventLine("trace.truncated", {
-          reason: "trajectory-runtime-file-size-limit",
-          droppedEvents,
-          droppedEventBytes,
-          limitBytes: maxRuntimeFileBytes,
-        });
-        if (line) {
-          writeBoundedLine(line, { reserveSentinel: false });
-        }
-        droppedEvents = 0;
-        droppedEventBytes = 0;
-      }
       await writer.flush();
+      // When this recorder owned the writer (no caller-supplied override), it
+      // is responsible for releasing the persistent file handle (batched mode)
+      // and removing the cache entry. Legacy writers have no close; the map
+      // delete is sufficient.
       if (!params.writer) {
         writers.delete(filePath);
+        if (isClosableWriter(writer)) {
+          await writer.close().catch(() => undefined);
+        }
       }
     },
   };

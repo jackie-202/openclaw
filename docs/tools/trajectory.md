@@ -168,6 +168,30 @@ This disables runtime trajectory capture. `/export-trajectory` can still export
 the transcript branch, but runtime-only files such as compiled context,
 provider artifacts, and prompt metadata may be missing.
 
+## Batched runtime writer
+
+Runtime trajectory events are written through a batched, persistent-handle file
+writer by default. The writer opens the trajectory sidecar once at session
+start, buffers events in memory, and flushes a coalesced batch every 100 ms (or
+on close). Critical events such as `session.started` and `session.ended` bypass
+the debounce and flush immediately so post-mortem reconstruction stays sound
+even when the gateway crashes mid-run.
+
+The batched writer also re-checks file stability every ten flushes or every
+five seconds, whichever comes first, to detect mid-session inode swaps,
+hardlink injection, or file-type changes against the persistent handle. If a
+re-check fails, the writer stops appending and releases the handle.
+
+Operators can fall back to the legacy per-event flush path with:
+
+```bash
+export OPENCLAW_TRAJECTORY_BATCH=0
+```
+
+The legacy mode performs the full safety chain on every event and is several
+times slower at high event rates. It is retained as a kill switch in case a
+deployment encounters an unexpected regression with batched writes.
+
 ## Privacy and limits
 
 Trajectory bundles are designed for support and debugging, not public posting.
