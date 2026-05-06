@@ -5,7 +5,7 @@ import path from "node:path";
 import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
 import { sanitizeTerminalText } from "openclaw/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { loginWeb } from "./login.js";
+import { buildLoginError, loginWeb } from "./login.js";
 import { renderQrTerminal } from "./qr-terminal.js";
 import { createWaSocket, formatError, waitForWaConnection } from "./session.js";
 
@@ -192,5 +192,36 @@ describe("loginWeb coverage", () => {
       "WhatsApp Web connection ended before fully opening. formatted:Error: boom",
     ]);
     expect(formatErrorMock).toHaveBeenCalled();
+  });
+});
+
+describe("buildLoginError", () => {
+  it("turns an undefined login result into a regular Error", () => {
+    const error = buildLoginError(undefined);
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(TypeError);
+    expect(error.message).toBe("WhatsApp login failed: unknown");
+  });
+
+  it("turns a partial failed login result into a regular Error", () => {
+    const error = buildLoginError({ outcome: "failed" });
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(TypeError);
+    expect(error.message).toBe("WhatsApp login failed: unknown");
+  });
+
+  it("preserves a well-formed failed login result", () => {
+    const cause = new Error("disconnect");
+    const error = buildLoginError({
+      outcome: "failed",
+      message: "formatted disconnect",
+      statusCode: 408,
+      error: cause,
+    });
+
+    expect(error.message).toBe("formatted disconnect");
+    expect(error.cause).toBe(cause);
   });
 });
