@@ -1,10 +1,12 @@
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
+} from "openclaw/plugin-sdk/channel-policy";
+import {
   loadSessionStore,
   resolveGroupSessionKey,
   resolveStorePath,
-} from "../config.runtime.js";
+} from "openclaw/plugin-sdk/session-store-runtime";
 import { normalizeGroupActivation } from "./group-activation.runtime.js";
 
 type LoadConfigFn = typeof import("../config.runtime.js").loadConfig;
