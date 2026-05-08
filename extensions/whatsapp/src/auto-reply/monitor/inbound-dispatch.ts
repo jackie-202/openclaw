@@ -20,6 +20,7 @@ import {
 } from "../../outbound-media-contract.js";
 import type { WhatsAppReplyDeliveryResult } from "../deliver-reply.js";
 import type { WebInboundMsg } from "../types.js";
+import { resolveGroupDeliveryPolicyFor } from "./group-activation.js";
 import { formatGroupMembers } from "./group-members.js";
 import type { GroupHistoryEntry } from "./inbound-context.js";
 import {
