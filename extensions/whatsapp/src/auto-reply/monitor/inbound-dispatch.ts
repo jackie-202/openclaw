@@ -8,8 +8,8 @@ import {
 } from "../../outbound-media-contract.js";
 import type { WhatsAppReplyDeliveryResult } from "../deliver-reply.js";
 import type { WebInboundMsg } from "../types.js";
-import { formatGroupMembers } from "./group-members.js";
 import { resolveGroupDeliveryPolicyFor } from "./group-activation.js";
+import { formatGroupMembers } from "./group-members.js";
 import type { GroupHistoryEntry } from "./inbound-context.js";
 import {
   createChannelMessageReplyPipeline,
@@ -519,29 +519,21 @@ export async function dispatchWhatsAppBufferedReply(params: {
         ) {
           return;
         }
-        const delivery = await params.deliverReply({
-          replyResult: normalizedDeliveryPayload,
-          normalizedReplyResult: normalizedDeliveryPayload,
-          msg: params.msg,
-          mediaLocalRoots,
-          maxMediaBytes: params.maxMediaBytes,
-          textLimit,
-          chunkMode,
-          replyLogger: params.replyLogger,
-          connectionId: params.connectionId,
-          skipLog: false,
-          tableMode,
-        });
-        if (!delivery.providerAccepted) {
-          params.replyLogger.warn(
-            {
-              correlationId: params.msg.id ?? null,
-              connectionId: params.connectionId,
-              conversationId: params.conversationId,
-              chatId: params.msg.chatId,
-              to: params.msg.from,
-              from: params.msg.to,
-              replyKind: info.kind,
+        if (!reply.hasMedia) {
+          logWhatsAppMediaOnlyFlushResult(await mediaOnlyCoalescer.flushAll());
+          const durable = await deliverInboundReplyWithMessageSendContext({
+            cfg: params.cfg,
+            channel: "whatsapp",
+            accountId: params.route.accountId,
+            agentId: params.route.agentId,
+            ctxPayload: params.context as FinalizedMsgContext,
+            payload: normalizedDeliveryPayload,
+            info,
+            to: params.msg.from,
+            formatting: {
+              textLimit,
+              tableMode,
+              chunkMode,
             },
           });
           if (durable.status === "failed") {
