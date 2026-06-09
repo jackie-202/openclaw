@@ -44,7 +44,7 @@ type TrajectoryRuntimeInit = {
   modelId?: string;
   modelApi?: string | null;
   workspaceDir?: string;
-  writer?: TrajectoryRuntimeWriter;
+  writer?: QueuedFileWriter;
 };
 
 type TrajectoryRuntimeRecorder = {
@@ -55,7 +55,7 @@ type TrajectoryRuntimeRecorder = {
   describeFlushState: () => string | undefined;
 };
 
-const writers = new Map<string, TrajectoryRuntimeWriter>();
+const writers = new Map<string, QueuedFileWriter>();
 const windowFlushes = new Map<string, Promise<void>>();
 const MAX_TRAJECTORY_WRITERS = 100;
 const TRAJECTORY_RUNTIME_DATA_STRING_MAX_CHARS = 32_768;
@@ -63,12 +63,7 @@ const TRAJECTORY_RUNTIME_DATA_ARRAY_MAX_ITEMS = 64;
 const TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS = 64;
 const TRAJECTORY_RUNTIME_DATA_MAX_DEPTH = 6;
 
-type TrajectoryRuntimeWriterDiagnostics = Omit<QueuedFileWriterDiagnostics, "activeOperation"> & {
-  activeOperation: QueuedFileWriterDiagnostics["activeOperation"] | "file-replace";
-};
-
-type TrajectoryRuntimeWriter = Omit<QueuedFileWriter, "describeQueue"> & {
-  describeQueue?: () => TrajectoryRuntimeWriterDiagnostics;
+type TrajectoryRuntimeWriter = QueuedFileWriter & {
   nextSourceSeq?: () => number;
 };
 
@@ -222,7 +217,7 @@ function sanitizeTrajectoryPayload(data: Record<string, unknown>): Record<string
   >;
 }
 
-function describeTrajectoryWriterFlushState(writer: TrajectoryRuntimeWriter): string | undefined {
+function describeTrajectoryWriterFlushState(writer: QueuedFileWriter): string | undefined {
   const diagnostics = writer.describeQueue?.();
   if (!diagnostics) {
     return undefined;
@@ -382,7 +377,7 @@ function createTrajectoryWindowWriter(
   let pendingLines: string[] = [];
   let queuedBytes = 0;
   let pendingWrites = 0;
-  let activeOperation: TrajectoryRuntimeWriterDiagnostics["activeOperation"] = "idle";
+  let activeOperation: QueuedFileWriterDiagnostics["activeOperation"] = "idle";
   let queue: Promise<unknown> = Promise.resolve();
   let sourceSeq = readMaxTrajectorySourceSeq(filePath);
 
@@ -409,7 +404,7 @@ function createTrajectoryWindowWriter(
       queuedBytes = 0;
       queue = queue
         .then(async () => {
-          activeOperation = "file-replace";
+          activeOperation = "file-append";
           await queueTrajectoryWindowFlush({
             filePath,
             maxFileBytes,
@@ -444,7 +439,7 @@ function getTrajectoryWindowWriter(
 ): TrajectoryRuntimeWriter {
   const existing = writers.get(filePath);
   if (existing) {
-    return existing;
+    return existing as TrajectoryRuntimeWriter;
   }
   trimTrajectoryWriterCache();
   const writer = createTrajectoryWindowWriter(filePath, maxFileBytes);
@@ -524,9 +519,12 @@ export function createTrajectoryRuntimeRecorder(
   let seq = 0;
   const traceId = params.sessionId;
 
-  const buildEventLine = (type: string, data?: Record<string, unknown>): { line: string; event: TrajectoryEvent } | undefined => {
+  const buildEventLine = (
+    type: string,
+    data?: Record<string, unknown>,
+  ): { line: string; event: TrajectoryEvent } | undefined => {
     const nextSeq = seq + 1;
-    const sourceSeq = writer.nextSourceSeq?.() ?? nextSeq;
+    const sourceSeq = nextSeq;
     const event: TrajectoryEvent = {
       traceSchema: "openclaw-trajectory",
       schemaVersion: 1,
@@ -565,8 +563,7 @@ export function createTrajectoryRuntimeRecorder(
       if (!built) {
         return;
       }
-      writer.write(`${built.line}
-`);
+      writer.write(`${built.line}\n`);
       // Bypass debounce for events whose loss would prevent post-mortem
       // reconstruction. Fire-and-forget: we do not block recordEvent on disk I/O.
       if (isCriticalTrajectoryEvent(type, built.event.data) && isClosableWriter(writer)) {
