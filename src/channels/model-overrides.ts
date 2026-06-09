@@ -7,6 +7,7 @@ import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
 } from "@openclaw/normalization-core/string-coerce";
+import type { ChannelRuntimeProfileConfig } from "../config/types.channels.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
   parseRawSessionConversationRef,
@@ -35,6 +36,7 @@ export type ChannelModelOverride = {
 };
 
 type ChannelModelByChannelConfig = Record<string, Record<string, string>>;
+type ChannelRuntimeByChannelConfig = Record<string, Record<string, ChannelRuntimeProfileConfig>>;
 
 type ChannelModelOverrideParams = {
   cfg: OpenClawConfig;
@@ -161,6 +163,54 @@ function resolveDirectChannelModelMatch(params: {
   return { model, matchKey: match.matchKey, matchSource: match.matchSource };
 }
 
+
+function resolveChannelEntryMatch<T>(
+  params: ChannelModelOverrideParams,
+  providerEntries: Record<string, T> | undefined,
+): { entry: T; matchKey?: string; matchSource?: ChannelMatchSource } | null {
+  const channel = normalizeOptionalString(params.channel);
+  if (!channel || !providerEntries) {
+    return null;
+  }
+  const directKeys = buildChannelKeyCandidates(
+    params.groupId,
+    ...buildGenericParentOverrideCandidates(params.parentSessionKey),
+  );
+  if (directKeys.length > 0) {
+    const directMatch = resolveChannelEntryMatchWithFallback({
+      entries: providerEntries,
+      keys: directKeys,
+      parentKeys: [],
+      wildcardKey: "*",
+      normalizeKey: (value) => normalizeOptionalLowercaseString(value) ?? "",
+    });
+    const raw = directMatch.entry ?? directMatch.wildcardEntry;
+    if (raw !== undefined) {
+      return { entry: raw, matchKey: directMatch.matchKey, matchSource: directMatch.matchSource };
+    }
+  }
+  const { keys, parentKeys } = buildChannelCandidates(params);
+  if (keys.length === 0 && parentKeys.length === 0) {
+    const wildcardEntry = providerEntries["*"];
+    if (wildcardEntry !== undefined) {
+      return { entry: wildcardEntry, matchKey: "*", matchSource: "wildcard" };
+    }
+    return null;
+  }
+  const match = resolveChannelEntryMatchWithFallback({
+    entries: providerEntries,
+    keys,
+    parentKeys,
+    wildcardKey: "*",
+    normalizeKey: (value) => normalizeOptionalLowercaseString(value) ?? "",
+  });
+  const raw = match.entry ?? match.wildcardEntry;
+  if (raw === undefined) {
+    return null;
+  }
+  return { entry: raw, matchKey: match.matchKey, matchSource: match.matchSource };
+}
+
 /** Resolves a channel-scoped model override from direct, parent, and wildcard config entries. */
 export function resolveChannelModelOverride(
   params: ChannelModelOverrideParams,
@@ -230,4 +280,27 @@ export function resolveChannelModelOverride(
     matchKey: match.matchKey,
     matchSource: match.matchSource,
   };
+}
+
+
+/** Resolves a channel-scoped runtime profile from direct, parent, and wildcard config entries. */
+export function resolveChannelRuntimeProfile(
+  params: ChannelModelOverrideParams,
+): (ChannelRuntimeProfileConfig & { matchKey?: string; matchSource?: ChannelMatchSource }) | null {
+  const channel = normalizeOptionalString(params.channel);
+  if (!channel) {
+    return null;
+  }
+  const runtimeByChannel = params.cfg.channels?.runtimeByChannel as
+    | ChannelRuntimeByChannelConfig
+    | undefined;
+  if (!runtimeByChannel) {
+    return null;
+  }
+  const providerEntries = resolveProviderEntry(runtimeByChannel, channel);
+  const match = resolveChannelEntryMatch(params, providerEntries);
+  if (!match || !match.entry || typeof match.entry !== "object") {
+    return null;
+  }
+  return { ...match.entry, matchKey: match.matchKey, matchSource: match.matchSource };
 }

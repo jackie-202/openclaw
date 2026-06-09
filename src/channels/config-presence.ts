@@ -18,7 +18,7 @@ import type { PluginDiscoveryResult } from "../plugins/discovery.js";
 import { isRecord } from "../utils.js";
 import { listBundledChannelIds } from "./plugins/bundled-ids.js";
 
-const IGNORED_CHANNEL_CONFIG_KEYS = new Set(["defaults", "modelByChannel"]);
+const IGNORED_CHANNEL_CONFIG_KEYS = new Set(["defaults", "modelByChannel", "runtimeByChannel"]);
 
 type ChannelPresenceOptions = {
   channelIds?: readonly string[];

@@ -99,6 +99,7 @@ export type StatusArgs = {
   resolvedVerbose?: VerboseLevel;
   resolvedReasoning?: ReasoningLevel;
   resolvedElevated?: ElevatedLevel;
+  resolvedTextVerbosity?: "low" | "medium" | "high";
   modelAuth?: string;
   activeModelAuth?: string;
   usageLine?: string;
@@ -889,12 +890,14 @@ export function buildStatusMessage(args: StatusArgs): string {
         ? "elevated"
         : `elevated:${elevatedLevel}`
       : null;
-  const textVerbosity = resolveConfiguredTextVerbosity({
-    config: args.config,
-    agentId: args.agentId,
-    provider: activeProvider,
-    model: activeModel,
-  });
+  const textVerbosity =
+    args.resolvedTextVerbosity ??
+    resolveConfiguredTextVerbosity({
+      config: args.config,
+      agentId: args.agentId,
+      provider: activeProvider,
+      model: activeModel,
+    });
   const optionParts = [
     `Execution: ${execution.label}`,
     `Runtime: ${agentRuntimeLabel}`,

@@ -1028,6 +1028,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.defaults.botLoopProtection.cooldownSeconds": "Default Bot Loop Cooldown Seconds",
   "channels.mattermost": "Mattermost",
   "channels.modelByChannel": "Channel Model Overrides",
+  "channels.runtimeByChannel": "Channel Runtime Profiles",
   "channels.googlechat.botLoopProtection": "Google Chat Bot Loop Protection",
   "channels.mattermost.botToken": "Mattermost Bot Token",
   "channels.mattermost.baseUrl": "Mattermost Base URL",

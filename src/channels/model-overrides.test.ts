@@ -4,7 +4,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../plugins/runtime.js";
 import { createTestRegistry } from "../test-utils/channel-plugins.js";
 import { createSessionConversationTestRegistry } from "../test-utils/session-conversation-registry.js";
-import { resolveChannelModelOverride } from "./model-overrides.js";
+import { resolveChannelModelOverride, resolveChannelRuntimeProfile } from "./model-overrides.js";
 
 describe("resolveChannelModelOverride", () => {
   beforeEach(() => {
@@ -221,5 +221,79 @@ describe("resolveChannelModelOverride", () => {
 
     expect(resolved?.model).toBe("demo-provider/demo-parent-model");
     expect(resolved?.matchKey).toBe("-100123");
+  });
+
+  it("resolves runtime profiles and keeps legacy modelByChannel as fallback", () => {
+    const cfg = {
+      channels: {
+        modelByChannel: {
+          discord: {
+            "1494790764134273195": "openai/gpt-5.4",
+          },
+        },
+        runtimeByChannel: {
+          discord: {
+            "1494790764134273195": {
+              model: "openai/gpt-5.5",
+              thinkingLevel: "xhigh",
+              reasoningLevel: "on",
+              textVerbosity: "low",
+            },
+          },
+        },
+      },
+    } as unknown as OpenClawConfig;
+
+    const runtimeProfile = resolveChannelRuntimeProfile({
+      cfg,
+      channel: "discord",
+      groupId: "1494790764134273195",
+    });
+    const modelOverride = resolveChannelModelOverride({
+      cfg,
+      channel: "discord",
+      groupId: "1494790764134273195",
+    });
+
+    expect(runtimeProfile).toEqual(
+      expect.objectContaining({
+        model: "openai/gpt-5.5",
+        thinkingLevel: "xhigh",
+        reasoningLevel: "on",
+        textVerbosity: "low",
+        matchKey: "1494790764134273195",
+      }),
+    );
+    expect(modelOverride?.model).toBe("openai/gpt-5.5");
+  });
+
+  it("uses legacy modelByChannel when runtime profile has no model", () => {
+    const resolved = resolveChannelRuntimeProfile({
+      cfg: {
+        channels: {
+          modelByChannel: {
+            discord: {
+              "1494790764134273195": "openai/gpt-5.4",
+            },
+          },
+          runtimeByChannel: {
+            discord: {
+              "1494790764134273195": {
+                thinkingLevel: "xhigh",
+              },
+            },
+          },
+        },
+      } as unknown as OpenClawConfig,
+      channel: "discord",
+      groupId: "1494790764134273195",
+    });
+
+    expect(resolved).toEqual(
+      expect.objectContaining({
+        model: "openai/gpt-5.4",
+        thinkingLevel: "xhigh",
+      }),
+    );
   });
 });
