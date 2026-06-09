@@ -22,6 +22,11 @@
       "import": "./dist/runtime-api.mjs",
       "default": "./dist/runtime-api.mjs"
     },
+    "./runtime-api.js": {
+      "types": "./dist/runtime-api.d.mts",
+      "import": "./dist/runtime-api.mjs",
+      "default": "./dist/runtime-api.mjs"
+    },
     "./speaker": {
       "types": "./dist/speaker.d.mts",
       "import": "./dist/speaker.mjs",
