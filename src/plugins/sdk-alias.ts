@@ -1337,6 +1337,11 @@ function resolveWorkspacePackageAliasMap(params: {
       packageName: "@openclaw/acp-core",
       packageDir: "acp-core",
     }),
+    ...listWorkspacePackageExportAliasEntries({
+      packageRoot,
+      packageName: "@openclaw/speech-core",
+      packageDir: "speech-core",
+    }),
   ];
   for (const entry of workspacePackageAliasEntries) {
     const alias = entry.subpath ? `${entry.packageName}/${entry.subpath}` : entry.packageName;
@@ -1356,7 +1361,10 @@ function resolveWorkspacePackageAliasMap(params: {
                 : []),
               path.join(packageRoot, "packages", entry.packageDir, "dist", entry.distFile),
             ]
-          : [path.join(packageRoot, "packages", entry.packageDir, "src", entry.srcFile)];
+          : [
+              path.join(packageRoot, "packages", entry.packageDir, "src", entry.srcFile),
+              path.join(packageRoot, "packages", entry.packageDir, entry.srcFile),
+            ];
       const candidate = candidates.find((candidatePath) => fs.existsSync(candidatePath));
       if (candidate) {
         aliasMap[alias] = normalizeJitiAliasTargetPath(candidate);

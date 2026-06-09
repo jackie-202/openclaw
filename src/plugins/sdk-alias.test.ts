@@ -171,6 +171,34 @@ function writeWorkspacePackageEntry(params: {
   return { srcFile, distFile };
 }
 
+function writeSpeechCoreRuntimeApiPackage(root: string) {
+  const packageRoot = path.join(root, "packages", "speech-core");
+  const srcFile = path.join(packageRoot, "runtime-api.ts");
+  const distFile = path.join(packageRoot, "dist", "runtime-api.mjs");
+  mkdirSafeDir(path.dirname(srcFile));
+  mkdirSafeDir(path.dirname(distFile));
+  fs.writeFileSync(srcFile, "export {};\n", "utf-8");
+  fs.writeFileSync(distFile, "export {};\n", "utf-8");
+  fs.writeFileSync(
+    path.join(packageRoot, "package.json"),
+    JSON.stringify(
+      {
+        name: "@openclaw/speech-core",
+        type: "module",
+        exports: {
+          ".": { import: "./dist/runtime-api.mjs" },
+          "./runtime-api": { import: "./dist/runtime-api.mjs" },
+          "./runtime-api.js": { import: "./dist/runtime-api.mjs" },
+        },
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
+  return { srcFile, distFile };
+}
+
 function createPluginRuntimeAliasFixture(params?: { srcBody?: string; distBody?: string }) {
   const root = makeTempDir();
   const srcFile = path.join(root, "src", "plugins", "runtime", "index.ts");
@@ -1487,6 +1515,7 @@ describe("plugin sdk alias helpers", () => {
       srcFile: path.join("runtime", "types.ts"),
       distFile: path.join("runtime", "types.mjs"),
     });
+    const speechCoreRuntimeApi = writeSpeechCoreRuntimeApiPackage(fixture.root);
     const normalizationCore = writeWorkspacePackageEntry({
       root: fixture.root,
       packageDir: "normalization-core",
@@ -1553,6 +1582,7 @@ describe("plugin sdk alias helpers", () => {
     fs.rmSync(mediaCoreMime.distFile);
     fs.rmSync(acpCore.distFile);
     fs.rmSync(acpCoreRuntimeTypes.distFile);
+    fs.rmSync(speechCoreRuntimeApi.distFile);
     fs.rmSync(normalizationCore.distFile);
     fs.rmSync(normalizationStringCoerce.distFile);
     fs.rmSync(terminalCore.distFile);
@@ -1604,6 +1634,12 @@ describe("plugin sdk alias helpers", () => {
     );
     expect(fs.realpathSync(aliases["@openclaw/acp-core/runtime/types"] ?? "")).toBe(
       fs.realpathSync(acpCoreRuntimeTypes.srcFile),
+    );
+    expect(fs.realpathSync(aliases["@openclaw/speech-core/runtime-api"] ?? "")).toBe(
+      fs.realpathSync(speechCoreRuntimeApi.srcFile),
+    );
+    expect(fs.realpathSync(aliases["@openclaw/speech-core/runtime-api.js"] ?? "")).toBe(
+      fs.realpathSync(speechCoreRuntimeApi.srcFile),
     );
     expect(fs.realpathSync(aliases["@openclaw/normalization-core"] ?? "")).toBe(
       fs.realpathSync(normalizationCore.srcFile),
@@ -1671,6 +1707,7 @@ describe("plugin sdk alias helpers", () => {
     const acpCoreRootDistFile = path.join(fixture.root, "dist", "acp-core", "normalize-text.js");
     mkdirSafeDir(path.dirname(acpCoreRootDistFile));
     fs.writeFileSync(acpCoreRootDistFile, "export {};\n", "utf-8");
+    const speechCoreRuntimeApi = writeSpeechCoreRuntimeApiPackage(fixture.root);
     writeWorkspacePackageEntry({
       root: fixture.root,
       packageDir: "normalization-core",
@@ -1739,6 +1776,12 @@ describe("plugin sdk alias helpers", () => {
     );
     expect(fs.realpathSync(aliases["@openclaw/acp-core/normalize-text"] ?? "")).toBe(
       fs.realpathSync(acpCoreRootDistFile),
+    );
+    expect(fs.realpathSync(aliases["@openclaw/speech-core/runtime-api"] ?? "")).toBe(
+      fs.realpathSync(speechCoreRuntimeApi.distFile),
+    );
+    expect(fs.realpathSync(aliases["@openclaw/speech-core/runtime-api.js"] ?? "")).toBe(
+      fs.realpathSync(speechCoreRuntimeApi.distFile),
     );
     expect(fs.realpathSync(aliases["@openclaw/normalization-core/record-coerce"] ?? "")).toBe(
       fs.realpathSync(normalizationCoreRootDistFile),

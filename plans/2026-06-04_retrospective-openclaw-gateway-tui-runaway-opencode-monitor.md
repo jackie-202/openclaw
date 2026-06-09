@@ -329,6 +329,57 @@ Candidate fixes, in priority order:
 3. Decide whether run-node runtime auto-build should preserve or regenerate plugin SDK DTS artifacts. If full-package artifact consistency matters after any `pnpm openclaw ...` auto-build, the auto-build must either run the DTS steps or avoid deleting existing `dist/plugin-sdk/*.d.ts` files.
 4. Add a regression check for the current `deps-* -> channel-outbound-send-*` hashed lazy import so future runtime lazy boundaries either use stable aliases or are explicitly accepted as non-live-safe.
 
+## 2026-06-09 speech-core runtime-api follow-up
+
+After an upstream sync, TUI/agent replies failed with:
+
+```text
+Unable to resolve bundled plugin public surface speech-core/runtime-api.js
+```
+
+Source/build evidence gathered:
+
+- `extensions/speech-core/**` does not exist; speech runtime now lives under `packages/speech-core/`.
+- `src/plugin-sdk/tts-runtime.ts` already imports `../../packages/speech-core/runtime-api.js`; it does not call the bundled plugin public-surface loader for `speech-core`.
+- Current `dist/plugin-sdk/tts-runtime.js` points at the compiled `tts-runtime-*` and `speech-core-*` chunks, not at `extensions/speech-core`.
+- The extension boundary stub still allows `@openclaw/speech-core/runtime-api.js`, but runtime workspace package alias generation did not include `@openclaw/speech-core` and only checked `packages/<pkg>/src/<file>` for source files.
+- `packages/speech-core/runtime-api.ts` is intentionally package-root based, not under `packages/speech-core/src/`.
+
+Source fix implemented:
+
+- `src/plugins/sdk-alias.ts` now includes `@openclaw/speech-core` in workspace package alias generation.
+- Workspace package aliases now check both `packages/<pkg>/src/<file>` and `packages/<pkg>/<file>` for source resolution, so package-root entrypoints such as `packages/speech-core/runtime-api.ts` resolve in source checkouts.
+- `packages/speech-core/package.json` now exports `./runtime-api.js` to match the extension boundary stub and the failing runtime specifier.
+- `tsconfig.json` now maps `@openclaw/speech-core/runtime-api.js` to `packages/speech-core/runtime-api.ts`.
+- `src/plugins/sdk-alias.test.ts` now covers source and dist alias resolution for both `@openclaw/speech-core/runtime-api` and `@openclaw/speech-core/runtime-api.js`.
+
+Verification performed:
+
+```text
+pnpm test src/plugins/sdk-alias.test.ts src/tts/tts.test.ts
+pnpm exec oxfmt --check --threads=1 src/plugins/sdk-alias.ts src/plugins/sdk-alias.test.ts
+git diff --check
+```
+
+All passed.
+
+Build/restart verification after user approval:
+
+```text
+node dist/index.js gateway stop
+pnpm build
+node dist/index.js gateway start
+node dist/index.js gateway status --deep
+```
+
+Result:
+
+- Gateway LaunchAgent stopped before the build, avoiding live `dist` cleanup under the running Gateway.
+- `pnpm build` completed successfully, including `tsdown`, runtime postbuild, plugin SDK DTS generation, `check-plugin-sdk-exports`, UI build, and CLI metadata/compat steps.
+- Gateway restarted from `/Users/michal/Projects/openclaw-fork/dist/index.js`.
+- Deep status passed: runtime running, connectivity probe `ok`, capability `admin-capable`.
+- Connected clients after restart included `openclaw-tui` and Mission Control.
+
 ## Changes made
 
 Operational/configuration changes:
