@@ -1956,6 +1956,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Allow Mattermost to write config in response to channel events/commands (default: true).",
   "channels.modelByChannel":
     "Map provider -> channel id -> model override (values are provider/model or aliases).",
+  "channels.runtimeByChannel":
+    "Map provider -> channel id -> runtime profile with model, thinkingLevel, reasoningLevel, and textVerbosity. Profile model values override channels.modelByChannel for the same target.",
   "messages.suppressToolErrors":
     "When true, suppress ⚠️ tool-error warnings from being shown to the user. The agent already sees errors in context and can retry. Default: false.",
   "messages.ackReaction": "Emoji reaction used to acknowledge inbound messages (empty disables).",

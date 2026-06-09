@@ -116,7 +116,12 @@ function collectConfiguredChannelIds(cfg: OpenClawConfig, env: NodeJS.ProcessEnv
   const channels = asObjectRecord(cfg.channels);
   if (channels) {
     for (const [channelId, value] of Object.entries(channels)) {
-      if (channelId === "defaults" || channelId === "modelByChannel" || !channelId.trim()) {
+      if (
+        channelId === "defaults" ||
+        channelId === "modelByChannel" ||
+        channelId === "runtimeByChannel" ||
+        !channelId.trim()
+      ) {
         continue;
       }
       const entry = asObjectRecord(value);

@@ -600,7 +600,11 @@ function shouldRequireOAuthDir(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): boo
   }
   // Pairing allowlists are persisted under credentials/<channel>-allowFrom.json.
   for (const [channelId, channelCfg] of Object.entries(channels)) {
-    if (channelId === "defaults" || channelId === "modelByChannel") {
+    if (
+      channelId === "defaults" ||
+      channelId === "modelByChannel" ||
+      channelId === "runtimeByChannel"
+    ) {
       continue;
     }
     if (hasPairingPolicy(channelCfg)) {

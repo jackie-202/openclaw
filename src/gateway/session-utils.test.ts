@@ -477,6 +477,49 @@ describe("gateway session utils", () => {
     expect(resolveThinkingProfile).toHaveBeenCalled();
   });
 
+  test("session row applies channel runtime profile when reconstructed fields are missing", () => {
+    const cfg = {
+      agents: {
+        defaults: {
+          model: { primary: "openai/gpt-5.4" },
+        },
+      },
+      channels: {
+        runtimeByChannel: {
+          discord: {
+            "1494790764134273195": {
+              model: "openai/gpt-5.5",
+              thinkingLevel: "xhigh",
+              reasoningLevel: "on",
+              textVerbosity: "low",
+            },
+          },
+        },
+      },
+    } as OpenClawConfig;
+    const entry = {
+      sessionId: "einstein-reconstructed",
+      updatedAt: Date.now(),
+      channel: "discord",
+      groupId: "1494790764134273195",
+      chatType: "channel",
+    } satisfies SessionEntry;
+
+    const row = buildGatewaySessionRow({
+      cfg,
+      storePath: "",
+      store: {},
+      key: "agent:main:discord:channel:1494790764134273195",
+      entry,
+      lightweightListRow: true,
+    });
+
+    expect(row.modelProvider).toBe("openai");
+    expect(row.model).toBe("gpt-5.5");
+    expect(row.thinkingLevel).toBe("xhigh");
+    expect(row.reasoningLevel).toBe("on");
+  });
+
   test("session list thinking cache preserves case-distinct model catalog entries", () => {
     const cfg = createModelDefaultsConfig({ primary: "custom/CaseModel" });
     const modelCatalog = [

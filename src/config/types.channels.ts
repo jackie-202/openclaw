@@ -36,6 +36,19 @@ export type ChannelDefaultsConfig = {
 /** Provider/channel/target model override map used by channel dispatch. */
 export type ChannelModelByChannelConfig = Record<string, Record<string, string>>;
 
+
+export type ChannelRuntimeProfileConfig = {
+  model?: string;
+  thinkingLevel?: string;
+  reasoningLevel?: string;
+  textVerbosity?: "low" | "medium" | "high";
+};
+
+export type ChannelRuntimeByChannelConfig = Record<
+  string,
+  Record<string, ChannelRuntimeProfileConfig>
+>;
+
 export type ExtensionNestedPolicyConfig = {
   /** Channel/plugin-owned nested policy mode, such as dm/group allowlist policy. */
   policy?: string;
@@ -129,6 +142,8 @@ export interface ChannelsConfig {
   defaults?: ChannelDefaultsConfig;
   /** Map provider -> channel id -> model override. */
   modelByChannel?: ChannelModelByChannelConfig;
+  /** Map provider -> channel id -> runtime profile override. */
+  runtimeByChannel?: ChannelRuntimeByChannelConfig;
   discord?: DiscordConfig;
   googlechat?: GoogleChatConfig;
   imessage?: IMessageConfig;
