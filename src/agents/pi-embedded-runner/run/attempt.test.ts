@@ -27,6 +27,7 @@ import {
   resolveUnknownToolGuardThreshold,
   shouldRunLlmOutputHooksForAttempt,
   resolveAttemptToolPolicyMessageProvider,
+  resolveGatewayResourceLoaderStartupDelayMs,
   resolvePromptBuildHookResult,
   resolvePromptModeForSession,
   shouldWarnOnOrphanedUserRepair,
@@ -84,6 +85,45 @@ describe("buildEmbeddedAttemptToolRunContext", () => {
       memoryFlushWritePath: "memory/log.md",
       runtimeToolAllowlist: ["memory_search", "memory_get"],
     });
+  });
+});
+
+describe("resolveGatewayResourceLoaderStartupDelayMs", () => {
+  it("does not delay non-gateway or test processes", () => {
+    expect(resolveGatewayResourceLoaderStartupDelayMs({}, 0)).toBe(0);
+    expect(
+      resolveGatewayResourceLoaderStartupDelayMs(
+        { OPENCLAW_GATEWAY_PORT: "18789", VITEST: "1" },
+        0,
+      ),
+    ).toBe(0);
+    expect(
+      resolveGatewayResourceLoaderStartupDelayMs(
+        { OPENCLAW_GATEWAY_PORT: "18789", NODE_ENV: "test" },
+        0,
+      ),
+    ).toBe(0);
+  });
+
+  it("delays gateway resource loading during startup grace", () => {
+    expect(
+      resolveGatewayResourceLoaderStartupDelayMs({ OPENCLAW_GATEWAY_PORT: "18789" }, 10_000),
+    ).toBe(50_000);
+    expect(
+      resolveGatewayResourceLoaderStartupDelayMs(
+        {
+          OPENCLAW_GATEWAY_PORT: "18789",
+          OPENCLAW_GATEWAY_RESOURCE_LOADER_STARTUP_GRACE_MS: "120000",
+        },
+        30_000,
+      ),
+    ).toBe(90_000);
+  });
+
+  it("does not delay after startup grace expires", () => {
+    expect(
+      resolveGatewayResourceLoaderStartupDelayMs({ OPENCLAW_GATEWAY_PORT: "18789" }, 60_001),
+    ).toBe(0);
   });
 });
 

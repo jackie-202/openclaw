@@ -26,6 +26,18 @@ export type ChannelDefaultsConfig = {
 
 export type ChannelModelByChannelConfig = Record<string, Record<string, string>>;
 
+export type ChannelRuntimeProfileConfig = {
+  model?: string;
+  thinkingLevel?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "adaptive" | "max";
+  reasoningLevel?: "off" | "on" | "stream";
+  textVerbosity?: "low" | "medium" | "high";
+};
+
+export type ChannelRuntimeByChannelConfig = Record<
+  string,
+  Record<string, ChannelRuntimeProfileConfig>
+>;
+
 export type ExtensionNestedPolicyConfig = {
   policy?: string;
   allowFrom?: Array<string | number> | ReadonlyArray<string | number>;
@@ -74,6 +86,8 @@ export interface ChannelsConfig {
   defaults?: ChannelDefaultsConfig;
   /** Map provider -> channel id -> model override. */
   modelByChannel?: ChannelModelByChannelConfig;
+  /** Map provider -> channel id -> runtime profile override. */
+  runtimeByChannel?: ChannelRuntimeByChannelConfig;
   /**
    * Channel sections are plugin-owned and keyed by arbitrary channel ids.
    * Keep the lookup permissive so augmented channel configs remain ergonomic at call sites.

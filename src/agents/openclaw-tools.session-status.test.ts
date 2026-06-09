@@ -148,6 +148,13 @@ function createModelCatalogModuleMock() {
         reasoning: true,
         contextWindow: 400000,
       },
+      {
+        provider: "openai",
+        id: "gpt-5.5",
+        name: "GPT-5.5",
+        reasoning: true,
+        contextWindow: 400000,
+      },
     ],
   };
 }
@@ -189,6 +196,9 @@ function createCommandsStatusRuntimeModuleMock() {
       model: string;
       workspaceDir?: string;
       primaryModelLabelOverride?: string;
+      resolvedThinkLevel?: string;
+      resolvedReasoningLevel?: string;
+      resolvedTextVerbosity?: string;
       includeTranscriptUsage?: boolean;
       taskLineOverride?: string;
       resolveDefaultThinkingLevel?: () => unknown;
@@ -228,11 +238,21 @@ function createCommandsStatusRuntimeModuleMock() {
             configuredAgent?.thinkingDefault ?? (await params.resolveDefaultThinkingLevel?.()),
         },
         sessionEntry: params.sessionEntry,
+        resolvedThink: params.resolvedThinkLevel,
+        resolvedReasoning: params.resolvedReasoningLevel,
+        resolvedTextVerbosity: params.resolvedTextVerbosity,
         modelAuth,
         includeTranscriptUsage: params.includeTranscriptUsage,
         workspaceDir: params.workspaceDir,
       });
-      return ["OpenClaw", `🧠 Model: ${primary}`, params.taskLineOverride]
+      return [
+        "OpenClaw",
+        `🧠 Model: ${primary}`,
+        params.resolvedThinkLevel ? `Think: ${params.resolvedThinkLevel}` : undefined,
+        params.resolvedReasoningLevel ? `Reasoning: ${params.resolvedReasoningLevel}` : undefined,
+        params.resolvedTextVerbosity ? `Text: ${params.resolvedTextVerbosity}` : undefined,
+        params.taskLineOverride,
+      ]
         .filter(Boolean)
         .join("\n");
     },
@@ -420,6 +440,94 @@ describe("session_status tool", () => {
     expect(details.statusText).toContain("OpenClaw");
     expect(details.statusText).toContain("🧠 Model:");
     expect(details.statusText).not.toContain("OAuth/token status");
+  });
+
+  it("applies channel runtime profile values for reconstructed channel sessions", async () => {
+    const sessionKey = "agent:main:discord:channel:1494790764134273195";
+    resetSessionStore({
+      [sessionKey]: {
+        sessionId: "einstein-reconstructed",
+        updatedAt: 10,
+        channel: "discord",
+        groupId: "1494790764134273195",
+        chatType: "channel",
+      },
+    });
+    mockConfig = {
+      ...createMockConfig(),
+      channels: {
+        runtimeByChannel: {
+          discord: {
+            "1494790764134273195": {
+              model: "openai/gpt-5.5",
+              thinkingLevel: "xhigh",
+              reasoningLevel: "on",
+              textVerbosity: "low",
+            },
+          },
+        },
+      },
+    };
+
+    const tool = getSessionStatusTool(sessionKey);
+
+    const result = await tool.execute("call-einstein-status", {});
+    const details = result.details as { ok?: boolean; statusText?: string };
+    expect(details.ok).toBe(true);
+    expect(details.statusText).toContain("🧠 Model: openai/gpt-5.5");
+    expect(details.statusText).toContain("Think: xhigh");
+    expect(details.statusText).toContain("Reasoning: on");
+    expect(details.statusText).toContain("Text: low");
+    expect(buildStatusMessageMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resolvedThink: "xhigh",
+        resolvedReasoning: "on",
+        resolvedTextVerbosity: "low",
+      }),
+    );
+  });
+
+  it("keeps explicit session runtime overrides above channel runtime profiles", async () => {
+    const sessionKey = "agent:main:discord:channel:1494790764134273195";
+    resetSessionStore({
+      [sessionKey]: {
+        sessionId: "einstein-explicit",
+        updatedAt: 10,
+        channel: "discord",
+        groupId: "1494790764134273195",
+        chatType: "channel",
+        thinkingLevel: "high",
+        reasoningLevel: "off",
+      },
+    });
+    mockConfig = {
+      ...createMockConfig(),
+      channels: {
+        runtimeByChannel: {
+          discord: {
+            "1494790764134273195": {
+              model: "openai/gpt-5.5",
+              thinkingLevel: "xhigh",
+              reasoningLevel: "on",
+            },
+          },
+        },
+      },
+    };
+
+    const tool = getSessionStatusTool(sessionKey);
+
+    const result = await tool.execute("call-einstein-explicit-status", {});
+    const details = result.details as { ok?: boolean; statusText?: string };
+    expect(details.ok).toBe(true);
+    expect(details.statusText).toContain("Think: high");
+    expect(details.statusText).toContain("Reasoning: off");
+    expect(buildStatusMessageMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resolvedThink: "high",
+        resolvedReasoning: "off",
+      }),
+    );
   });
 
   it("enables transcript usage fallback for session_status", async () => {

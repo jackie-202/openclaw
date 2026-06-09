@@ -5,6 +5,7 @@ import type {
   ThinkLevel,
   VerboseLevel,
 } from "../../auto-reply/thinking.js";
+import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
 import { getRuntimeConfig } from "../../config/config.js";
 import {
   loadSessionStore,
@@ -656,17 +657,39 @@ export function createSessionStatusTool(opts?: {
         modelRaw,
         resolvedKey: resolved.key,
       });
+      const channelRuntimeProfile = resolveChannelRuntimeProfile({
+        cfg,
+        channel:
+          resolved.entry.channel ?? resolved.entry.lastChannel ?? resolved.entry.origin?.provider,
+        groupId: resolved.entry.groupId,
+        groupChatType: resolved.entry.chatType ?? resolved.entry.origin?.chatType,
+        groupChannel: resolved.entry.groupChannel,
+        groupSubject: resolved.entry.subject,
+        parentSessionKey: resolved.entry.parentSessionKey,
+      });
+      const persistedExplicitModelOverride = Boolean(
+        resolved.entry.providerOverride?.trim() || resolved.entry.modelOverride?.trim(),
+      );
+      const channelProfileModelIdentity =
+        !activeModelIdentity && !persistedExplicitModelOverride && channelRuntimeProfile?.model
+          ? resolveModelRefFromString({
+              raw: channelRuntimeProfile.model,
+              defaultProvider: configured.provider,
+              aliasIndex: buildModelAliasIndex({ cfg, defaultProvider: configured.provider }),
+            })?.ref
+          : undefined;
       const runtimeModelIdentity = activeModelIdentity
         ? activeModelIdentity
-        : resolveSessionModelIdentityRef(
-            cfg,
-            resolved.entry,
-            agentId,
-            `${configured.provider}/${configured.model}`,
-          );
+        : channelProfileModelIdentity
+          ? channelProfileModelIdentity
+          : resolveSessionModelIdentityRef(
+              cfg,
+              resolved.entry,
+              agentId,
+              `${configured.provider}/${configured.model}`,
+            );
       const hasExplicitModelOverride = Boolean(
-        !activeModelIdentity &&
-        (resolved.entry.providerOverride?.trim() || resolved.entry.modelOverride?.trim()),
+        !activeModelIdentity && persistedExplicitModelOverride,
       );
       const runtimeProviderForCard = runtimeModelIdentity.provider?.trim();
       const runtimeModelForCard = runtimeModelIdentity.model.trim();
@@ -712,11 +735,20 @@ export function createSessionStatusTool(opts?: {
         workspaceDir: statusSessionEntry.spawnedWorkspaceDir,
         provider: providerForCard,
         model: defaultModelForCard,
-        resolvedThinkLevel: statusSessionEntry.thinkingLevel as ThinkLevel | undefined,
+        resolvedThinkLevel:
+          (statusSessionEntry.thinkingLevel as ThinkLevel | undefined) ??
+          (channelRuntimeProfile?.thinkingLevel as ThinkLevel | undefined),
         resolvedFastMode: statusSessionEntry.fastMode,
         resolvedVerboseLevel: (statusSessionEntry.verboseLevel ?? "off") as VerboseLevel,
-        resolvedReasoningLevel: (statusSessionEntry.reasoningLevel ?? "off") as ReasoningLevel,
+        resolvedReasoningLevel: (statusSessionEntry.reasoningLevel ??
+          channelRuntimeProfile?.reasoningLevel ??
+          "off") as ReasoningLevel,
         resolvedElevatedLevel: statusSessionEntry.elevatedLevel as ElevatedLevel | undefined,
+        resolvedTextVerbosity: channelRuntimeProfile?.textVerbosity as
+          | "low"
+          | "medium"
+          | "high"
+          | undefined,
         resolveDefaultThinkingLevel: async () => {
           const configuredCatalog = buildConfiguredModelCatalog({ cfg });
           const configuredSelectedEntry = configuredCatalog.find(

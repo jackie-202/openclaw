@@ -88,6 +88,18 @@ export function collectConfiguredModelRefs(
         pushModelRef(`channels.modelByChannel.${channelId}.${targetId}`, modelRef);
       }
     }
+    const runtimeByChannel = isRecord(channels.runtimeByChannel) ? channels.runtimeByChannel : {};
+    for (const [channelId, channelMap] of Object.entries(runtimeByChannel)) {
+      if (!isRecord(channelMap)) {
+        continue;
+      }
+      for (const [targetId, profile] of Object.entries(channelMap)) {
+        pushModelRef(
+          `channels.runtimeByChannel.${channelId}.${targetId}.model`,
+          isRecord(profile) ? profile.model : undefined,
+        );
+      }
+    }
   }
   const hooks = isRecord(root.hooks) ? root.hooks : {};
   if (Array.isArray(hooks.mappings)) {

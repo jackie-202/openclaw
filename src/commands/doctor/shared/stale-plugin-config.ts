@@ -8,7 +8,7 @@ import { defaultSlotIdForKey, type PluginSlotKey } from "../../../plugins/slots.
 import { sanitizeForLog } from "../../../terminal/ansi.js";
 import { asObjectRecord } from "./object.js";
 
-const CHANNEL_CONFIG_META_KEYS = new Set(["defaults", "modelByChannel"]);
+const CHANNEL_CONFIG_META_KEYS = new Set(["defaults", "modelByChannel", "runtimeByChannel"]);
 
 type StalePluginSurface = "allow" | "entries" | "slot" | "channel" | "heartbeat" | "modelByChannel";
 

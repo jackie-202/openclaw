@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import {
   createAgentSession,
@@ -387,6 +388,47 @@ export {
 };
 
 const MAX_BTW_SNAPSHOT_MESSAGES = 100;
+const GATEWAY_RESOURCE_LOADER_STARTUP_GRACE_MS = 60_000;
+
+let resourceLoaderReloadQueue: Promise<void> = Promise.resolve();
+
+export function resolveGatewayResourceLoaderStartupDelayMs(
+  env: NodeJS.ProcessEnv = process.env,
+  uptimeMs: number = process.uptime() * 1000,
+): number {
+  if (env.VITEST || env.NODE_ENV === "test") {
+    return 0;
+  }
+  if (!env.OPENCLAW_GATEWAY_PORT) {
+    return 0;
+  }
+  const rawOverride = env.OPENCLAW_GATEWAY_RESOURCE_LOADER_STARTUP_GRACE_MS;
+  const graceMs = rawOverride
+    ? Number.parseInt(rawOverride, 10)
+    : GATEWAY_RESOURCE_LOADER_STARTUP_GRACE_MS;
+  if (!Number.isFinite(graceMs) || graceMs <= 0) {
+    return 0;
+  }
+  return Math.max(0, Math.floor(graceMs - uptimeMs));
+}
+
+async function reloadResourceLoaderWithGatewayBackpressure(
+  resourceLoader: Pick<DefaultResourceLoader, "reload">,
+): Promise<void> {
+  const run = async () => {
+    const delayMs = resolveGatewayResourceLoaderStartupDelayMs();
+    if (delayMs > 0) {
+      await sleep(delayMs, undefined, { ref: false });
+    }
+    await resourceLoader.reload();
+  };
+  const queued = resourceLoaderReloadQueue.catch(() => {}).then(run);
+  resourceLoaderReloadQueue = queued.then(
+    () => {},
+    () => {},
+  );
+  await queued;
+}
 
 export function resolveUnknownToolGuardThreshold(loopDetection?: {
   enabled?: boolean;
@@ -1535,7 +1577,7 @@ export async function runEmbeddedAttempt(
         settingsManager,
         extensionFactories,
       });
-      await resourceLoader.reload();
+      await reloadResourceLoaderWithGatewayBackpressure(resourceLoader);
       // DefaultResourceLoader.reload() rehydrates settings from disk and can drop OpenClaw
       // compaction overrides applied in createPreparedEmbeddedPiSettingsManager — same
       // rehydration also restores Pi's auto-compaction (openclaw#75799), so re-apply

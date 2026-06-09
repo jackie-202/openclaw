@@ -517,7 +517,7 @@ function configMayNeedPluginManifestRegistry(cfg: OpenClawConfig, env: NodeJS.Pr
     return false;
   }
   for (const key of Object.keys(configuredChannels)) {
-    if (key === "defaults" || key === "modelByChannel") {
+    if (key === "defaults" || key === "modelByChannel" || key === "runtimeByChannel") {
       continue;
     }
     return true;

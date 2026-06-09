@@ -25,7 +25,7 @@ type ChannelRemovalChoiceOption = Extract<
 >;
 type ChannelRemovalDoneOption = Extract<ChannelRemovalOption, { value: { kind: "done" } }>;
 
-const RESERVED_CHANNEL_CONFIG_KEYS = new Set(["defaults", "modelByChannel"]);
+const RESERVED_CHANNEL_CONFIG_KEYS = new Set(["defaults", "modelByChannel", "runtimeByChannel"]);
 const DONE_VALUE: Extract<ChannelRemovalSelectValue, { kind: "done" }> = { kind: "done" };
 
 function listConfiguredChannelRemovalChoices(

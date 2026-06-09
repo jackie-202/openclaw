@@ -41,6 +41,7 @@ import {
   shouldKeepSubagentRunChildLink,
 } from "../agents/subagent-run-liveness.js";
 import { listThinkingLevelOptions } from "../auto-reply/thinking.js";
+import { resolveChannelRuntimeProfile } from "../channels/model-overrides.js";
 import { getRuntimeConfig } from "../config/io.js";
 import { resolveAgentModelFallbackValues } from "../config/model-input.js";
 import { resolveStateDir } from "../config/paths.js";
@@ -1591,6 +1592,15 @@ export function buildGatewaySessionRow(params: {
     entry?.label ??
     originLabel;
   const deliveryFields = normalizeSessionDeliveryFields(entry);
+  const channelRuntimeProfile = resolveChannelRuntimeProfile({
+    cfg,
+    channel: channel ?? deliveryFields.lastChannel ?? entry?.origin?.provider,
+    groupId: entry?.groupId ?? id,
+    groupChatType: entry?.chatType ?? entry?.origin?.chatType,
+    groupChannel,
+    groupSubject: subject,
+    parentSessionKey: entry?.parentSessionKey,
+  });
   const parsedAgent = parseAgentSessionKey(key);
   const sessionAgentId = normalizeAgentId(parsedAgent?.agentId ?? resolveDefaultAgentId(cfg));
   const rowContext = params.rowContext;
@@ -1652,15 +1662,19 @@ export function buildGatewaySessionRow(params: {
     rowContext,
     allowPluginNormalization: !lightweight,
   });
-  const resolvedModel = resolveSessionModelIdentityRef(
-    cfg,
-    entry,
-    sessionAgentId,
-    subagentRun?.model,
-    { allowPluginNormalization: !lightweight },
-  );
   const runtimeModelPresent =
     Boolean(entry?.model?.trim()) || Boolean(entry?.modelProvider?.trim());
+  const channelProfileModel =
+    !selectedModel && !runtimeModelPresent && channelRuntimeProfile?.model
+      ? parseModelRef(channelRuntimeProfile.model, DEFAULT_PROVIDER, {
+          allowPluginNormalization: !lightweight,
+        })
+      : undefined;
+  const resolvedModel = channelProfileModel
+    ? channelProfileModel
+    : resolveSessionModelIdentityRef(cfg, entry, sessionAgentId, subagentRun?.model, {
+        allowPluginNormalization: !lightweight,
+      });
   const needsTranscriptTotalTokens =
     resolvePositiveNumber(resolveFreshSessionTotalTokens(entry)) === undefined;
   const needsTranscriptContextTokens = resolvePositiveNumber(entry?.contextTokens) === undefined;
@@ -1813,14 +1827,14 @@ export function buildGatewaySessionRow(params: {
     sessionId: entry?.sessionId,
     systemSent: entry?.systemSent,
     abortedLastRun: entry?.abortedLastRun,
-    thinkingLevel: entry?.thinkingLevel,
+    thinkingLevel: entry?.thinkingLevel ?? channelRuntimeProfile?.thinkingLevel,
     thinkingLevels,
     thinkingOptions: thinkingLevels?.map((level) => level.label),
     thinkingDefault,
     fastMode: entry?.fastMode,
     verboseLevel: entry?.verboseLevel,
     traceLevel: entry?.traceLevel,
-    reasoningLevel: entry?.reasoningLevel,
+    reasoningLevel: entry?.reasoningLevel ?? channelRuntimeProfile?.reasoningLevel,
     elevatedLevel: entry?.elevatedLevel,
     sendPolicy: entry?.sendPolicy,
     inputTokens: entry?.inputTokens,

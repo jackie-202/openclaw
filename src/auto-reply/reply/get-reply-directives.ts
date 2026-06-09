@@ -4,6 +4,7 @@ import { resolveFastModeState } from "../../agents/fast-mode.js";
 import { type ModelAliasIndex, resolveModelRefFromString } from "../../agents/model-selection.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/runtime-status.js";
 import type { SkillCommandSpec } from "../../agents/skills.js";
+import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
@@ -417,7 +418,22 @@ export async function resolveReplyDirectives(params: {
   });
   const defaultActivation = defaultGroupActivation(requireMention);
   const resolvedThinkLevel =
-    directives.thinkLevel ?? (targetSessionEntry?.thinkingLevel as ThinkLevel | undefined);
+    directives.thinkLevel ??
+    (targetSessionEntry?.thinkingLevel as ThinkLevel | undefined) ??
+    (resolveChannelRuntimeProfile({
+      cfg,
+      channel:
+        groupResolution?.channel ??
+        targetSessionEntry.channel ??
+        targetSessionEntry.origin?.provider ??
+        (typeof ctx.OriginatingChannel === "string" ? ctx.OriginatingChannel : undefined) ??
+        ctx.Provider,
+      groupId: groupResolution?.id ?? targetSessionEntry.groupId,
+      groupChatType: targetSessionEntry.chatType ?? sessionCtx.ChatType ?? ctx.ChatType,
+      groupChannel: targetSessionEntry.groupChannel ?? sessionCtx.GroupChannel ?? ctx.GroupChannel,
+      groupSubject: targetSessionEntry.subject ?? sessionCtx.GroupSubject ?? ctx.GroupSubject,
+      parentSessionKey: sessionCtx.ModelParentSessionKey ?? sessionCtx.ParentSessionKey,
+    })?.thinkingLevel as ThinkLevel | undefined);
   const resolvedFastMode =
     directives.fastMode ??
     resolveFastModeState({
@@ -453,7 +469,24 @@ export async function resolveReplyDirectives(params: {
     sessionReasoningLevel == null &&
     configuredReasoningDefault != null;
   let resolvedReasoningLevel: ReasoningLevel =
-    directives.reasoningLevel ?? sessionReasoningLevel ?? configuredReasoningDefault ?? "off";
+    directives.reasoningLevel ??
+    sessionReasoningLevel ??
+    (resolveChannelRuntimeProfile({
+      cfg,
+      channel:
+        groupResolution?.channel ??
+        targetSessionEntry.channel ??
+        targetSessionEntry.origin?.provider ??
+        (typeof ctx.OriginatingChannel === "string" ? ctx.OriginatingChannel : undefined) ??
+        ctx.Provider,
+      groupId: groupResolution?.id ?? targetSessionEntry.groupId,
+      groupChatType: targetSessionEntry.chatType ?? sessionCtx.ChatType ?? ctx.ChatType,
+      groupChannel: targetSessionEntry.groupChannel ?? sessionCtx.GroupChannel ?? ctx.GroupChannel,
+      groupSubject: targetSessionEntry.subject ?? sessionCtx.GroupSubject ?? ctx.GroupSubject,
+      parentSessionKey: sessionCtx.ModelParentSessionKey ?? sessionCtx.ParentSessionKey,
+    })?.reasoningLevel as ReasoningLevel | undefined) ??
+    configuredReasoningDefault ??
+    "off";
   if (reasoningUsesConfiguredDefault && !canUseReasoningState) {
     resolvedReasoningLevel = "off";
   }

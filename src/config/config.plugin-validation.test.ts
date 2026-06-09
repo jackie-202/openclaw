@@ -953,6 +953,16 @@ describe("config plugin validation", () => {
             whatsapp: "openai/gpt-5.4",
           },
         },
+        runtimeByChannel: {
+          discord: {
+            "1494790764134273195": {
+              model: "openai/gpt-5.5",
+              thinkingLevel: "xhigh",
+              reasoningLevel: "on",
+              textVerbosity: "low",
+            },
+          },
+        },
       },
       plugins: { enabled: false, entries: { discord: { enabled: true } } },
     });

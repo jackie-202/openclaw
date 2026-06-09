@@ -481,10 +481,12 @@ vi.mock("../channels/config-presence.js", () => ({
       entry && typeof entry === "object" && Object.keys(entry as Record<string, unknown>).length,
     ),
   listPotentialConfiguredChannelIds: (cfg: { channels?: Record<string, unknown> }) =>
-    Object.keys(cfg.channels ?? {}).filter((key) => key !== "defaults" && key !== "modelByChannel"),
+    Object.keys(cfg.channels ?? {}).filter(
+      (key) => key !== "defaults" && key !== "modelByChannel" && key !== "runtimeByChannel",
+    ),
   listPotentialConfiguredChannelPresenceSignals: (cfg: { channels?: Record<string, unknown> }) =>
     Object.keys(cfg.channels ?? {})
-      .filter((key) => key !== "defaults" && key !== "modelByChannel")
+      .filter((key) => key !== "defaults" && key !== "modelByChannel" && key !== "runtimeByChannel")
       .map((channelId) => ({ channelId, source: "config" })),
 }));
 

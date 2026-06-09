@@ -97,6 +97,39 @@ describe("config model reference validation", () => {
     expect(res.ok).toBe(true);
   });
 
+  it("validates channel runtime profile models through configured model refs", () => {
+    const res = validateConfigObjectWithPlugins(
+      {
+        channels: {
+          runtimeByChannel: {
+            discord: {
+              "1494790764134273195": {
+                model: "openai-codex/gpt-5.3-codex",
+                thinkingLevel: "xhigh",
+                reasoningLevel: "on",
+              },
+            },
+          },
+        },
+      },
+      {
+        pluginMetadataSnapshot: {
+          manifestRegistry: createModelSuppressionRegistry(),
+        },
+      },
+    );
+
+    expect(res.ok).toBe(false);
+    if (res.ok) {
+      return;
+    }
+    expect(res.issues).toContainEqual({
+      path: "channels.runtimeByChannel.discord.1494790764134273195.model",
+      message:
+        "Unknown model: openai-codex/gpt-5.3-codex. gpt-5.3-codex is no longer supported for ChatGPT/Codex OAuth accounts. Use openai/gpt-5.5 through the Codex runtime.",
+    });
+  });
+
   it("rejects stale openai-codex fallback model pairs", () => {
     const res = validateConfigObjectWithPlugins(
       {

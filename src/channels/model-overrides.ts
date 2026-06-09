@@ -1,3 +1,4 @@
+import type { ChannelRuntimeProfileConfig } from "../config/types.channels.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
   parseRawSessionConversationRef,
@@ -28,7 +29,18 @@ export type ChannelModelOverride = {
   matchSource?: ChannelMatchSource;
 };
 
+export type ChannelRuntimeProfileOverride = {
+  channel: string;
+  model?: string;
+  thinkingLevel?: string;
+  reasoningLevel?: string;
+  textVerbosity?: string;
+  matchKey?: string;
+  matchSource?: ChannelMatchSource;
+};
+
 type ChannelModelByChannelConfig = Record<string, Record<string, string>>;
+type ChannelRuntimeByChannelConfig = Record<string, Record<string, ChannelRuntimeProfileConfig>>;
 
 type ChannelModelOverrideParams = {
   cfg: OpenClawConfig;
@@ -40,16 +52,16 @@ type ChannelModelOverrideParams = {
   parentSessionKey?: string | null;
 };
 
-function resolveProviderEntry(
-  modelByChannel: ChannelModelByChannelConfig | undefined,
+function resolveProviderEntry<T>(
+  entriesByChannel: Record<string, Record<string, T>> | undefined,
   channel: string,
-): Record<string, string> | undefined {
+): Record<string, T> | undefined {
   const normalized =
     normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "";
   return (
-    modelByChannel?.[normalized] ??
-    modelByChannel?.[
-      Object.keys(modelByChannel ?? {}).find((key) => {
+    entriesByChannel?.[normalized] ??
+    entriesByChannel?.[
+      Object.keys(entriesByChannel ?? {}).find((key) => {
         const normalizedKey =
           normalizeMessageChannel(key) ?? normalizeOptionalLowercaseString(key) ?? "";
         return normalizedKey === normalized;
@@ -123,12 +135,12 @@ function buildGenericParentOverrideCandidates(sessionKey: string | null | undefi
   return buildChannelKeyCandidates(threadId ? baseSessionKey : raw.rawId);
 }
 
-function resolveDirectChannelModelMatch(params: {
+function resolveDirectChannelEntryMatch<T>(params: {
   channel: string;
-  providerEntries: Record<string, string>;
+  providerEntries: Record<string, T>;
   groupId?: string | null;
   parentSessionKey?: string | null;
-}): { model: string; matchKey?: string; matchSource?: ChannelMatchSource } | null {
+}): { entry: T; matchKey?: string; matchSource?: ChannelMatchSource } | null {
   const directKeys = buildChannelKeyCandidates(
     params.groupId,
     ...buildGenericParentOverrideCandidates(params.parentSessionKey),
@@ -144,46 +156,28 @@ function resolveDirectChannelModelMatch(params: {
     normalizeKey: (value) => normalizeOptionalLowercaseString(value) ?? "",
   });
   const raw = match.entry ?? match.wildcardEntry;
-  if (typeof raw !== "string") {
+  if (raw === undefined) {
     return null;
   }
-  const model = normalizeOptionalString(raw);
-  if (!model) {
-    return null;
-  }
-  return { model, matchKey: match.matchKey, matchSource: match.matchSource };
+  return { entry: raw, matchKey: match.matchKey, matchSource: match.matchSource };
 }
 
-export function resolveChannelModelOverride(
+function resolveChannelEntryMatch<T>(
   params: ChannelModelOverrideParams,
-): ChannelModelOverride | null {
+  providerEntries: Record<string, T> | undefined,
+): { entry: T; matchKey?: string; matchSource?: ChannelMatchSource } | null {
   const channel = normalizeOptionalString(params.channel);
-  if (!channel) {
+  if (!channel || !providerEntries) {
     return null;
   }
-  const modelByChannel = params.cfg.channels?.modelByChannel as
-    | ChannelModelByChannelConfig
-    | undefined;
-  if (!modelByChannel) {
-    return null;
-  }
-  const providerEntries = resolveProviderEntry(modelByChannel, channel);
-  if (!providerEntries) {
-    return null;
-  }
-  const directMatch = resolveDirectChannelModelMatch({
+  const directMatch = resolveDirectChannelEntryMatch({
     channel,
     providerEntries,
     groupId: params.groupId,
     parentSessionKey: params.parentSessionKey,
   });
   if (directMatch) {
-    return {
-      channel: normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "",
-      model: directMatch.model,
-      matchKey: directMatch.matchKey,
-      matchSource: directMatch.matchSource,
-    };
+    return directMatch;
   }
 
   const { keys, parentKeys } = buildChannelCandidates(params);
@@ -198,18 +192,94 @@ export function resolveChannelModelOverride(
     normalizeKey: (value) => normalizeOptionalLowercaseString(value) ?? "",
   });
   const raw = match.entry ?? match.wildcardEntry;
-  if (typeof raw !== "string") {
+  if (raw === undefined) {
     return null;
   }
-  const model = normalizeOptionalString(raw);
-  if (!model) {
+  return { entry: raw, matchKey: match.matchKey, matchSource: match.matchSource };
+}
+
+function normalizeRuntimeProfileEntry(
+  entry: ChannelRuntimeProfileConfig | undefined,
+): Omit<ChannelRuntimeProfileOverride, "channel" | "matchKey" | "matchSource"> {
+  if (!entry) {
+    return {};
+  }
+  return {
+    ...(normalizeOptionalString(entry.model)
+      ? { model: normalizeOptionalString(entry.model) }
+      : {}),
+    ...(normalizeOptionalString(entry.thinkingLevel)
+      ? { thinkingLevel: normalizeOptionalString(entry.thinkingLevel) }
+      : {}),
+    ...(normalizeOptionalString(entry.reasoningLevel)
+      ? { reasoningLevel: normalizeOptionalString(entry.reasoningLevel) }
+      : {}),
+    ...(normalizeOptionalString(entry.textVerbosity)
+      ? { textVerbosity: normalizeOptionalString(entry.textVerbosity) }
+      : {}),
+  };
+}
+
+export function resolveChannelRuntimeProfile(
+  params: ChannelModelOverrideParams,
+): ChannelRuntimeProfileOverride | null {
+  const channel = normalizeOptionalString(params.channel);
+  if (!channel) {
+    return null;
+  }
+  const normalizedChannel =
+    normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "";
+  const runtimeByChannel = params.cfg.channels?.runtimeByChannel as
+    | ChannelRuntimeByChannelConfig
+    | undefined;
+  const modelByChannel = params.cfg.channels?.modelByChannel as
+    | ChannelModelByChannelConfig
+    | undefined;
+  const runtimeMatch = resolveChannelEntryMatch(
+    params,
+    resolveProviderEntry(runtimeByChannel, channel),
+  );
+  const legacyModelMatch = resolveChannelEntryMatch(
+    params,
+    resolveProviderEntry(modelByChannel, channel),
+  );
+  const runtimeProfile = normalizeRuntimeProfileEntry(runtimeMatch?.entry);
+  const legacyModel =
+    typeof legacyModelMatch?.entry === "string"
+      ? normalizeOptionalString(legacyModelMatch.entry)
+      : undefined;
+  const model = runtimeProfile.model ?? legacyModel;
+  if (
+    !model &&
+    !runtimeProfile.thinkingLevel &&
+    !runtimeProfile.reasoningLevel &&
+    !runtimeProfile.textVerbosity
+  ) {
     return null;
   }
 
   return {
-    channel: normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "",
-    model,
-    matchKey: match.matchKey,
-    matchSource: match.matchSource,
+    channel: normalizedChannel,
+    ...(model ? { model } : {}),
+    ...(runtimeProfile.thinkingLevel ? { thinkingLevel: runtimeProfile.thinkingLevel } : {}),
+    ...(runtimeProfile.reasoningLevel ? { reasoningLevel: runtimeProfile.reasoningLevel } : {}),
+    ...(runtimeProfile.textVerbosity ? { textVerbosity: runtimeProfile.textVerbosity } : {}),
+    matchKey: runtimeMatch?.matchKey ?? legacyModelMatch?.matchKey,
+    matchSource: runtimeMatch?.matchSource ?? legacyModelMatch?.matchSource,
+  };
+}
+
+export function resolveChannelModelOverride(
+  params: ChannelModelOverrideParams,
+): ChannelModelOverride | null {
+  const runtimeProfile = resolveChannelRuntimeProfile(params);
+  if (!runtimeProfile?.model) {
+    return null;
+  }
+  return {
+    channel: runtimeProfile.channel,
+    model: runtimeProfile.model,
+    matchKey: runtimeProfile.matchKey,
+    matchSource: runtimeProfile.matchSource,
   };
 }

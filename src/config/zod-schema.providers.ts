@@ -11,6 +11,21 @@ const ChannelModelByChannelSchema = z
   .record(z.string(), z.record(z.string(), z.string()))
   .optional();
 
+const ChannelRuntimeProfileSchema = z
+  .object({
+    model: z.string().trim().min(1).optional(),
+    thinkingLevel: z
+      .enum(["off", "minimal", "low", "medium", "high", "xhigh", "adaptive", "max"])
+      .optional(),
+    reasoningLevel: z.enum(["off", "on", "stream"]).optional(),
+    textVerbosity: z.enum(["low", "medium", "high"]).optional(),
+  })
+  .strict();
+
+const ChannelRuntimeByChannelSchema = z
+  .record(z.string(), z.record(z.string(), ChannelRuntimeProfileSchema))
+  .optional();
+
 function addLegacyChannelAcpBindingIssues(
   value: unknown,
   ctx: z.RefinementCtx,
@@ -54,6 +69,7 @@ export const ChannelsSchema: z.ZodType<ChannelsConfig | undefined> = z
       .strict()
       .optional(),
     modelByChannel: ChannelModelByChannelSchema,
+    runtimeByChannel: ChannelRuntimeByChannelSchema,
   })
   .passthrough() // Allow extension channel configs (nostr, matrix, zalo, etc.)
   .superRefine((value, ctx) => {

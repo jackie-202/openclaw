@@ -291,7 +291,7 @@ function isLinkedPathInstallRecord(installRecord: PluginInstallRecord | undefine
   );
 }
 
-const SHARED_CHANNEL_CONFIG_KEYS = new Set(["defaults", "modelByChannel"]);
+const SHARED_CHANNEL_CONFIG_KEYS = new Set(["defaults", "modelByChannel", "runtimeByChannel"]);
 
 /**
  * Resolve the channel config keys owned by a plugin during uninstall.

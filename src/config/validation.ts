@@ -1228,7 +1228,12 @@ function validateConfigObjectWithPluginsBase(
     };
   };
 
-  const allowedChannels = new Set<string>(["defaults", "modelByChannel", ...CHANNEL_IDS]);
+  const allowedChannels = new Set<string>([
+    "defaults",
+    "modelByChannel",
+    "runtimeByChannel",
+    ...CHANNEL_IDS,
+  ]);
 
   if (config.channels && isRecord(config.channels)) {
     for (const key of Object.keys(config.channels)) {
