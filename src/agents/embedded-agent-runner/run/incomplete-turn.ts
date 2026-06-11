@@ -128,6 +128,10 @@ const PLANNING_ONLY_BULLET_RE = /^(?:[-*•]\s+|\d+[.)]\s+)/u;
 const PLANNING_ONLY_MAX_VISIBLE_TEXT = 700;
 const PLANNING_ONLY_ACTION_VERB_RE =
   /\b(?:inspect|investigate|check|look(?:\s+into|\s+at)?|read|search|find|debug|fix|patch|update|change|edit|write|implement|run|test|verify|review|analy(?:s|z)e|summari(?:s|z)e|explain|answer|show|share|report|prepare|capture|take|refactor|restart|deploy|ship)\b/i;
+const PROMISE_ONLY_ACTIONABLE_RE = /\b(?:i\s+(?:would|can|could|should)|we\s+should)\b/i;
+const PROMISE_ONLY_BARE_ACCEPTANCE_RE = /^(?:sure[, ]+)?i can do that[.!]?$/i;
+const PROMISE_ONLY_BLOCKER_OR_CONFIRMATION_RE =
+  /\b(?:but\b|confirm(?:ation)?|approval|permission|unsafe|destructive|privacy|private|secret|credential|blocked|blocker|can't|cannot)\b/i;
 const SINGLE_ACTION_EXPLICIT_CONTINUATION_RE =
   /\b(?:going to|first[, ]+i(?:'ll| will)|next[, ]+i(?:'ll| will)|then[, ]+i(?:'ll| will)|i can do that next|let me (?!know\b)\w+(?:\s+\w+){0,3}\s+(?:next|then|first)\b)/i;
 const SINGLE_ACTION_MULTI_STEP_PROMISE_RE =
@@ -959,6 +963,16 @@ function isSingleActionThenNarrativePattern(params: {
   );
 }
 
+function isPromiseOnlyActionableNoProgressText(text: string): boolean {
+  if (PROMISE_ONLY_BLOCKER_OR_CONFIRMATION_RE.test(text)) {
+    return false;
+  }
+  if (PROMISE_ONLY_BARE_ACCEPTANCE_RE.test(text)) {
+    return true;
+  }
+  return PROMISE_ONLY_ACTIONABLE_RE.test(text) && PLANNING_ONLY_ACTION_VERB_RE.test(text);
+}
+
 /** Retry budget for plan-only recovery, higher for strict-agentic models. */
 export function resolvePlanningOnlyRetryLimit(
   executionContract?: EmbeddedAgentExecutionContract,
@@ -1021,12 +1035,18 @@ export function resolvePlanningOnlyRetryInstruction(params: {
     return null;
   }
   const hasStructuredPlanningFormat = hasStructuredPlanningOnlyFormat(text);
-  if (!PLANNING_ONLY_PROMISE_RE.test(text) && !hasStructuredPlanningFormat) {
+  const hasPromiseOnlyActionableText = isPromiseOnlyActionableNoProgressText(text);
+  if (
+    !PLANNING_ONLY_PROMISE_RE.test(text) &&
+    !hasStructuredPlanningFormat &&
+    !hasPromiseOnlyActionableText
+  ) {
     return null;
   }
   if (
     !hasStructuredPlanningFormat &&
     !singleActionNarrative &&
+    !hasPromiseOnlyActionableText &&
     !PLANNING_ONLY_ACTION_VERB_RE.test(text)
   ) {
     return null;

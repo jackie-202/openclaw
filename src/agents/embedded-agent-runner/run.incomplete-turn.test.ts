@@ -506,6 +506,143 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
     expect(retryInstruction).toContain("Do not restate the plan");
   });
 
+  it("retries strict-agentic promise-only actionable final text", async () => {
+    mockedClassifyFailoverReason.mockReturnValue(null);
+    mockedRunEmbeddedAttempt.mockResolvedValueOnce(
+      makeAttemptResult({
+        assistantTexts: ["We should update the failing parser test."],
+      }),
+    );
+    mockedRunEmbeddedAttempt.mockResolvedValueOnce(
+      makeAttemptResult({
+        assistantTexts: ["Updated the parser test and verified the focused suite passes."],
+      }),
+    );
+
+    const result = await runEmbeddedAgent({
+      ...overflowBaseRunParams,
+      prompt: "Please update the failing parser test.",
+      provider: "openai",
+      model: "gpt-5.5",
+      runId: "run-strict-agentic-promise-only-retry",
+      config: {
+        agents: {
+          defaults: {
+            embeddedAgent: {
+              executionContract: "strict-agentic",
+            },
+          },
+          list: [{ id: "main" }],
+        },
+      } as OpenClawConfig,
+    });
+
+    expect(mockedRunEmbeddedAttempt).toHaveBeenCalledTimes(2);
+    expect(runAttemptCall(1).prompt).toContain(PLANNING_ONLY_RETRY_INSTRUCTION);
+    expect(result.payloads).not.toEqual([{ text: STRICT_AGENTIC_BLOCKED_TEXT, isError: true }]);
+  });
+
+  it("detects bare promise-only acceptance on actionable GPT-5 turns", () => {
+    const retryInstruction = resolvePlanningOnlyRetryInstruction({
+      provider: "openai",
+      modelId: "gpt-5.5",
+      executionContract: "strict-agentic",
+      prompt: "Please inspect the code and patch the failing test.",
+      aborted: false,
+      timedOut: false,
+      attempt: makeAttemptResult({
+        assistantTexts: ["I can do that."],
+      }),
+    });
+
+    expect(retryInstruction).toBe(PLANNING_ONLY_RETRY_INSTRUCTION);
+  });
+
+  it("uses the strict-agentic blocked path after promise-only retry exhaustion", async () => {
+    mockedClassifyFailoverReason.mockReturnValue(null);
+    mockedRunEmbeddedAttempt.mockResolvedValue(
+      makeAttemptResult({
+        assistantTexts: ["I would run the focused tests next."],
+      }),
+    );
+
+    const result = await runEmbeddedAgent({
+      ...overflowBaseRunParams,
+      prompt: "Please run the focused tests.",
+      provider: "openai",
+      model: "gpt-5.5",
+      runId: "run-strict-agentic-promise-only-exhausted",
+      config: {
+        agents: {
+          defaults: {
+            embeddedAgent: {
+              executionContract: "strict-agentic",
+            },
+          },
+          list: [{ id: "main" }],
+        },
+      } as OpenClawConfig,
+    });
+
+    expect(mockedRunEmbeddedAttempt).toHaveBeenCalledTimes(3);
+    expect(result.payloads).toEqual([
+      {
+        text: STRICT_AGENTIC_BLOCKED_TEXT,
+        isError: true,
+      },
+    ]);
+  });
+
+  it("does not retry ordinary informational answer text as promise-only", () => {
+    const retryInstruction = resolvePlanningOnlyRetryInstruction({
+      provider: "openai",
+      modelId: "gpt-5.5",
+      executionContract: "strict-agentic",
+      prompt: "Please explain why the test failed.",
+      aborted: false,
+      timedOut: false,
+      attempt: makeAttemptResult({
+        assistantTexts: ["The test failed because the parser rejects missing names."],
+      }),
+    });
+
+    expect(retryInstruction).toBeNull();
+  });
+
+  it("does not retry confirmation or blocker-style promise text", () => {
+    const retryInstruction = resolvePlanningOnlyRetryInstruction({
+      provider: "openai",
+      modelId: "gpt-5.5",
+      executionContract: "strict-agentic",
+      prompt: "Please delete the old workspace files.",
+      aborted: false,
+      timedOut: false,
+      attempt: makeAttemptResult({
+        assistantTexts: ["I can delete the old workspace files, but I need confirmation first."],
+      }),
+    });
+
+    expect(retryInstruction).toBeNull();
+  });
+
+  it("does not retry promise-only text after actual progress evidence", () => {
+    const retryInstruction = resolvePlanningOnlyRetryInstruction({
+      provider: "openai",
+      modelId: "gpt-5.5",
+      executionContract: "strict-agentic",
+      prompt: "Please update the parser test.",
+      aborted: false,
+      timedOut: false,
+      attempt: makeAttemptResult({
+        assistantTexts: ["We should update the parser test next."],
+        didSendViaMessagingTool: true,
+        messagingToolSentTexts: ["Started updating the parser test."],
+      }),
+    });
+
+    expect(retryInstruction).toBeNull();
+  });
+
   it("retries reasoning-only GPT turns with a visible-answer continuation instruction", async () => {
     mockedClassifyFailoverReason.mockReturnValue(null);
     mockedRunEmbeddedAttempt.mockResolvedValueOnce(
