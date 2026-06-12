@@ -63,9 +63,7 @@ const TRAJECTORY_RUNTIME_DATA_ARRAY_MAX_ITEMS = 64;
 const TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS = 64;
 const TRAJECTORY_RUNTIME_DATA_MAX_DEPTH = 6;
 
-type TrajectoryRuntimeWriterDiagnostics = Omit<QueuedFileWriterDiagnostics, "activeOperation"> & {
-  activeOperation: QueuedFileWriterDiagnostics["activeOperation"] | "file-replace";
-};
+type TrajectoryRuntimeWriterDiagnostics = QueuedFileWriterDiagnostics;
 
 type TrajectoryRuntimeWriter = Omit<QueuedFileWriter, "describeQueue"> & {
   describeQueue?: () => TrajectoryRuntimeWriterDiagnostics;
@@ -511,7 +509,7 @@ export function createTrajectoryRuntimeRecorder(
   if (!params.writer) {
     trimTrajectoryWriterCache();
   }
-  const writer =
+  const writer: TrajectoryRuntimeWriter =
     params.writer ??
     getQueuedFileWriter(writers, filePath, {
       maxFileBytes: TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
@@ -524,7 +522,10 @@ export function createTrajectoryRuntimeRecorder(
   let seq = 0;
   const traceId = params.sessionId;
 
-  const buildEventLine = (type: string, data?: Record<string, unknown>): { line: string; event: TrajectoryEvent } | undefined => {
+  const buildEventLine = (
+    type: string,
+    data?: Record<string, unknown>,
+  ): { line: string; event: TrajectoryEvent } | undefined => {
     const nextSeq = seq + 1;
     const sourceSeq = writer.nextSourceSeq?.() ?? nextSeq;
     const event: TrajectoryEvent = {

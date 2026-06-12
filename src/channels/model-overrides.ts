@@ -48,16 +48,16 @@ type ChannelModelOverrideParams = {
   parentSessionKey?: string | null;
 };
 
-function resolveProviderEntry(
-  modelByChannel: ChannelModelByChannelConfig | undefined,
+function resolveProviderEntry<T>(
+  entriesByChannel: Record<string, Record<string, T>> | undefined,
   channel: string,
-): Record<string, string> | undefined {
+): Record<string, T> | undefined {
   const normalized =
     normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "";
   return (
-    modelByChannel?.[normalized] ??
-    modelByChannel?.[
-      Object.keys(modelByChannel ?? {}).find((key) => {
+    entriesByChannel?.[normalized] ??
+    entriesByChannel?.[
+      Object.keys(entriesByChannel ?? {}).find((key) => {
         const normalizedKey =
           normalizeMessageChannel(key) ?? normalizeOptionalLowercaseString(key) ?? "";
         return normalizedKey === normalized;
@@ -162,7 +162,6 @@ function resolveDirectChannelModelMatch(params: {
   }
   return { model, matchKey: match.matchKey, matchSource: match.matchSource };
 }
-
 
 function resolveChannelEntryMatch<T>(
   params: ChannelModelOverrideParams,
@@ -281,7 +280,6 @@ export function resolveChannelModelOverride(
     matchSource: match.matchSource,
   };
 }
-
 
 /** Resolves a channel-scoped runtime profile from direct, parent, and wildcard config entries. */
 export function resolveChannelRuntimeProfile(

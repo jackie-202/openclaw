@@ -16,7 +16,7 @@ import path from "node:path";
 export type QueuedFileWriterDiagnostics = {
   pendingWrites: number;
   queuedBytes: number;
-  activeOperation: "idle" | "mkdir" | "yield" | "file-append";
+  activeOperation: "idle" | "mkdir" | "yield" | "file-append" | "file-replace";
   activeWriteBytes?: number;
   maxFileBytes?: number;
   maxQueuedBytes?: number;
