@@ -118,6 +118,103 @@ function makeFinishChunk(
 }
 
 describe("OpenAI-compatible completions params", () => {
+  it("passes configured reasoning effort through unchanged", async () => {
+    let capturedReasoningEffort: unknown;
+    const stream = streamOpenAICompletions(
+      {
+        ...reasoningModel,
+        compat: { supportsReasoningEffort: true },
+        thinkingLevelMap: { high: "xhigh" },
+      },
+      context,
+      {
+        apiKey: "sk-test",
+        reasoningEffort: "high",
+        onPayload(payload) {
+          capturedReasoningEffort = (payload as { reasoning_effort?: unknown }).reasoning_effort;
+          throw new Error("stop before network");
+        },
+      },
+    );
+
+    const result = await stream.result();
+
+    expect(result.stopReason).toBe("error");
+    expect(capturedReasoningEffort).toBe("high");
+  });
+
+  it("does not remap configured xhigh reasoning effort", async () => {
+    let capturedReasoningEffort: unknown;
+    const stream = streamOpenAICompletions(
+      {
+        ...reasoningModel,
+        compat: { supportsReasoningEffort: true },
+        thinkingLevelMap: { xhigh: "high" },
+      },
+      context,
+      {
+        apiKey: "sk-test",
+        reasoningEffort: "xhigh",
+        onPayload(payload) {
+          capturedReasoningEffort = (payload as { reasoning_effort?: unknown }).reasoning_effort;
+          throw new Error("stop before network");
+        },
+      },
+    );
+
+    const result = await stream.result();
+
+    expect(result.stopReason).toBe("error");
+    expect(capturedReasoningEffort).toBe("xhigh");
+  });
+
+  it("omits reasoning effort when unset", async () => {
+    let capturedPayload: unknown;
+    const stream = streamOpenAICompletions(
+      {
+        ...reasoningModel,
+        compat: { supportsReasoningEffort: true },
+      },
+      context,
+      {
+        apiKey: "sk-test",
+        onPayload(payload) {
+          capturedPayload = payload;
+          throw new Error("stop before network");
+        },
+      },
+    );
+
+    const result = await stream.result();
+
+    expect(result.stopReason).toBe("error");
+    expect(capturedPayload).not.toHaveProperty("reasoning_effort");
+  });
+
+  it("does not emit reasoning effort for unsupported OpenAI-compatible providers", async () => {
+    let capturedPayload: unknown;
+    const stream = streamOpenAICompletions(
+      {
+        ...reasoningModel,
+        compat: { supportsReasoningEffort: false },
+      },
+      context,
+      {
+        apiKey: "sk-test",
+        reasoningEffort: "high",
+        onPayload(payload) {
+          capturedPayload = payload;
+          throw new Error("stop before network");
+        },
+      },
+    );
+
+    const result = await stream.result();
+
+    expect(result.stopReason).toBe("error");
+    expect(capturedPayload).not.toHaveProperty("reasoning_effort");
+  });
+
   it("clamps requested max tokens to the model output cap", async () => {
     let capturedMaxTokens: unknown;
     const stream = streamOpenAICompletions(createModel(32_000), context, {

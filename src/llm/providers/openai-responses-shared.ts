@@ -436,9 +436,7 @@ export function applyCommonResponsesParams<TApi extends Api>(
   }
 
   if (options?.reasoningEffort || options?.reasoningSummary) {
-    const effort = options?.reasoningEffort
-      ? (model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort)
-      : "medium";
+    const effort = options?.reasoningEffort ?? "medium";
     params.reasoning = {
       effort: effort as NonNullable<typeof params.reasoning>["effort"],
       summary: options?.reasoningSummary || "auto",

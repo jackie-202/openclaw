@@ -683,15 +683,14 @@ function buildParams(
   } else if (compat.thinkingFormat === "deepseek" && model.reasoning) {
     params.thinking = { type: options?.reasoningEffort ? "enabled" : "disabled" };
     if (options?.reasoningEffort) {
-      params.reasoning_effort =
-        model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort;
+      params.reasoning_effort = options.reasoningEffort;
     }
   } else if (compat.thinkingFormat === "openrouter" && model.reasoning) {
     // OpenRouter normalizes reasoning across providers via a nested reasoning object.
     const openRouterParams = params as typeof params & { reasoning?: { effort?: string } };
     if (options?.reasoningEffort) {
       openRouterParams.reasoning = {
-        effort: model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort,
+        effort: options.reasoningEffort,
       };
     } else if (model.thinkingLevelMap?.off !== null) {
       openRouterParams.reasoning = { effort: model.thinkingLevelMap?.off ?? "none" };
@@ -703,13 +702,11 @@ function buildParams(
     };
     togetherParams.reasoning = { enabled: Boolean(options?.reasoningEffort) };
     if (options?.reasoningEffort && compat.supportsReasoningEffort) {
-      togetherParams.reasoning_effort =
-        model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort;
+      togetherParams.reasoning_effort = options.reasoningEffort;
     }
   } else if (options?.reasoningEffort && model.reasoning && compat.supportsReasoningEffort) {
     // OpenAI-style reasoning_effort
-    params.reasoning_effort =
-      model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort;
+    params.reasoning_effort = options.reasoningEffort;
   } else if (!options?.reasoningEffort && model.reasoning && compat.supportsReasoningEffort) {
     const offValue = model.thinkingLevelMap?.off;
     if (typeof offValue === "string") {

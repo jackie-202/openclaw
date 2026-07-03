@@ -3,7 +3,11 @@ import type { Tool as OpenAIResponsesTool } from "openai/resources/responses/res
 import { describe, expect, it } from "vitest";
 import type { AssistantMessage, Context, Model, Tool } from "../types.js";
 import { AssistantMessageEventStream } from "../utils/event-stream.js";
-import { convertResponsesMessages, processResponsesStream } from "./openai-responses-shared.js";
+import {
+  applyCommonResponsesParams,
+  convertResponsesMessages,
+  processResponsesStream,
+} from "./openai-responses-shared.js";
 import { convertResponsesTools } from "./openai-responses-tools.js";
 
 type ResponsesFunctionTool = Extract<OpenAIResponsesTool, { type: "function" }>;
@@ -400,6 +404,44 @@ describe("convertResponsesMessages", () => {
       encrypted_content: "ciphertext",
       summary: [],
     });
+  });
+});
+
+describe("applyCommonResponsesParams", () => {
+  it("passes configured reasoning effort through unchanged", () => {
+    const params = {} as Parameters<typeof applyCommonResponsesParams>[0];
+
+    applyCommonResponsesParams(
+      params,
+      { ...nativeOpenAIModel, thinkingLevelMap: { high: "xhigh" } },
+      { messages: [] },
+      { reasoningEffort: "high" },
+    );
+
+    expect(params.reasoning?.effort).toBe("high");
+  });
+
+  it("does not remap configured xhigh reasoning effort", () => {
+    const params = {} as Parameters<typeof applyCommonResponsesParams>[0];
+
+    applyCommonResponsesParams(
+      params,
+      { ...nativeOpenAIModel, thinkingLevelMap: { xhigh: "high" } },
+      { messages: [] },
+      { reasoningEffort: "xhigh" },
+    );
+
+    expect(params.reasoning?.effort).toBe("xhigh");
+  });
+
+  it("omits reasoning when effort is unset and default-off is disabled", () => {
+    const params = {} as Parameters<typeof applyCommonResponsesParams>[0];
+
+    applyCommonResponsesParams(params, nativeOpenAIModel, { messages: [] }, undefined, {
+      setDefaultReasoningOff: false,
+    });
+
+    expect(params).not.toHaveProperty("reasoning");
   });
 });
 
