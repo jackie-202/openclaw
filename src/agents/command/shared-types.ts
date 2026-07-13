@@ -11,6 +11,8 @@ export type AgentStreamParams = {
   stop?: string[];
   /** Provider fast-mode override (best-effort). */
   fastMode?: boolean;
+  /** OpenAI response text verbosity override (best-effort). */
+  textVerbosity?: "low" | "medium" | "high";
   responseFormat?: Record<string, unknown>;
   frequencyPenalty?: number;
   presencePenalty?: number;

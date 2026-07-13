@@ -1,0 +1,68 @@
+{
+  "checks_available": [
+    {
+      "description": "Check whether the implementation matches the intended architecture and keeps the change isolated.",
+      "id": "architecture",
+      "severity": "P1",
+      "when_to_apply": "The task changes code structure, boundaries, or integration points."
+    },
+    {
+      "description": "Check whether required red-green TDD evidence exists and matches the implemented change.",
+      "id": "tdd",
+      "severity": "P1",
+      "when_to_apply": "The task or plan requires tests-first development or proof artifacts."
+    },
+    {
+      "description": "Placeholder for security-sensitive acceptance review.",
+      "id": "security",
+      "severity": "P2",
+      "when_to_apply": "The task handles authentication, authorization, secrets, user input, or external data."
+    }
+  ],
+  "record_calls": 1,
+  "result": {
+    "failed_checks": [],
+    "overall": "pass",
+    "record_calls": 1,
+    "remaining": [],
+    "selected": [
+      "tdd"
+    ],
+    "skipped": [
+      {
+        "id": "architecture",
+        "reason": "This acceptance repair changes only evidence artifacts and leaves the preserved implementation unchanged"
+      },
+      {
+        "id": "security",
+        "reason": "No authentication authorization secrets user input or external data surface changes"
+      }
+    ],
+    "status": "finalized",
+    "verdicts": {
+      "tdd": {
+        "evidence": "plans/checkpoints/bold-dune-2644.red-green-proof.md links genuine parent RED (exit 1; 3 failed, 43 passed; exact command hash 674432cb...) and contains fresh GREEN from the identical command (exit 0; 55 passed across 4 files and 2 shards).",
+        "verdict": "pass"
+      }
+    }
+  },
+  "selected": [
+    "tdd"
+  ],
+  "skipped": [
+    {
+      "id": "architecture",
+      "reason": "This acceptance repair changes only evidence artifacts and leaves the preserved implementation unchanged"
+    },
+    {
+      "id": "security",
+      "reason": "No authentication authorization secrets user input or external data surface changes"
+    }
+  ],
+  "verdicts": {
+    "tdd": {
+      "evidence": "plans/checkpoints/bold-dune-2644.red-green-proof.md links genuine parent RED (exit 1; 3 failed, 43 passed; exact command hash 674432cb...) and contains fresh GREEN from the identical command (exit 0; 55 passed across 4 files and 2 shards).",
+      "verdict": "pass"
+    }
+  }
+}

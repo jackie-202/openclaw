@@ -149,6 +149,11 @@ async function resolveHelloWithModelDefaults(params: {
   provider?: string;
   model?: string;
   ctx?: Parameters<typeof buildTestCtx>[0];
+  channelRuntimeProfile?: {
+    thinkingLevel?: string;
+    reasoningLevel?: string;
+    textVerbosity?: "low" | "medium" | "high";
+  };
 }) {
   const resolveDefaultThinkingLevel = vi.fn(async () => params.defaultThinking);
   const resolveDefaultReasoningLevel = vi.fn(async () => params.defaultReasoning);
@@ -195,6 +200,7 @@ async function resolveHelloWithModelDefaults(params: {
     aliasIndex: { byAlias: new Map(), byKey: new Map() },
     provider: params.provider ?? "openai",
     model: params.model ?? "gpt-4o-mini",
+    channelRuntimeProfile: params.channelRuntimeProfile,
     hasResolvedHeartbeatModelOverride: false,
     typing: makeTypingController(),
     opts: undefined,
@@ -315,6 +321,39 @@ describe("resolveReplyDirectives", () => {
       enabled: sessionEntry?.sessionId === "target-session",
     }));
     mocks.resolveReplyExecOverrides.mockReturnValue(undefined);
+  });
+
+  it("uses channel runtime thinking and reasoning for a fresh session", async () => {
+    const { result } = await resolveHelloWithModelDefaults({
+      defaultThinking: "low",
+      defaultReasoning: "on",
+      commandAuthorized: true,
+      channelRuntimeProfile: {
+        thinkingLevel: "high",
+        reasoningLevel: "on",
+        textVerbosity: "low",
+      },
+    });
+
+    expectContinueResult(result, {
+      resolvedThinkLevel: "high",
+      resolvedReasoningLevel: "on",
+    });
+  });
+
+  it("keeps explicit session runtime levels ahead of the channel profile", async () => {
+    const { result } = await resolveHelloWithModelDefaults({
+      defaultThinking: "low",
+      defaultReasoning: "on",
+      commandAuthorized: true,
+      sessionEntry: makeSessionEntry({ thinkingLevel: "minimal", reasoningLevel: "stream" }),
+      channelRuntimeProfile: { thinkingLevel: "high", reasoningLevel: "on" },
+    });
+
+    expectContinueResult(result, {
+      resolvedThinkLevel: "minimal",
+      resolvedReasoningLevel: "stream",
+    });
   });
 
   it("prefers the target session entry from sessionStore for directive state", async () => {

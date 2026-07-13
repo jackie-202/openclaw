@@ -334,6 +334,123 @@ describe("getReplyFromConfig fast test bootstrap", () => {
     expect(stored.pendingFinalDeliveryAttemptCount).toBeUndefined();
   });
 
+  it("selects fresh Discord channel runtime models with session-first precedence", async () => {
+    vi.stubEnv("OPENCLAW_ALLOW_SLOW_REPLY_TESTS", "1");
+    vi.mocked(resolveDefaultModelMock).mockReturnValue({
+      defaultProvider: "openai",
+      defaultModel: "gpt-5.5",
+      aliasIndex: emptyAliasIndex(),
+    });
+    vi.mocked(resolveModelRefFromStringMock).mockImplementation(({ raw }) => {
+      const [provider, ...modelParts] = raw.split("/");
+      const model = modelParts.join("/");
+      return provider && model ? ({ ref: { provider, model } } as never) : null;
+    });
+    const target = "1483471834283507863";
+    const sessionKey = `agent:main:discord:channel:${target}`;
+    const cases = [
+      {
+        name: "live session override",
+        sessionEntry: { modelOverride: "gpt-5.7", providerOverride: "openai" },
+        runtimeProfile: { model: "openai/gpt-5.6-sol" },
+        legacyModel: "openai/gpt-5.4",
+        expectedModel: "gpt-5.7",
+      },
+      {
+        name: "runtime profile",
+        sessionEntry: {},
+        runtimeProfile: {
+          model: "openai/gpt-5.6-sol",
+          thinkingLevel: "high",
+          reasoningLevel: "on",
+          textVerbosity: "low" as const,
+        },
+        legacyModel: "openai/gpt-5.4",
+        expectedModel: "gpt-5.6-sol",
+      },
+      {
+        name: "legacy channel model",
+        sessionEntry: {},
+        runtimeProfile: { thinkingLevel: "high" },
+        legacyModel: "openai/gpt-5.4",
+        expectedModel: "gpt-5.4",
+      },
+      {
+        name: "global default",
+        sessionEntry: {},
+        runtimeProfile: undefined,
+        legacyModel: undefined,
+        expectedModel: "gpt-5.5",
+      },
+    ];
+
+    for (const testCase of cases) {
+      mocks.initSessionState.mockResolvedValueOnce(
+        createGetReplySessionState({
+          sessionCtx: { Provider: "discord", ChatType: "channel", SessionKey: sessionKey },
+          sessionEntry: {
+            sessionId: `session-${testCase.name}`,
+            updatedAt: 1,
+            channel: "discord",
+            chatType: "channel",
+            groupId: target,
+            ...testCase.sessionEntry,
+          },
+          sessionStore: {},
+          sessionKey,
+          isNewSession: true,
+          groupResolution: { channel: "discord", id: target },
+          isGroup: true,
+        }),
+      );
+      mocks.resolveReplyDirectives.mockResolvedValueOnce({ kind: "reply", reply: { text: "ok" } });
+      const cfg = {
+        agents: { defaults: { model: "openai/gpt-5.5" } },
+        channels: {
+          ...(testCase.runtimeProfile
+            ? { runtimeByChannel: { discord: { [target]: testCase.runtimeProfile } } }
+            : {}),
+          ...(testCase.legacyModel
+            ? { modelByChannel: { discord: { [target]: testCase.legacyModel } } }
+            : {}),
+        },
+      } as OpenClawConfig;
+
+      await getReplyFromConfig(
+        buildGetReplyCtx({
+          Provider: "discord",
+          Surface: "discord",
+          ChatType: "channel",
+          SessionKey: sessionKey,
+          From: `discord:channel:${target}`,
+          To: `discord:channel:${target}`,
+        }),
+        undefined,
+        cfg,
+      );
+
+      const directiveParams = mocks.resolveReplyDirectives.mock.calls.at(-1)?.[0] as {
+        model?: string;
+        channelRuntimeProfile?: Record<string, unknown> | null;
+        sessionEntry?: Record<string, unknown>;
+      };
+      expect(directiveParams.model, testCase.name).toBe(testCase.expectedModel);
+      expect(directiveParams.channelRuntimeProfile, testCase.name).toEqual(
+        testCase.runtimeProfile
+          ? expect.objectContaining({
+              ...testCase.runtimeProfile,
+              ...(testCase.runtimeProfile.model || !testCase.legacyModel
+                ? {}
+                : { model: testCase.legacyModel }),
+            })
+          : null,
+      );
+      if (testCase.name === "runtime profile") {
+        expect(directiveParams.sessionEntry?.modelOverride).toBeUndefined();
+      }
+    }
+  });
+
   it("handles native /status before workspace bootstrap", async () => {
     const home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-status-fast-"));
     const targetSessionKey = "agent:main:telegram:123";
@@ -542,6 +659,13 @@ describe("getReplyFromConfig fast test bootstrap", () => {
           workspace: path.join(home, "workspace"),
         },
       },
+      channels: {
+        runtimeByChannel: {
+          telegram: {
+            "*": { thinkingLevel: "high", reasoningLevel: "on", textVerbosity: "low" },
+          },
+        },
+      },
       session: { store: storePath },
     } as OpenClawConfig);
     const continuationPrompt = `Pursue this goal exactly as written from this JSON string: "\\/status"`;
@@ -559,9 +683,14 @@ describe("getReplyFromConfig fast test bootstrap", () => {
     mocks.resolveReplyDirectives
       .mockImplementationOnce(continueDirectives)
       .mockImplementationOnce(async (params: unknown) => {
-        expect((params as { triggerBodyNormalized: string }).triggerBodyNormalized).toBe(
-          continuationPrompt,
-        );
+        expect(params).toMatchObject({
+          triggerBodyNormalized: continuationPrompt,
+          channelRuntimeProfile: {
+            thinkingLevel: "high",
+            reasoningLevel: "on",
+            textVerbosity: "low",
+          },
+        });
         return continueDirectives(params);
       });
     mocks.handleInlineActions.mockImplementation(async (params: unknown) => {

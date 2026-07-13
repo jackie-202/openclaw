@@ -14,7 +14,7 @@ import {
 import { resolveModelRefFromString } from "../../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
-import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
+import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
 import { type OpenClawConfig, getRuntimeConfig } from "../../config/config.js";
 import { logVerbose } from "../../globals.js";
 import { measureDiagnosticsTimelineSpan } from "../../infra/diagnostics-timeline.js";
@@ -28,7 +28,11 @@ import type { GetReplyOptions } from "../get-reply-options.types.js";
 import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS, stripHeartbeatToken } from "../heartbeat.js";
 import type { ReplyPayload } from "../reply-payload.js";
 import type { MsgContext } from "../templating.js";
-import { normalizeVerboseLevel } from "../thinking.js";
+import {
+  normalizeReasoningLevel,
+  normalizeThinkLevel,
+  normalizeVerboseLevel,
+} from "../thinking.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import { resolveDefaultModel } from "./directive-handling.defaults.js";
 import { clearInlineDirectives } from "./get-reply-directives-utils.js";
@@ -559,29 +563,26 @@ export async function getReplyFromConfig(
     });
   }
 
-  const channelModelOverride = cfg.channels?.modelByChannel
-    ? resolveChannelModelOverride({
-        cfg,
-        channel:
-          groupResolution?.channel ??
-          sessionEntry.channel ??
-          sessionEntry.origin?.provider ??
-          (typeof finalized.OriginatingChannel === "string"
-            ? finalized.OriginatingChannel
-            : undefined) ??
-          finalized.Provider,
-        groupId: groupResolution?.id ?? sessionEntry.groupId,
-        groupChatType: sessionEntry.chatType ?? sessionCtx.ChatType ?? finalized.ChatType,
-        groupChannel:
-          sessionEntry.groupChannel ?? sessionCtx.GroupChannel ?? finalized.GroupChannel,
-        groupSubject: sessionEntry.subject ?? sessionCtx.GroupSubject ?? finalized.GroupSubject,
-        parentSessionKey: sessionCtx.ModelParentSessionKey ?? sessionCtx.ParentSessionKey,
-      })
-    : null;
+  const channelRuntimeProfile = resolveChannelRuntimeProfile({
+    cfg,
+    channel:
+      groupResolution?.channel ??
+      sessionEntry.channel ??
+      sessionEntry.origin?.provider ??
+      (typeof finalized.OriginatingChannel === "string"
+        ? finalized.OriginatingChannel
+        : undefined) ??
+      finalized.Provider,
+    groupId: groupResolution?.id ?? sessionEntry.groupId,
+    groupChatType: sessionEntry.chatType ?? sessionCtx.ChatType ?? finalized.ChatType,
+    groupChannel: sessionEntry.groupChannel ?? sessionCtx.GroupChannel ?? finalized.GroupChannel,
+    groupSubject: sessionEntry.subject ?? sessionCtx.GroupSubject ?? finalized.GroupSubject,
+    parentSessionKey: sessionCtx.ModelParentSessionKey ?? sessionCtx.ParentSessionKey,
+  });
   const resolvedChannelModelOverride =
-    channelModelOverride && !hasResolvedHeartbeatModelOverride
+    channelRuntimeProfile?.model && !hasResolvedHeartbeatModelOverride
       ? resolveModelRefFromString({
-          raw: channelModelOverride.model,
+          raw: channelRuntimeProfile.model,
           defaultProvider,
           aliasIndex,
         })
@@ -686,9 +687,10 @@ export async function getReplyFromConfig(
           finalized.BodyForCommands ?? finalized.CommandBody ?? finalized.RawBody ?? "",
         ),
         defaultActivation: "always",
-        resolvedThinkLevel: undefined,
+        resolvedThinkLevel: normalizeThinkLevel(channelRuntimeProfile?.thinkingLevel),
         resolvedVerboseLevel: normalizeVerboseLevel(agentCfg?.verboseDefault),
-        resolvedReasoningLevel: "off",
+        resolvedReasoningLevel:
+          normalizeReasoningLevel(channelRuntimeProfile?.reasoningLevel) ?? "off",
         resolvedElevatedLevel: "off",
         execOverrides: undefined,
         elevatedEnabled: false,
@@ -720,6 +722,7 @@ export async function getReplyFromConfig(
         workspaceDir,
         abortedLastRun,
         autoFallbackPrimaryProbe,
+        textVerbosity: channelRuntimeProfile?.textVerbosity,
       }),
     );
     logResolverTiming("completed", "fast_directive_prepared_reply");
@@ -752,6 +755,7 @@ export async function getReplyFromConfig(
       aliasIndex,
       provider,
       model,
+      channelRuntimeProfile,
       hasResolvedHeartbeatModelOverride,
       typing,
       opts: resolvedOpts,
@@ -1018,6 +1022,7 @@ export async function getReplyFromConfig(
       workspaceDir,
       abortedLastRun,
       autoFallbackPrimaryProbe: runAutoFallbackPrimaryProbe,
+      textVerbosity: channelRuntimeProfile?.textVerbosity,
     }),
   );
   logResolverTiming("completed", "prepared_reply");

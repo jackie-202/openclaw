@@ -513,10 +513,6 @@ function resolveChannelModelCandidate(params: {
   entry?: SessionEntry;
   parentSessionKey?: string;
 }): HarnessDefaultCandidate | undefined {
-  if (!params.cfg.channels?.modelByChannel) {
-    return undefined;
-  }
-
   const channel = resolveHarnessDefaultChannel({
     ctx: params.ctx,
     entry: params.entry,

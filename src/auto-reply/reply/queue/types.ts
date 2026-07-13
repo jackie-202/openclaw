@@ -1,6 +1,7 @@
 // Shared queue type contracts for admission, drain, and fallback handling.
 import type { AutoFallbackPrimaryProbe } from "../../../agents/agent-scope.js";
 import type { ExecToolDefaults } from "../../../agents/bash-tools.js";
+import type { AgentStreamParams } from "../../../agents/command/shared-types.js";
 import type { CurrentInboundPromptContext } from "../../../agents/embedded-agent-runner/run/params.js";
 import type { SilentReplyPromptMode } from "../../../agents/system-prompt.types.js";
 import type { InboundEventKind } from "../../../channels/inbound-event/kind.js";
@@ -116,6 +117,7 @@ export type FollowupRun = {
     thinkLevel?: ThinkLevel;
     verboseLevel?: VerboseLevel;
     reasoningLevel?: ReasoningLevel;
+    streamParams?: AgentStreamParams;
     elevatedLevel?: ElevatedLevel;
     execOverrides?: Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
     bashElevated?: {

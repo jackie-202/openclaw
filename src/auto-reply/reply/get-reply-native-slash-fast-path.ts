@@ -2,9 +2,11 @@
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { loadModelCatalog } from "../../agents/model-catalog.js";
 import {
+  resolveModelRefFromString,
   resolveThinkingDefaultWithRuntimeCatalog,
   type ModelAliasIndex,
 } from "../../agents/model-selection.js";
+import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 import type { SkillCommandSpec } from "../../skills/types.js";
@@ -108,6 +110,29 @@ export async function maybeResolveNativeSlashCommandFastReply(params: {
     commandAuthorized: params.commandAuthorized,
     workspaceDir: params.workspaceDir,
   });
+  const channelRuntimeProfile = resolveChannelRuntimeProfile({
+    cfg: params.cfg,
+    channel:
+      sessionState.sessionEntry.channel ??
+      (typeof params.ctx.OriginatingChannel === "string"
+        ? params.ctx.OriginatingChannel
+        : undefined) ??
+      params.ctx.Provider,
+    groupId: sessionState.sessionEntry.groupId,
+    groupChatType: sessionState.sessionEntry.chatType ?? params.ctx.ChatType,
+    groupChannel: sessionState.sessionEntry.groupChannel ?? params.ctx.GroupChannel,
+    groupSubject: sessionState.sessionEntry.subject ?? params.ctx.GroupSubject,
+    parentSessionKey: sessionState.sessionKey,
+  });
+  const channelModelRef = channelRuntimeProfile?.model
+    ? resolveModelRefFromString({
+        raw: channelRuntimeProfile.model,
+        defaultProvider: params.defaultProvider,
+        aliasIndex: params.aliasIndex,
+      })?.ref
+    : undefined;
+  const provider = channelModelRef?.provider ?? params.provider;
+  const model = channelModelRef?.model ?? params.model;
   const command = buildCommandContext({
     ctx: params.ctx,
     cfg: params.cfg,
@@ -124,8 +149,8 @@ export async function maybeResolveNativeSlashCommandFastReply(params: {
     const resolveDefaultThinkingLevel = async () => {
       resolvedDefaultThinkingLevel ??= await resolveNativeSlashDefaultThinkingLevel({
         cfg: params.cfg,
-        provider: params.provider,
-        model: params.model,
+        provider,
+        model,
       });
       return resolvedDefaultThinkingLevel;
     };
@@ -141,8 +166,8 @@ export async function maybeResolveNativeSlashCommandFastReply(params: {
         parentSessionKey: targetSessionEntry?.parentSessionKey ?? params.ctx.ParentSessionKey,
         sessionScope: sessionState.sessionScope,
         storePath: sessionState.storePath,
-        provider: params.provider,
-        model: params.model,
+        provider,
+        model,
         workspaceDir: params.workspaceDir,
         resolvedThinkLevel,
         resolvedVerboseLevel: "off",
@@ -198,8 +223,8 @@ export async function maybeResolveNativeSlashCommandFastReply(params: {
     blockReplyChunking: undefined,
     resolvedBlockStreamingBreak: "text_end",
     resolveDefaultThinkingLevel: async () => undefined,
-    provider: params.provider,
-    model: params.model,
+    provider,
+    model,
     contextTokens: params.agentCfg?.contextTokens ?? 0,
     isGroup: sessionState.isGroup,
     loadSkillCommands: loadNativeSkillCommands,

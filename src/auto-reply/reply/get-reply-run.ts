@@ -444,6 +444,7 @@ type RunPreparedReplyParams = {
   workspaceDir: string;
   abortedLastRun: boolean;
   autoFallbackPrimaryProbe?: AutoFallbackPrimaryProbe;
+  textVerbosity?: "low" | "medium" | "high";
 };
 
 /** Runs a prepared reply turn after session, prompt, queue, and policy state are resolved. */
@@ -1317,6 +1318,7 @@ export async function runPreparedReply(
           }).enabled,
       verboseLevel: resolvedVerboseLevel,
       reasoningLevel: resolvedReasoningLevel,
+      streamParams: params.textVerbosity ? { textVerbosity: params.textVerbosity } : undefined,
       elevatedLevel: resolvedElevatedLevel,
       execOverrides,
       bashElevated: {

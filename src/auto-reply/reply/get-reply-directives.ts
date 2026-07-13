@@ -9,6 +9,7 @@ import { resolveFastModeState } from "../../agents/fast-mode.js";
 import { type ModelAliasIndex, resolveModelRefFromString } from "../../agents/model-selection.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/runtime-status.js";
 import type { SessionEntry } from "../../config/sessions.js";
+import type { ChannelRuntimeProfileConfig } from "../../config/types.channels.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
@@ -174,6 +175,7 @@ export async function resolveReplyDirectives(params: {
   aliasIndex: ModelAliasIndex;
   provider: string;
   model: string;
+  channelRuntimeProfile?: ChannelRuntimeProfileConfig | null;
   skipStoredModelOverride?: boolean;
   hasResolvedHeartbeatModelOverride: boolean;
   typing: TypingController;
@@ -436,8 +438,12 @@ export async function resolveReplyDirectives(params: {
   const sessionThinkLevel = directives.clearThinkLevel
     ? undefined
     : (targetSessionEntry?.thinkingLevel as ThinkLevel | undefined);
+  const channelThinkLevel = normalizeThinkLevel(params.channelRuntimeProfile?.thinkingLevel);
   const resolvedThinkLevel =
-    normalizeThinkLevel(opts?.thinkingLevelOverride) ?? directives.thinkLevel ?? sessionThinkLevel;
+    normalizeThinkLevel(opts?.thinkingLevelOverride) ??
+    directives.thinkLevel ??
+    sessionThinkLevel ??
+    channelThinkLevel;
   const resolvedFastMode =
     opts?.fastModeOverride ??
     directives.fastMode ??
@@ -454,6 +460,7 @@ export async function resolveReplyDirectives(params: {
     (targetSessionEntry?.verboseLevel as VerboseLevel | undefined) ??
     (agentCfg?.verboseDefault as VerboseLevel | undefined);
   const configuredReasoningDefault =
+    (params.channelRuntimeProfile?.reasoningLevel as ReasoningLevel | undefined) ??
     (agentEntry?.reasoningDefault as ReasoningLevel | undefined) ??
     (agentCfg?.reasoningDefault as ReasoningLevel | undefined);
   const canUseReasoningState =

@@ -34,9 +34,15 @@ vi.mock("../../agents/workspace.js", () => ({
   ensureAgentWorkspace: vi.fn(async () => ({ dir: "/tmp/workspace" })),
 }));
 
-vi.mock("../../channels/model-overrides.js", () => ({
-  resolveChannelModelOverride: vi.fn(() => undefined),
-}));
+vi.mock("../../channels/model-overrides.js", async () => {
+  const actual = await vi.importActual<typeof import("../../channels/model-overrides.js")>(
+    "../../channels/model-overrides.js",
+  );
+  return {
+    ...actual,
+    resolveChannelModelOverride: vi.fn(() => undefined),
+  };
+});
 
 vi.mock("../../config/config.js", () => ({
   getRuntimeConfig: vi.fn(() => ({})),

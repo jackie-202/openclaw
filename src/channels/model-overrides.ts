@@ -211,7 +211,7 @@ function resolveChannelEntryMatch<T>(
 }
 
 /** Resolves a channel-scoped model override from direct, parent, and wildcard config entries. */
-export function resolveChannelModelOverride(
+function resolveLegacyChannelModelOverride(
   params: ChannelModelOverrideParams,
 ): ChannelModelOverride | null {
   const channel = normalizeOptionalString(params.channel);
@@ -281,8 +281,7 @@ export function resolveChannelModelOverride(
   };
 }
 
-/** Resolves a channel-scoped runtime profile from direct, parent, and wildcard config entries. */
-export function resolveChannelRuntimeProfile(
+function resolveConfiguredChannelRuntimeProfile(
   params: ChannelModelOverrideParams,
 ): (ChannelRuntimeProfileConfig & { matchKey?: string; matchSource?: ChannelMatchSource }) | null {
   const channel = normalizeOptionalString(params.channel);
@@ -301,4 +300,39 @@ export function resolveChannelRuntimeProfile(
     return null;
   }
   return { ...match.entry, matchKey: match.matchKey, matchSource: match.matchSource };
+}
+
+/** Resolves the effective channel runtime profile, including the legacy model fallback. */
+export function resolveChannelRuntimeProfile(
+  params: ChannelModelOverrideParams,
+): (ChannelRuntimeProfileConfig & { matchKey?: string; matchSource?: ChannelMatchSource }) | null {
+  const profile = resolveConfiguredChannelRuntimeProfile(params);
+  const legacyModel = profile?.model ? null : resolveLegacyChannelModelOverride(params);
+  if (!profile && !legacyModel) {
+    return null;
+  }
+  return {
+    ...(legacyModel ? { model: legacyModel.model } : {}),
+    ...profile,
+    matchKey: profile?.matchKey ?? legacyModel?.matchKey,
+    matchSource: profile?.matchSource ?? legacyModel?.matchSource,
+  };
+}
+
+/** Resolves the effective channel-scoped model from runtime profiles, then legacy config. */
+export function resolveChannelModelOverride(
+  params: ChannelModelOverrideParams,
+): ChannelModelOverride | null {
+  const channel = normalizeOptionalString(params.channel);
+  const profile = resolveChannelRuntimeProfile(params);
+  const model = normalizeOptionalString(profile?.model);
+  if (!channel || !model) {
+    return null;
+  }
+  return {
+    channel: normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "",
+    model,
+    matchKey: profile?.matchKey,
+    matchSource: profile?.matchSource,
+  };
 }
