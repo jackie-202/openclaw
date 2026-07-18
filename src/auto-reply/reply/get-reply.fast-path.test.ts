@@ -451,6 +451,147 @@ describe("getReplyFromConfig fast test bootstrap", () => {
     }
   });
 
+  it("keeps the Einstein runtime profile authoritative over stale fallback state", async () => {
+    vi.stubEnv("OPENCLAW_ALLOW_SLOW_REPLY_TESTS", "1");
+    vi.mocked(resolveDefaultModelMock).mockReturnValue({
+      defaultProvider: "openai",
+      defaultModel: "gpt-5.5",
+      aliasIndex: emptyAliasIndex(),
+    });
+    vi.mocked(resolveModelRefFromStringMock).mockImplementation(({ raw }) => {
+      const [provider, ...modelParts] = raw.split("/");
+      const model = modelParts.join("/");
+      return provider && model ? ({ ref: { provider, model } } as never) : null;
+    });
+    mocks.handleInlineActions.mockImplementation(async (params: unknown) => ({
+      kind: "continue",
+      directives: {},
+      abortedLastRun: false,
+      cleanedBody: (params as { cleanedBody: string }).cleanedBody,
+    }));
+    mocks.resolveReplyDirectives.mockImplementation(async (params: unknown) => {
+      const selected = params as { provider: string; model: string; triggerBodyNormalized: string };
+      return createGetReplyContinueDirectivesResult({
+        body: selected.triggerBodyNormalized,
+        abortKey: "agent:main:discord:channel:1494790764134273195",
+        from: "discord:channel:1494790764134273195",
+        to: "discord:channel:1494790764134273195",
+        senderId: "einstein-user",
+        commandSource: selected.triggerBodyNormalized,
+        senderIsOwner: true,
+        resetHookTriggered: false,
+        provider: selected.provider,
+        model: selected.model,
+      });
+    });
+
+    const target = "1494790764134273195";
+    const sessionKey = `agent:main:discord:channel:${target}`;
+    const staleRuntime = {
+      sessionId: "a6eaa5bb-58de-46da-b30e-eb3597c533cb",
+      updatedAt: 1,
+      channel: "discord",
+      chatType: "channel" as const,
+      groupId: target,
+      modelProvider: "ollama",
+      model: "qwen3-coder-next-q6k:latest",
+    };
+    const cases = [
+      {
+        name: "ordinary stale runtime metadata",
+        sessionEntry: staleRuntime,
+        profileModel: "copilot/claude-fable-5",
+        expectedProvider: "copilot",
+        expectedModel: "claude-fable-5",
+      },
+      {
+        name: "stale auto fallback from the previous channel primary",
+        sessionEntry: {
+          ...staleRuntime,
+          providerOverride: "ollama",
+          modelOverride: "qwen3-coder-next-q6k:latest",
+          modelOverrideSource: "auto" as const,
+          modelOverrideFallbackOriginProvider: "openai",
+          modelOverrideFallbackOriginModel: "gpt-5.6-sol",
+        },
+        profileModel: "copilot/claude-fable-5",
+        expectedProvider: "copilot",
+        expectedModel: "claude-fable-5",
+      },
+      {
+        name: "explicit same-session model command",
+        sessionEntry: {
+          ...staleRuntime,
+          providerOverride: "ollama",
+          modelOverride: "qwen3-coder-next-q6k:latest",
+          modelOverrideSource: "user" as const,
+        },
+        profileModel: "copilot/claude-fable-5",
+        expectedProvider: "ollama",
+        expectedModel: "qwen3-coder-next-q6k:latest",
+      },
+      {
+        name: "unprofiled channel",
+        sessionEntry: staleRuntime,
+        profileModel: undefined,
+        expectedProvider: "openai",
+        expectedModel: "gpt-5.5",
+      },
+    ];
+
+    for (const testCase of cases) {
+      const sessionEntry = { ...testCase.sessionEntry };
+      mocks.initSessionState.mockResolvedValueOnce(
+        createGetReplySessionState({
+          sessionCtx: { Provider: "discord", ChatType: "channel", SessionKey: sessionKey },
+          sessionEntry,
+          sessionStore: {
+            [sessionKey]: sessionEntry,
+            "agent:main:current": {
+              sessionId: "unrelated",
+              updatedAt: 1,
+              providerOverride: "ollama",
+              modelOverride: "qwen3-coder-next-q6k:latest",
+              modelOverrideSource: "user",
+            },
+          },
+          sessionKey,
+          groupResolution: { channel: "discord", id: target },
+          isGroup: true,
+        }),
+      );
+      const cfg = {
+        agents: { defaults: { model: "openai/gpt-5.5" } },
+        channels: testCase.profileModel
+          ? {
+              runtimeByChannel: {
+                discord: { [target]: { model: testCase.profileModel } },
+              },
+            }
+          : {},
+      } as OpenClawConfig;
+
+      await getReplyFromConfig(
+        buildGetReplyCtx({
+          Provider: "discord",
+          Surface: "discord",
+          ChatType: "channel",
+          SessionKey: sessionKey,
+          From: `discord:channel:${target}`,
+          To: `discord:channel:${target}`,
+        }),
+        undefined,
+        cfg,
+      );
+
+      const preparedReplyParams = vi.mocked(runPreparedReplyMock).mock.calls.at(-1)?.[0];
+      expect(preparedReplyParams, testCase.name).toMatchObject({
+        provider: testCase.expectedProvider,
+        model: testCase.expectedModel,
+      });
+    }
+  });
+
   it("handles native /status before workspace bootstrap", async () => {
     const home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-status-fast-"));
     const targetSessionKey = "agent:main:telegram:123";

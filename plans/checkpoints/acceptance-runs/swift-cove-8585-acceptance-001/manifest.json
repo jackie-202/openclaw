@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-18T11:51:17+00:00",
+    "implementingStartedAt": "2026-07-18T11:27:19+00:00",
+    "taskFile": "plans/tasks/2026-07-17_trace-and-fix-discord-channel-runtime-model-drift.md",
+    "taskId": "swift-cove-8585",
+    "title": "race and fix Discord channel runtime model drift after a persistent Fable 5 switch"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "race and fix Discord channel runtime model drift after a persistent Fable 5 switch"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-cove-8585-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-cove-8585",
+  "tddRequired": true
+}

@@ -233,6 +233,62 @@ function createMinimalRun(params?: {
 }
 
 describe("runReplyAgent heartbeat followup guard", () => {
+  it("persists the selected Einstein runtime model without a fabricated fallback", async () => {
+    const sessionKey = "agent:main:discord:channel:1494790764134273195";
+    const sessionEntry: SessionEntry = {
+      sessionId: "a6eaa5bb-58de-46da-b30e-eb3597c533cb",
+      updatedAt: 1,
+      modelProvider: "ollama",
+      model: "qwen3-coder-next-q6k:latest",
+    };
+    const sessionStore = { [sessionKey]: sessionEntry };
+    const storeRoot = await mkdtemp(join(tmpdir(), "openclaw-einstein-runtime-"));
+    const storePath = join(storeRoot, "sessions.json");
+    await writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
+    try {
+      state.runEmbeddedAgentMock.mockResolvedValueOnce({
+        payloads: [{ text: "final" }],
+        meta: {
+          agentMeta: {
+            provider: "copilot",
+            model: "claude-fable-5",
+            usage: { input: 1, output: 1 },
+          },
+        },
+      });
+      const fallbackSpy = vi.spyOn(modelFallbackModule, "runWithModelFallback");
+      const { run } = createMinimalRun({
+        sessionEntry,
+        sessionStore,
+        sessionKey,
+        storePath,
+        sessionCtx: { Provider: "discord", ChatType: "channel" },
+        runOverrides: {
+          messageProvider: "discord",
+          provider: "copilot",
+          model: "claude-fable-5",
+        },
+      });
+
+      await run();
+
+      expect(state.runEmbeddedAgentMock).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "copilot", model: "claude-fable-5" }),
+      );
+      const persistedStore = JSON.parse(await readFile(storePath, "utf-8"));
+      expect(persistedStore[sessionKey]).toMatchObject({
+        modelProvider: "copilot",
+        model: "claude-fable-5",
+      });
+      expect(persistedStore[sessionKey].providerOverride).toBeUndefined();
+      expect(persistedStore[sessionKey].modelOverride).toBeUndefined();
+      expect(persistedStore[sessionKey].fallbackNoticeActiveModel).toBeUndefined();
+      await expect(fallbackSpy.mock.results.at(-1)?.value).resolves.toMatchObject({ attempts: [] });
+    } finally {
+      await rm(storeRoot, { recursive: true, force: true });
+    }
+  });
+
   it("drops heartbeat runs when reply-lane admission finds an active owner", async () => {
     const active = createReplyOperation({
       sessionKey: "main",

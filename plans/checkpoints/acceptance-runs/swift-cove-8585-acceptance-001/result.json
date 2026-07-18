@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "race and fix Discord channel runtime model drift after a persistent Fable 5 switch"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-cove-8585-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "swift-cove-8585"
+}

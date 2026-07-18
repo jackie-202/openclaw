@@ -39,7 +39,7 @@ export {
   type ModelDirectiveSelection,
 } from "./model-selection-directive.js";
 import {
-  isStaleHeartbeatAutoFallbackOverride,
+  isStaleAutoFallbackOverride,
   resolveStoredModelOverride,
 } from "./stored-model-override.js";
 
@@ -196,7 +196,7 @@ export async function createModelSelectionState(params: {
   const directStoredModelOverride = directStoredOverride
     ? { ...directStoredOverride, source: "session" as const }
     : null;
-  const staleHeartbeatAutoFallbackOverride = isStaleHeartbeatAutoFallbackOverride({
+  const staleAutoFallbackOverride = isStaleAutoFallbackOverride({
     isHeartbeat: params.isHeartbeat,
     hasResolvedHeartbeatModelOverride: params.hasResolvedHeartbeatModelOverride,
     sessionEntry,
@@ -235,7 +235,7 @@ export async function createModelSelectionState(params: {
     modelKey(normalizedCurrentSelection.provider, normalizedCurrentSelection.model) !==
       modelKey(normalizedDirectOverride.provider, normalizedDirectOverride.model);
   const staleDirectStoredOverride =
-    staleHeartbeatAutoFallbackOverride ||
+    staleAutoFallbackOverride ||
     staleLegacyOpenAICodexAutoOverride ||
     staleLegacyAutoFallbackWithoutOrigin;
 

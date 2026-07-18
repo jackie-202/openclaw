@@ -79,8 +79,8 @@ function resolveModelRefKey(params: {
   return modelKey(normalized.provider, normalized.model);
 }
 
-/** Detects heartbeat auto-fallback overrides that no longer match the primary model. */
-export function isStaleHeartbeatAutoFallbackOverride(params: {
+/** Detects auto-fallback overrides whose recorded origin no longer matches the primary model. */
+export function isStaleAutoFallbackOverride(params: {
   isHeartbeat?: boolean;
   hasResolvedHeartbeatModelOverride?: boolean;
   sessionEntry?: SessionEntry;
@@ -90,7 +90,7 @@ export function isStaleHeartbeatAutoFallbackOverride(params: {
   primaryProvider?: string;
   primaryModel?: string;
 }): boolean {
-  if (params.isHeartbeat !== true || params.hasResolvedHeartbeatModelOverride === true) {
+  if (params.hasResolvedHeartbeatModelOverride === true) {
     return false;
   }
   if (params.storedOverride?.source !== "session") {
@@ -125,6 +125,9 @@ export function isStaleHeartbeatAutoFallbackOverride(params: {
   });
   if (originKey) {
     return originKey !== primaryKey;
+  }
+  if (params.isHeartbeat !== true) {
+    return false;
   }
 
   const noticeSelectedKey = resolveModelRefKey({
