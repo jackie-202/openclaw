@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Remove fork-only trajectory batched writer and cron trajectory opt-out"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-fork-4679-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "calm-fork-4679"
+}

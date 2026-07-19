@@ -1,0 +1,47 @@
+{
+  "findings": [
+    {
+      "claim": "The required complete modelByChannel source-search proof and exhaustive classification are absent from the supplied acceptance material.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied checkpoint says the classification was completed, but no artifact contains the complete verbatim output of git grep -n modelByChannel src/ or a classification reconciling every returned line. The implementation log excerpt contains only one isolated match and a summary of other categories.",
+      "rationale": "This follow-up exists specifically to provide that missing acceptance evidence. Without the complete output and line-by-line classification, semantic review cannot confirm that every remaining modelByChannel reference is an intentionally preserved upstream compatibility, maintenance, metadata, caller, or test reference rather than a forbidden fork runtime read.",
+      "required": "Supply the complete verbatim git grep -n modelByChannel src/ output and classify every returned line, reconcile classification counts to the raw match count, state the upstream compatibility decision, and show that no production runtime read remains under src/auto-reply/reply/.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-19_followup-remove-legacy-channels-modelbychannel-support-fork-only-simp.md:Verification"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-19_bright-brook-6161_remove-legacy-channels-modelbychannel-support-fork-only.md:Implementation"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-brook-6161.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "implementation-session-log-excerpt"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Remove legacy channels.modelByChannel support (fork-only simplification): goal-001: Remove legacy chann"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-brook-6161-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bright-brook-6161"
+}

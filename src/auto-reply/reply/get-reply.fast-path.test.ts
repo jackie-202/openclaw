@@ -369,11 +369,11 @@ describe("getReplyFromConfig fast test bootstrap", () => {
         expectedModel: "gpt-5.6-sol",
       },
       {
-        name: "legacy channel model",
+        name: "legacy channel model ignored",
         sessionEntry: {},
         runtimeProfile: { thinkingLevel: "high" },
         legacyModel: "openai/gpt-5.4",
-        expectedModel: "gpt-5.4",
+        expectedModel: "gpt-5.5",
       },
       {
         name: "global default",
@@ -439,9 +439,6 @@ describe("getReplyFromConfig fast test bootstrap", () => {
         testCase.runtimeProfile
           ? expect.objectContaining({
               ...testCase.runtimeProfile,
-              ...(testCase.runtimeProfile.model || !testCase.legacyModel
-                ? {}
-                : { model: testCase.legacyModel }),
             })
           : null,
       );

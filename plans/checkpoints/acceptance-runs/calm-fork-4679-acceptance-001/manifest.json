@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-19T11:32:19+00:00",
+    "implementingStartedAt": "2026-07-19T11:14:09+00:00",
+    "taskFile": "plans/tasks/2026-07-18_remove-fork-trajectory-batched-writer-and-cron-opt-out.md",
+    "taskId": "calm-fork-4679",
+    "title": "Remove fork-only trajectory batched writer and cron trajectory opt-out"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Remove fork-only trajectory batched writer and cron trajectory opt-out"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-fork-4679-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-fork-4679",
+  "tddRequired": true
+}

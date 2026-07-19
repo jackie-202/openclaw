@@ -2,12 +2,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { sanitizeDiagnosticPayload } from "../agents/payload-redaction.js";
-import {
-  evictOldestWritersToCap,
-  getQueuedFileWriter,
-  isClosableWriter,
-  type QueuedFileWriter,
-  type QueuedFileWriterDiagnostics,
+import type {
+  QueuedFileWriter,
+  QueuedFileWriterDiagnostics,
 } from "../agents/queued-file-writer.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { assertNoSymlinkParents, writeSiblingTempFile } from "../infra/fs-safe-advanced.js";
@@ -16,6 +13,7 @@ import { redactSecrets } from "../logging/redact.js";
 import { parseBooleanValue } from "../utils/boolean.js";
 import { safeJsonStringify } from "../utils/safe-json.js";
 import {
+  TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES,
   TRAJECTORY_RUNTIME_EVENT_MAX_BYTES,
   TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
   resolveTrajectoryFilePath,
@@ -25,6 +23,7 @@ import {
 import type { TrajectoryEvent, TrajectoryToolDefinition } from "./types.js";
 
 export {
+  TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES,
   TRAJECTORY_RUNTIME_EVENT_MAX_BYTES,
   TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
   resolveTrajectoryFilePath,
@@ -36,6 +35,7 @@ export {
 type TrajectoryRuntimeInit = {
   cfg?: OpenClawConfig;
   env?: NodeJS.ProcessEnv;
+  maxRuntimeFileBytes?: number;
   runId?: string;
   sessionId: string;
   sessionKey?: string;
@@ -119,10 +119,13 @@ function writeTrajectoryPointerBestEffort(params: {
 }
 
 function trimTrajectoryWriterCache(): void {
-  // Defense in depth against runaway sessions or callers that never flush.
-  // Evicts oldest writers and asynchronously closes their handles (batched
-  // writers only — legacy writers have nothing to release).
-  evictOldestWritersToCap(writers, MAX_TRAJECTORY_WRITERS);
+  while (writers.size >= MAX_TRAJECTORY_WRITERS) {
+    const oldestKey = writers.keys().next().value;
+    if (!oldestKey) {
+      return;
+    }
+    writers.delete(oldestKey);
+  }
 }
 
 function truncateOversizedTrajectoryEvent(
@@ -470,26 +473,6 @@ export function toTrajectoryToolDefinitions(
     .toSorted((left, right) => left.name.localeCompare(right.name));
 }
 
-/**
- * Event types that must hit disk promptly to preserve post-mortem reconstruction
- * even when the gateway crashes mid-run. Critical events bypass the batched
- * debounce window by triggering an immediate flush.
- *
- * Keep this list small; expanding it erodes the throughput win from batching.
- */
-const CRITICAL_TRAJECTORY_EVENT_TYPES: ReadonlySet<string> = new Set([
-  "session.started",
-  "session.ended",
-]);
-
-function isCriticalTrajectoryEvent(type: string, data?: Record<string, unknown>): boolean {
-  if (CRITICAL_TRAJECTORY_EVENT_TYPES.has(type)) {
-    return true;
-  }
-  // Allow callers to opt-in per-event without touching this list.
-  return data?.critical === true;
-}
-
 export function createTrajectoryRuntimeRecorder(
   params: TrajectoryRuntimeInit,
 ): TrajectoryRuntimeRecorder | null {
@@ -506,14 +489,11 @@ export function createTrajectoryRuntimeRecorder(
     sessionFile: params.sessionFile,
     sessionId: params.sessionId,
   });
-  if (!params.writer) {
-    trimTrajectoryWriterCache();
-  }
-  const writer: TrajectoryRuntimeWriter =
-    params.writer ??
-    getQueuedFileWriter(writers, filePath, {
-      maxFileBytes: TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
-    });
+  const maxRuntimeFileBytes = Math.max(
+    1,
+    Math.floor(params.maxRuntimeFileBytes ?? TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES),
+  );
+  const writer = params.writer ?? getTrajectoryWindowWriter(filePath, maxRuntimeFileBytes);
   writeTrajectoryPointerBestEffort({
     filePath,
     sessionFile: params.sessionFile,
@@ -522,10 +502,12 @@ export function createTrajectoryRuntimeRecorder(
   let seq = 0;
   const traceId = params.sessionId;
 
-  const buildEventLine = (
-    type: string,
-    data?: Record<string, unknown>,
-  ): { line: string; event: TrajectoryEvent } | undefined => {
+  const writeBoundedLine = (line: string): void => {
+    const jsonlLine = `${line}\n`;
+    writer.write(jsonlLine);
+  };
+
+  const buildEventLine = (type: string, data?: Record<string, unknown>): string | undefined => {
     const nextSeq = seq + 1;
     const sourceSeq = writer.nextSourceSeq?.() ?? nextSeq;
     const event: TrajectoryEvent = {
@@ -555,37 +537,21 @@ export function createTrajectoryRuntimeRecorder(
       return undefined;
     }
     seq = nextSeq;
-    return { line: boundedLine, event };
+    return boundedLine;
   };
 
   return {
     enabled: true,
     filePath,
     recordEvent: (type, data) => {
-      const built = buildEventLine(type, data);
-      if (!built) {
+      const line = buildEventLine(type, data);
+      if (!line) {
         return;
       }
-      writer.write(`${built.line}
-`);
-      // Bypass debounce for events whose loss would prevent post-mortem
-      // reconstruction. Fire-and-forget: we do not block recordEvent on disk I/O.
-      if (isCriticalTrajectoryEvent(type, built.event.data) && isClosableWriter(writer)) {
-        void writer.flushNow().catch(() => undefined);
-      }
+      writeBoundedLine(line);
     },
     flush: async () => {
       await writer.flush();
-      // When this recorder owned the writer (no caller-supplied override), it
-      // is responsible for releasing the persistent file handle (batched mode)
-      // and removing the cache entry. Legacy writers have no close; the map
-      // delete is sufficient.
-      if (!params.writer) {
-        writers.delete(filePath);
-        if (isClosableWriter(writer)) {
-          await writer.close().catch(() => undefined);
-        }
-      }
     },
     describeFlushState: () => describeTrajectoryWriterFlushState(writer),
   };

@@ -1,0 +1,39 @@
+{
+  "findings": [
+    {
+      "claim": "The required final-note grep proof and classification are absent from the supplied acceptance material.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The task requires final-note output from git grep -n modelByChannel src/ with every remaining match classified, but the supplied artifacts contain only a completion checkpoint and RED/GREEN proof; neither includes that output or classification.",
+      "rationale": "The grep classification is explicit acceptance evidence for distinguishing preserved upstream compatibility from removed fork-added runtime reads. A checkpoint assertion that verification completed does not supply the required evidence.",
+      "required": "Supply the final note containing the git grep -n modelByChannel src/ output and classification of every remaining match, including the upstream-ownership finding and resulting compatibility decision.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-18_remove-legacy-modelbychannel-support.md:Verification"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-cove-7515.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Remove legacy channels.modelByChannel support (fork-only simplification)"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-cove-7515-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-cove-7515"
+}

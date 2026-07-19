@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-19T10:28:47+00:00",
+    "implementingStartedAt": "2026-07-19T10:13:48+00:00",
+    "taskFile": "plans/tasks/2026-07-19_followup-remove-legacy-channels-modelbychannel-support-fork-only-simp.md",
+    "taskId": "bright-brook-6161",
+    "title": "[acceptance-fix] Remove legacy channels.modelByChannel support (fork-only simplification): goal-001: Remove legacy chann"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Remove legacy channels.modelByChannel support (fork-only simplification): goal-001: Remove legacy chann"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-brook-6161-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-brook-6161",
+  "tddRequired": false
+}

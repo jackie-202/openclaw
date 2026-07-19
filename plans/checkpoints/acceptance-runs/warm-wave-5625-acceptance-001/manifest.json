@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-19T10:56:09+00:00",
+    "implementingStartedAt": "2026-07-19T10:46:08+00:00",
+    "taskFile": "plans/tasks/2026-07-19_followup-acceptance-fix-remove-legacy-channels-modelbychannel-support.md",
+    "taskId": "warm-wave-5625",
+    "title": "[acceptance-fix] [acceptance-fix] Remove legacy channels.modelByChannel support (fork-only simplification): goal-001: Re"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Remove legacy channels.modelByChannel support (fork-only simplification): goal-001: Re"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-wave-5625-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-wave-5625",
+  "tddRequired": false
+}

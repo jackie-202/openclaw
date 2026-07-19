@@ -223,7 +223,7 @@ describe("resolveChannelModelOverride", () => {
     expect(resolved?.matchKey).toBe("-100123");
   });
 
-  it("resolves runtime profiles and keeps legacy modelByChannel as fallback", () => {
+  it("keeps runtime and legacy model resolvers separate", () => {
     const cfg = {
       channels: {
         modelByChannel: {
@@ -264,10 +264,10 @@ describe("resolveChannelModelOverride", () => {
         matchKey: "1494790764134273195",
       }),
     );
-    expect(modelOverride?.model).toBe("openai/gpt-5.5");
+    expect(modelOverride?.model).toBe("openai/gpt-5.4");
   });
 
-  it("uses legacy modelByChannel when runtime profile has no model", () => {
+  it("does not inherit legacy modelByChannel when runtime profile has no model", () => {
     const resolved = resolveChannelRuntimeProfile({
       cfg: {
         channels: {
@@ -291,9 +291,9 @@ describe("resolveChannelModelOverride", () => {
 
     expect(resolved).toEqual(
       expect.objectContaining({
-        model: "openai/gpt-5.4",
         thinkingLevel: "xhigh",
       }),
     );
+    expect(resolved?.model).toBeUndefined();
   });
 });

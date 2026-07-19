@@ -501,7 +501,6 @@ type PreparedCronRunContext = {
    * the LLM idle watchdog can honor the cron's per-run choice.
    */
   runTimeoutOverrideMs?: number;
-  trajectoryEnabled: boolean;
 };
 
 type CronPreparationResult =
@@ -765,7 +764,6 @@ async function prepareCronRunContext(params: {
   // `timeoutSeconds` happens to numerically equal `agents.defaults.timeoutSeconds`.
   const runTimeoutOverrideMs = resolveCronRunTimeoutOverrideMs(explicitTimeoutSeconds);
   const agentPayload = input.job.payload.kind === "agentTurn" ? input.job.payload : null;
-  const trajectoryEnabled = agentPayload?.trajectory ?? true;
   const { deliveryPlan, deliveryRequested, resolvedDelivery, sourceDelivery } =
     await resolveCronDeliveryContext({
       cfg: cfgWithAgentDefaults,
@@ -916,7 +914,6 @@ async function prepareCronRunContext(params: {
       thinkLevel,
       timeoutMs,
       runTimeoutOverrideMs,
-      trajectoryEnabled,
     },
   };
 }
@@ -1333,7 +1330,6 @@ export async function runCronIsolatedAgentTurn(params: {
       thinkLevel: prepared.context.thinkLevel,
       timeoutMs: prepared.context.timeoutMs,
       runTimeoutOverrideMs: prepared.context.runTimeoutOverrideMs,
-      trajectoryEnabled: prepared.context.trajectoryEnabled,
       suppressExecNotifyOnExit: prepared.context.suppressExecNotifyOnExit,
     });
     if (isAborted()) {

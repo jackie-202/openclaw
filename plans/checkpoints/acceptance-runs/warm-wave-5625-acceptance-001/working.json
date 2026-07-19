@@ -1,0 +1,47 @@
+{
+  "findings": [
+    {
+      "claim": "The required exhaustive modelByChannel source-search proof is absent from the supplied acceptance artifacts.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied warm-wave-5625 learning states that git grep returned 112 lines and reconciles category totals as 2 + 3 + 45 + 62 = 112, but no supplied artifact preserves the complete verbatim git grep -n modelByChannel src/ output or one classification keyed to each returned file:line. The supplied parent checkpoint likewise contains only a completion summary, and the historical RED/GREEN artifact is test evidence rather than the required source-search ledger.",
+      "rationale": "This evidence-only follow-up was created specifically to make every remaining modelByChannel reference auditable and prove that no forbidden production runtime read remains. Counts and conclusions without the raw output and exhaustive per-match classification cannot establish that all 112 matches belong to intentionally retained compatibility, maintenance, metadata, caller, or test surfaces.",
+      "required": "Supply the complete verbatim git grep -n modelByChannel src/ output, classify every returned file:line using the required categories, reconcile every classification to the raw match count, record the upstream compatibility decision, and preserve the scoped src/auto-reply/reply/ search showing its match is test-only.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-19_followup-acceptance-fix-remove-legacy-channels-modelbychannel-support.md:10"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-19_warm-wave-5625_acceptance-fix-remove-legacy-channels-modelbychannel.md:Implementation"
+        },
+        {
+          "kind": "artifact",
+          "reference": "learnings/tooling/warm-wave-5625-checkpoint-as-acceptance-ledger.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-brook-6161.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Remove legacy channels.modelByChannel support (fork-only simplification): goal-001: Re"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-wave-5625-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-wave-5625"
+}

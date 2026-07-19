@@ -707,13 +707,6 @@ function removeTrailingMidTurnPrecheckAssistantError(params: {
   mutableSessionManager.rewriteFile();
 }
 
-export function resolveAttemptTrajectoryRecorder<TRecorder>(params: {
-  trajectoryEnabled?: boolean;
-  createRecorder: () => TRecorder;
-}): TRecorder | null {
-  return params.trajectoryEnabled === false ? null : params.createRecorder();
-}
-
 function collectAttemptExplicitToolAllowlistSources(params: {
   config?: EmbeddedRunAttemptParams["config"];
   sessionKey?: string;
@@ -2512,21 +2505,17 @@ export async function runEmbeddedAttempt(
         modelApi: params.model.api,
         workspaceDir: params.workspaceDir,
       });
-      trajectoryRecorder = resolveAttemptTrajectoryRecorder({
-        trajectoryEnabled: params.trajectoryEnabled,
-        createRecorder: () =>
-          createTrajectoryRuntimeRecorder({
-            cfg: params.config,
-            env: process.env,
-            runId: params.runId,
-            sessionId: activeSession.sessionId,
-            sessionKey: params.sessionKey,
-            sessionFile: params.sessionFile,
-            provider: params.provider,
-            modelId: params.modelId,
-            modelApi: params.model.api,
-            workspaceDir: params.workspaceDir,
-          }),
+      trajectoryRecorder = createTrajectoryRuntimeRecorder({
+        cfg: params.config,
+        env: process.env,
+        runId: params.runId,
+        sessionId: activeSession.sessionId,
+        sessionKey: params.sessionKey,
+        sessionFile: params.sessionFile,
+        provider: params.provider,
+        modelId: params.modelId,
+        modelApi: params.model.api,
+        workspaceDir: params.workspaceDir,
       });
       trajectoryRecorder?.recordEvent("session.started", {
         trigger: params.trigger,

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-19T10:01:18+00:00",
+    "implementingStartedAt": "2026-07-19T09:33:49+00:00",
+    "taskFile": "plans/tasks/2026-07-18_remove-legacy-modelbychannel-support.md",
+    "taskId": "warm-cove-7515",
+    "title": "Remove legacy channels.modelByChannel support (fork-only simplification)"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Remove legacy channels.modelByChannel support (fork-only simplification)"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-cove-7515-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-cove-7515",
+  "tddRequired": true
+}

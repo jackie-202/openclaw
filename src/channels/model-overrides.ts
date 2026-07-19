@@ -133,7 +133,6 @@ function buildGenericParentOverrideCandidates(sessionKey: string | null | undefi
 }
 
 function resolveDirectChannelModelMatch(params: {
-  channel: string;
   providerEntries: Record<string, string>;
   groupId?: string | null;
   parentSessionKey?: string | null;
@@ -157,10 +156,7 @@ function resolveDirectChannelModelMatch(params: {
     return null;
   }
   const model = normalizeOptionalString(raw);
-  if (!model) {
-    return null;
-  }
-  return { model, matchKey: match.matchKey, matchSource: match.matchSource };
+  return model ? { model, matchKey: match.matchKey, matchSource: match.matchSource } : null;
 }
 
 function resolveChannelEntryMatch<T>(
@@ -210,78 +206,8 @@ function resolveChannelEntryMatch<T>(
   return { entry: raw, matchKey: match.matchKey, matchSource: match.matchSource };
 }
 
-/** Resolves a channel-scoped model override from direct, parent, and wildcard config entries. */
-function resolveLegacyChannelModelOverride(
-  params: ChannelModelOverrideParams,
-): ChannelModelOverride | null {
-  const channel = normalizeOptionalString(params.channel);
-  if (!channel) {
-    return null;
-  }
-  const modelByChannel = params.cfg.channels?.modelByChannel as
-    | ChannelModelByChannelConfig
-    | undefined;
-  if (!modelByChannel) {
-    return null;
-  }
-  const providerEntries = resolveProviderEntry(modelByChannel, channel);
-  if (!providerEntries) {
-    return null;
-  }
-  const directMatch = resolveDirectChannelModelMatch({
-    channel,
-    providerEntries,
-    groupId: params.groupId,
-    parentSessionKey: params.parentSessionKey,
-  });
-  if (directMatch) {
-    return {
-      channel: normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "",
-      model: directMatch.model,
-      matchKey: directMatch.matchKey,
-      matchSource: directMatch.matchSource,
-    };
-  }
-
-  const { keys, parentKeys } = buildChannelCandidates(params);
-  if (keys.length === 0 && parentKeys.length === 0) {
-    const wildcardModel = normalizeOptionalString(providerEntries["*"]);
-    if (wildcardModel) {
-      return {
-        channel:
-          normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "",
-        model: wildcardModel,
-        matchKey: "*",
-        matchSource: "wildcard",
-      };
-    }
-    return null;
-  }
-  const match = resolveChannelEntryMatchWithFallback({
-    entries: providerEntries,
-    keys,
-    parentKeys,
-    wildcardKey: "*",
-    normalizeKey: (value) => normalizeOptionalLowercaseString(value) ?? "",
-  });
-  const raw = match.entry ?? match.wildcardEntry;
-  if (typeof raw !== "string") {
-    return null;
-  }
-  const model = normalizeOptionalString(raw);
-  if (!model) {
-    return null;
-  }
-
-  return {
-    channel: normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "",
-    model,
-    matchKey: match.matchKey,
-    matchSource: match.matchSource,
-  };
-}
-
-function resolveConfiguredChannelRuntimeProfile(
+/** Resolves a channel-scoped runtime profile from direct, parent, and wildcard config entries. */
+export function resolveChannelRuntimeProfile(
   params: ChannelModelOverrideParams,
 ): (ChannelRuntimeProfileConfig & { matchKey?: string; matchSource?: ChannelMatchSource }) | null {
   const channel = normalizeOptionalString(params.channel);
@@ -302,37 +228,63 @@ function resolveConfiguredChannelRuntimeProfile(
   return { ...match.entry, matchKey: match.matchKey, matchSource: match.matchSource };
 }
 
-/** Resolves the effective channel runtime profile, including the legacy model fallback. */
-export function resolveChannelRuntimeProfile(
-  params: ChannelModelOverrideParams,
-): (ChannelRuntimeProfileConfig & { matchKey?: string; matchSource?: ChannelMatchSource }) | null {
-  const profile = resolveConfiguredChannelRuntimeProfile(params);
-  const legacyModel = profile?.model ? null : resolveLegacyChannelModelOverride(params);
-  if (!profile && !legacyModel) {
-    return null;
-  }
-  return {
-    ...(legacyModel ? { model: legacyModel.model } : {}),
-    ...profile,
-    matchKey: profile?.matchKey ?? legacyModel?.matchKey,
-    matchSource: profile?.matchSource ?? legacyModel?.matchSource,
-  };
-}
-
-/** Resolves the effective channel-scoped model from runtime profiles, then legacy config. */
+/** Resolves a channel-scoped model override from direct, parent, and wildcard config entries. */
 export function resolveChannelModelOverride(
   params: ChannelModelOverrideParams,
 ): ChannelModelOverride | null {
   const channel = normalizeOptionalString(params.channel);
-  const profile = resolveChannelRuntimeProfile(params);
-  const model = normalizeOptionalString(profile?.model);
-  if (!channel || !model) {
+  if (!channel) {
+    return null;
+  }
+  const modelByChannel = params.cfg.channels?.modelByChannel as
+    | ChannelModelByChannelConfig
+    | undefined;
+  const providerEntries = resolveProviderEntry(modelByChannel, channel);
+  if (!providerEntries) {
+    return null;
+  }
+  const directMatch = resolveDirectChannelModelMatch({
+    providerEntries,
+    groupId: params.groupId,
+    parentSessionKey: params.parentSessionKey,
+  });
+  if (directMatch) {
+    return {
+      channel: normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "",
+      model: directMatch.model,
+      matchKey: directMatch.matchKey,
+      matchSource: directMatch.matchSource,
+    };
+  }
+
+  const { keys, parentKeys } = buildChannelCandidates(params);
+  if (keys.length === 0 && parentKeys.length === 0) {
+    const model = normalizeOptionalString(providerEntries["*"]);
+    return model
+      ? {
+          channel:
+            normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "",
+          model,
+          matchKey: "*",
+          matchSource: "wildcard",
+        }
+      : null;
+  }
+  const match = resolveChannelEntryMatchWithFallback({
+    entries: providerEntries,
+    keys,
+    parentKeys,
+    wildcardKey: "*",
+    normalizeKey: (value) => normalizeOptionalLowercaseString(value) ?? "",
+  });
+  const model = normalizeOptionalString(match.entry ?? match.wildcardEntry);
+  if (!model) {
     return null;
   }
   return {
     channel: normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "",
     model,
-    matchKey: profile?.matchKey,
-    matchSource: profile?.matchSource,
+    matchKey: match.matchKey,
+    matchSource: match.matchSource,
   };
 }
