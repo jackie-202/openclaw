@@ -75,6 +75,41 @@ describe("runCronCommandJob", () => {
     });
   });
 
+  it("uses an explicit bounded cron failure marker as the command error", async () => {
+    const result = await runCronCommandJob({
+      job: makeCommandJob({
+        kind: "command",
+        argv: [
+          process.execPath,
+          "-e",
+          "process.stderr.write('CRON_FAILURE: stage=validation code=bad'); process.exit(1)",
+        ],
+        timeoutSeconds: 5,
+      }),
+    });
+
+    expect(result.status).toBe("error");
+    expect(result.error).toBe("stage=validation code=bad");
+  });
+
+  it("caps an explicit cron failure marker without exposing following stderr", async () => {
+    const marker = "x".repeat(800);
+    const result = await runCronCommandJob({
+      job: makeCommandJob({
+        kind: "command",
+        argv: [
+          process.execPath,
+          "-e",
+          `process.stderr.write('CRON_FAILURE: ${marker}\\nsecret body'); process.exit(1)`,
+        ],
+        timeoutSeconds: 5,
+      }),
+    });
+
+    expect(result.error).toHaveLength(512);
+    expect(result.error).not.toContain("secret body");
+  });
+
   it("marks command timeouts as cron errors", async () => {
     const result = await runCronCommandJob({
       job: makeCommandJob({

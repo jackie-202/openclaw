@@ -5,6 +5,8 @@ import type { CronRunDiagnostics, CronRunOutcome, CronRunStatus, CronJob } from 
 
 const DEFAULT_COMMAND_TIMEOUT_MS = 10 * 60_000;
 const EFFECTIVELY_UNBOUNDED_TIMEOUT_MS = 2_147_483_647;
+const MAX_CRON_FAILURE_LENGTH = 512;
+const CRON_FAILURE_PREFIX = "CRON_FAILURE:";
 
 function secondsToMs(value: number | undefined): number | undefined {
   if (typeof value !== "number") {
@@ -51,6 +53,15 @@ function commandErrorMessage(params: {
     return `command exited with code ${params.code}`;
   }
   return "command failed";
+}
+
+function explicitCronFailure(stderr: string): string | undefined {
+  const markers = stderr.split(/\r?\n/u).filter((line) => line.startsWith(CRON_FAILURE_PREFIX));
+  if (markers.length !== 1) {
+    return undefined;
+  }
+  const message = markers[0].slice(CRON_FAILURE_PREFIX.length).trim();
+  return message ? message.slice(0, MAX_CRON_FAILURE_LENGTH) : undefined;
 }
 
 function buildDiagnostics(params: {
@@ -126,13 +137,18 @@ export async function runCronCommandJob(params: {
       result.termination !== "signal";
     const status: CronRunStatus = ok ? "ok" : "error";
     const summary = buildCommandSummary({ stdout: result.stdout, stderr: result.stderr });
+    const markedFailure =
+      typeof result.code === "number" && result.code !== 0
+        ? explicitCronFailure(result.stderr)
+        : undefined;
     const error = ok
       ? undefined
-      : commandErrorMessage({
+      : (markedFailure ??
+        commandErrorMessage({
           code: result.code,
           signal: result.signal,
           termination: result.termination,
-        });
+        }));
     return {
       status,
       ...(error ? { error } : {}),
