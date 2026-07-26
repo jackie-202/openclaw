@@ -1,0 +1,46 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/bold-fork-4060.evidence.md",
+      "provenance": "evidence_repair:bold-fork-4060-acceptance-001-evidence-repair-001",
+      "size": 1587
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/bold-fork-4060.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/bold-fork-4060-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "dc43c20df50c843537e39f77789b3994d534e579",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-07-24T23:24:58.901768+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "npm test",
+      "outcome": "Test Files  1 failed | 49 passed (50)"
+    },
+    {
+      "command": "TASK_ID=dark-dune-1632 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test src/channels/model-overrides.test.ts src/config/config.plugin-validation.test.ts sr",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=dark-dune-1632 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test src/channels/model-overrides.test.ts src/config/config.plugin-validation.test.ts ",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=dark-dune-1632 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test src/channels/model-overrides.test.ts src/config/config.plugin-validation.test.ts ",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "bold-fork-4060-acceptance-001-evidence-repair-001",
+  "sourceRunId": "bold-fork-4060-acceptance-001",
+  "startedAt": "2026-07-24T23:24:49.041991+00:00",
+  "status": "escalated"
+}

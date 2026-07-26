@@ -1,0 +1,680 @@
+# Semantic Review Material: warm-peak-1796
+
+- Source: `plans/checkpoints/swift-dune-1559.source-and-tests.diff`
+- SHA-256: `83ecc4e4ede1228faeed223bfec45e86fb2934316c1441cf5f4b02a69c45a878`
+- Scope: complete parent implementation and focused-test diff, with no omitted hunks
+
+```diff
+diff --git a/src/agents/agent-command.live-model-switch.test.ts b/src/agents/agent-command.live-model-switch.test.ts
+index d6c11544a8..dc63e63789 100644
+--- a/src/agents/agent-command.live-model-switch.test.ts
++++ b/src/agents/agent-command.live-model-switch.test.ts
+@@ -1205,6 +1205,48 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
+     });
+   });
+ 
++  it("resolves the transitional runtime model when modelByChannel is absent", async () => {
++    setupSingleAttemptFallback();
++    state.runtimeConfigMock = {
++      agents: {
++        defaults: {
++          model: "anthropic/default-model",
++          models: {
++            "anthropic/default-model": {},
++            "openai/channel-model": {},
++          },
++        },
++      },
++      channels: {
++        runtimeByChannel: {
++          discord: {
++            "channel-123": { model: "openai/channel-model" },
++          },
++        },
++      },
++    };
++    state.resolveChannelModelOverrideMock.mockReturnValue({
++      channel: "discord",
++      model: "openai/channel-model",
++      matchKey: "channel-123",
++    });
++    state.sessionEntryMock = {
++      sessionId: "session-1",
++      updatedAt: 1,
++      channel: "discord",
++      groupId: "channel-123",
++      skillsSnapshot: { prompt: "", skills: [], version: 0 },
++    };
++    state.runAgentAttemptMock.mockResolvedValue(makeSuccessResult("openai", "channel-model"));
++
++    await runBasicAgentCommand();
++
++    expect(state.resolveChannelModelOverrideMock).toHaveBeenCalledOnce();
++    const fallbackParams = mockCallArg(state.runWithModelFallbackMock) as FallbackRunnerParams;
++    expect(fallbackParams.provider).toBe("openai");
++    expect(fallbackParams.model).toBe("channel-model");
++  });
++
+   it("uses current run channel context when persisted session metadata is absent", async () => {
+     setupSingleAttemptFallback();
+     state.runtimeConfigMock = {
+diff --git a/src/agents/agent-command.ts b/src/agents/agent-command.ts
+index f7da971935..e2dd2b5f9d 100644
+--- a/src/agents/agent-command.ts
++++ b/src/agents/agent-command.ts
+@@ -1332,22 +1332,21 @@ async function agentCommandInternal(
+     const channelOverrideGroupId = currentRunModelChannel
+       ? (runContext.groupId ?? sessionEntry?.groupId ?? runContext.currentChannelId)
+       : (sessionEntry?.groupId ?? runContext.groupId ?? runContext.currentChannelId);
+-    const channelModelOverride =
+-      cfg.channels?.modelByChannel && !hasExplicitRunOverride
+-        ? resolveChannelModelOverride({
+-            cfg,
+-            channel:
+-              currentRunModelChannel ??
+-              sessionEntry?.channel ??
+-              sessionEntry?.lastChannel ??
+-              sessionEntry?.origin?.provider,
+-            groupId: channelOverrideGroupId,
+-            groupChatType: sessionEntry?.chatType ?? sessionEntry?.origin?.chatType,
+-            groupChannel: runContext.groupChannel ?? sessionEntry?.groupChannel,
+-            groupSubject: sessionEntry?.subject,
+-            parentSessionKey: sessionEntry?.parentSessionKey ?? sessionKey,
+-          })
+-        : null;
++    const channelModelOverride = !hasExplicitRunOverride
++      ? resolveChannelModelOverride({
++          cfg,
++          channel:
++            currentRunModelChannel ??
++            sessionEntry?.channel ??
++            sessionEntry?.lastChannel ??
++            sessionEntry?.origin?.provider,
++          groupId: channelOverrideGroupId,
++          groupChatType: sessionEntry?.chatType ?? sessionEntry?.origin?.chatType,
++          groupChannel: runContext.groupChannel ?? sessionEntry?.groupChannel,
++          groupSubject: sessionEntry?.subject,
++          parentSessionKey: sessionEntry?.parentSessionKey ?? sessionKey,
++        })
++      : null;
+     const normalizedChannelOverride = channelModelOverride
+       ? parseAgentCommandModelRef(
+           cfg,
+diff --git a/src/auto-reply/reply/dispatch-from-config.test.ts b/src/auto-reply/reply/dispatch-from-config.test.ts
+index efef852360..62f3ad27fd 100644
+--- a/src/auto-reply/reply/dispatch-from-config.test.ts
++++ b/src/auto-reply/reply/dispatch-from-config.test.ts
+@@ -8803,7 +8803,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
+     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
+   });
+ 
+-  it("uses runtime-only channel models before Codex first-turn delivery defaults", async () => {
++  it("uses modelByChannel before runtime models for first-turn delivery defaults", async () => {
+     setNoAbort();
+     registerAgentHarness({
+       id: "codex",
+@@ -8818,8 +8818,8 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
+     sessionStoreMocks.currentEntry = undefined;
+     const dispatcher = createDispatcher();
+     const replyResolver = vi.fn(async (_ctx: MsgContext, opts?: GetReplyOptions) => {
+-      expect(opts?.sourceReplyDeliveryMode).toBe("automatic");
+-      return { text: "visible channel-model reply" } satisfies ReplyPayload;
++      expect(opts?.sourceReplyDeliveryMode).toBe("message_tool_only");
++      return { text: "private channel-model reply" } satisfies ReplyPayload;
+     });
+ 
+     const result = await dispatchReplyFromConfig({
+@@ -8832,6 +8832,11 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
+       }),
+       cfg: {
+         channels: {
++          modelByChannel: {
++            telegram: {
++              "*": "codex/gpt-5.5",
++            },
++          },
+           runtimeByChannel: {
+             telegram: {
+               "*": { model: "anthropic/claude-sonnet-4.6" },
+@@ -8844,8 +8849,8 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
+     });
+ 
+     expect(replyResolver).toHaveBeenCalledTimes(1);
+-    expect(result.queuedFinal).toBe(true);
+-    expect(firstFinalReplyPayload(dispatcher)?.text).toBe("visible channel-model reply");
++    expect(result.queuedFinal).toBe(false);
++    expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
+   });
+ 
+   it("uses runtime channel models before cached Codex runtime defaults", async () => {
+diff --git a/src/auto-reply/reply/dispatch-from-config.ts b/src/auto-reply/reply/dispatch-from-config.ts
+index 69013ee9fc..b960f8ed09 100644
+--- a/src/auto-reply/reply/dispatch-from-config.ts
++++ b/src/auto-reply/reply/dispatch-from-config.ts
+@@ -39,7 +39,7 @@ import {
+   touchConversationBindingRecord,
+ } from "../../bindings/records.js";
+ import { normalizeChatType } from "../../channels/chat-type.js";
+-import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
++import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
+ import { shouldSuppressLocalExecApprovalPrompt } from "../../channels/plugins/exec-approval-local.js";
+ import { applyMergePatch } from "../../config/merge-patch.js";
+ import { resolveGroupSessionKey } from "../../config/sessions/group.js";
+@@ -517,7 +517,7 @@ function resolveChannelModelCandidate(params: {
+     ctx: params.ctx,
+     entry: params.entry,
+   });
+-  const channelRuntimeProfile = resolveChannelRuntimeProfile({
++  const channelModelOverride = resolveChannelModelOverride({
+     cfg: params.cfg,
+     channel,
+     groupId: params.entry?.groupId,
+@@ -526,12 +526,12 @@ function resolveChannelModelCandidate(params: {
+     groupSubject: params.entry?.subject ?? params.ctx.GroupSubject,
+     parentSessionKey: params.parentSessionKey,
+   });
+-  if (!channelRuntimeProfile?.model) {
++  if (!channelModelOverride) {
+     return undefined;
+   }
+ 
+   return resolveModelRefFromString({
+-    raw: channelRuntimeProfile.model,
++    raw: channelModelOverride.model,
+     defaultProvider: params.defaultProvider,
+     aliasIndex: params.aliasIndex,
+   })?.ref;
+diff --git a/src/auto-reply/reply/get-reply-native-slash-fast-path.ts b/src/auto-reply/reply/get-reply-native-slash-fast-path.ts
+index ee5f234960..1e572b481a 100644
+--- a/src/auto-reply/reply/get-reply-native-slash-fast-path.ts
++++ b/src/auto-reply/reply/get-reply-native-slash-fast-path.ts
+@@ -6,7 +6,7 @@ import {
+   resolveThinkingDefaultWithRuntimeCatalog,
+   type ModelAliasIndex,
+ } from "../../agents/model-selection.js";
+-import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
++import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
+ import type { OpenClawConfig } from "../../config/config.js";
+ import { createLazyImportLoader } from "../../shared/lazy-promise.js";
+ import type { SkillCommandSpec } from "../../skills/types.js";
+@@ -110,7 +110,7 @@ export async function maybeResolveNativeSlashCommandFastReply(params: {
+     commandAuthorized: params.commandAuthorized,
+     workspaceDir: params.workspaceDir,
+   });
+-  const channelRuntimeProfile = resolveChannelRuntimeProfile({
++  const channelModelOverride = resolveChannelModelOverride({
+     cfg: params.cfg,
+     channel:
+       sessionState.sessionEntry.channel ??
+@@ -124,9 +124,9 @@ export async function maybeResolveNativeSlashCommandFastReply(params: {
+     groupSubject: sessionState.sessionEntry.subject ?? params.ctx.GroupSubject,
+     parentSessionKey: sessionState.sessionKey,
+   });
+-  const channelModelRef = channelRuntimeProfile?.model
++  const channelModelRef = channelModelOverride
+     ? resolveModelRefFromString({
+-        raw: channelRuntimeProfile.model,
++        raw: channelModelOverride.model,
+         defaultProvider: params.defaultProvider,
+         aliasIndex: params.aliasIndex,
+       })?.ref
+diff --git a/src/auto-reply/reply/get-reply.fast-path.test.ts b/src/auto-reply/reply/get-reply.fast-path.test.ts
+index d2f16145b4..d7a0d07cea 100644
+--- a/src/auto-reply/reply/get-reply.fast-path.test.ts
++++ b/src/auto-reply/reply/get-reply.fast-path.test.ts
+@@ -357,7 +357,7 @@ describe("getReplyFromConfig fast test bootstrap", () => {
+         expectedModel: "gpt-5.7",
+       },
+       {
+-        name: "runtime profile",
++        name: "modelByChannel precedence",
+         sessionEntry: {},
+         runtimeProfile: {
+           model: "openai/gpt-5.6-sol",
+@@ -366,14 +366,14 @@ describe("getReplyFromConfig fast test bootstrap", () => {
+           textVerbosity: "low" as const,
+         },
+         legacyModel: "openai/gpt-5.4",
+-        expectedModel: "gpt-5.6-sol",
++        expectedModel: "gpt-5.4",
+       },
+       {
+-        name: "legacy channel model ignored",
++        name: "modelByChannel without runtime model",
+         sessionEntry: {},
+         runtimeProfile: { thinkingLevel: "high" },
+         legacyModel: "openai/gpt-5.4",
+-        expectedModel: "gpt-5.5",
++        expectedModel: "gpt-5.4",
+       },
+       {
+         name: "global default",
+@@ -442,7 +442,7 @@ describe("getReplyFromConfig fast test bootstrap", () => {
+             })
+           : null,
+       );
+-      if (testCase.name === "runtime profile") {
++      if (testCase.name === "modelByChannel precedence") {
+         expect(directiveParams.sessionEntry?.modelOverride).toBeUndefined();
+       }
+     }
+@@ -686,6 +686,57 @@ describe("getReplyFromConfig fast test bootstrap", () => {
+     expect(vi.mocked(runPreparedReplyMock)).not.toHaveBeenCalled();
+   });
+ 
++  it("uses modelByChannel before the transitional runtime model for native /status", async () => {
++    const home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-status-channel-model-"));
++    const targetSessionKey = "agent:main:telegram:123";
++    const cfg = markCompleteReplyConfig({
++      agents: {
++        defaults: {
++          model: "openai/gpt-5.5",
++          workspace: path.join(home, "workspace"),
++        },
++      },
++      channels: {
++        modelByChannel: { telegram: { "*": "openai/gpt-5.4" } },
++        runtimeByChannel: {
++          telegram: { "*": { model: "openai/gpt-5.6-sol", thinkingLevel: "high" } },
++        },
++      },
++      session: { store: path.join(home, "sessions.json") },
++    } as OpenClawConfig);
++    vi.mocked(resolveDefaultModelMock).mockReturnValueOnce({
++      defaultProvider: "openai",
++      defaultModel: "gpt-5.5",
++      aliasIndex: emptyAliasIndex(),
++    });
++    vi.mocked(resolveModelRefFromStringMock).mockImplementation(({ raw }) => {
++      const [provider, ...modelParts] = raw.split("/");
++      const model = modelParts.join("/");
++      return provider && model ? ({ ref: { provider, model } } as never) : null;
++    });
++
++    const reply = await getReplyFromConfig(
++      buildGetReplyCtx({
++        Body: "/status",
++        BodyForAgent: "/status",
++        RawBody: "/status",
++        CommandBody: "/status",
++        CommandSource: "native",
++        CommandAuthorized: true,
++        SessionKey: "telegram:slash:123",
++        CommandTargetSessionKey: targetSessionKey,
++      }),
++      undefined,
++      cfg,
++    );
++
++    expect(Array.isArray(reply)).toBe(false);
++    if (!reply || Array.isArray(reply)) {
++      throw new Error("expected single reply payload");
++    }
++    expect(reply.text).toContain("Model: openai/gpt-5.4");
++  });
++
+   it("uses the target session thinking override for native /status", async () => {
+     const home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-status-think-"));
+     const storePath = path.join(home, "sessions.json");
+diff --git a/src/auto-reply/reply/get-reply.test-mocks.ts b/src/auto-reply/reply/get-reply.test-mocks.ts
+index 9f635ff7b2..62026db80c 100644
+--- a/src/auto-reply/reply/get-reply.test-mocks.ts
++++ b/src/auto-reply/reply/get-reply.test-mocks.ts
+@@ -40,7 +40,7 @@ vi.mock("../../channels/model-overrides.js", async () => {
+   );
+   return {
+     ...actual,
+-    resolveChannelModelOverride: vi.fn(() => undefined),
++    resolveChannelModelOverride: vi.fn(actual.resolveChannelModelOverride),
+   };
+ });
+ 
+diff --git a/src/auto-reply/reply/get-reply.ts b/src/auto-reply/reply/get-reply.ts
+index edf218b88e..658ca12ef6 100644
+--- a/src/auto-reply/reply/get-reply.ts
++++ b/src/auto-reply/reply/get-reply.ts
+@@ -14,7 +14,10 @@ import {
+ import { resolveModelRefFromString } from "../../agents/model-selection.js";
+ import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
+ import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
+-import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
++import {
++  resolveChannelModelOverride,
++  resolveChannelRuntimeProfile,
++} from "../../channels/model-overrides.js";
+ import { type OpenClawConfig, getRuntimeConfig } from "../../config/config.js";
+ import { logVerbose } from "../../globals.js";
+ import { measureDiagnosticsTimelineSpan } from "../../infra/diagnostics-timeline.js";
+@@ -563,7 +566,7 @@ export async function getReplyFromConfig(
+     });
+   }
+ 
+-  const channelRuntimeProfile = resolveChannelRuntimeProfile({
++  const channelResolutionParams = {
+     cfg,
+     channel:
+       groupResolution?.channel ??
+@@ -578,11 +581,13 @@ export async function getReplyFromConfig(
+     groupChannel: sessionEntry.groupChannel ?? sessionCtx.GroupChannel ?? finalized.GroupChannel,
+     groupSubject: sessionEntry.subject ?? sessionCtx.GroupSubject ?? finalized.GroupSubject,
+     parentSessionKey: sessionCtx.ModelParentSessionKey ?? sessionCtx.ParentSessionKey,
+-  });
++  };
++  const channelRuntimeProfile = resolveChannelRuntimeProfile(channelResolutionParams);
++  const channelModelOverride = resolveChannelModelOverride(channelResolutionParams);
+   const resolvedChannelModelOverride =
+-    channelRuntimeProfile?.model && !hasResolvedHeartbeatModelOverride
++    channelModelOverride && !hasResolvedHeartbeatModelOverride
+       ? resolveModelRefFromString({
+-          raw: channelRuntimeProfile.model,
++          raw: channelModelOverride.model,
+           defaultProvider,
+           aliasIndex,
+         })
+diff --git a/src/auto-reply/status.test.ts b/src/auto-reply/status.test.ts
+index e732b7eac6..5a1ab5b8b6 100644
+--- a/src/auto-reply/status.test.ts
++++ b/src/auto-reply/status.test.ts
+@@ -825,6 +825,34 @@ describe("buildStatusMessage", () => {
+     expect(normalized).toContain("channel override");
+   });
+ 
++  it("attributes a transitional runtime model fallback as a channel override", () => {
++    const text = buildStatusMessage({
++      config: {
++        channels: {
++          runtimeByChannel: {
++            discord: {
++              "123": { model: "openai/gpt-5.5" },
++            },
++          },
++        },
++      } as unknown as OpenClawConfig,
++      agent: {
++        model: "openai/gpt-5.5",
++      },
++      sessionEntry: {
++        sessionId: "abc",
++        updatedAt: 0,
++        channel: "discord",
++        groupId: "123",
++      },
++      sessionKey: "agent:main:main",
++      sessionScope: "per-sender",
++      queue: { mode: "collect", depth: 0 },
++    });
++
++    expect(normalizeTestText(text)).toContain("channel override");
++  });
++
+   it("uses the channel override model context window instead of stale persisted context", () => {
+     const text = buildStatusMessage({
+       config: {
+diff --git a/src/channels/model-overrides.test.ts b/src/channels/model-overrides.test.ts
+index a1b5996e2d..105c21d624 100644
+--- a/src/channels/model-overrides.test.ts
++++ b/src/channels/model-overrides.test.ts
+@@ -1,15 +1,24 @@
+ // Model override tests cover channel-level model selection and override precedence.
+-import { beforeEach, describe, expect, it } from "vitest";
++import { beforeEach, describe, expect, it, vi } from "vitest";
+ import type { OpenClawConfig } from "../config/config.js";
+ import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../plugins/runtime.js";
+ import { createTestRegistry } from "../test-utils/channel-plugins.js";
+ import { createSessionConversationTestRegistry } from "../test-utils/session-conversation-registry.js";
+ import { resolveChannelModelOverride, resolveChannelRuntimeProfile } from "./model-overrides.js";
+ 
++const { logWarn } = vi.hoisted(() => ({ logWarn: vi.fn() }));
++
++vi.mock("../logging/subsystem.js", () => ({
++  createSubsystemLogger: () => ({
++    warn: logWarn,
++  }),
++}));
++
+ describe("resolveChannelModelOverride", () => {
+   beforeEach(() => {
+     resetPluginRuntimeStateForTest();
+     setActivePluginRegistry(createSessionConversationTestRegistry());
++    logWarn.mockClear();
+   });
+ 
+   it.each([
+@@ -223,7 +232,7 @@ describe("resolveChannelModelOverride", () => {
+     expect(resolved?.matchKey).toBe("-100123");
+   });
+ 
+-  it("keeps runtime and legacy model resolvers separate", () => {
++  it("keeps modelByChannel authoritative over a runtime profile model", () => {
+     const cfg = {
+       channels: {
+         modelByChannel: {
+@@ -265,6 +274,41 @@ describe("resolveChannelModelOverride", () => {
+       }),
+     );
+     expect(modelOverride?.model).toBe("openai/gpt-5.4");
++    expect(logWarn).not.toHaveBeenCalled();
++  });
++
++  it("falls back to the runtime profile model and warns once when modelByChannel misses", () => {
++    const resolved = resolveChannelModelOverride({
++      cfg: {
++        channels: {
++          runtimeByChannel: {
++            discord: {
++              "1494790764134273195": {
++                model: "openai/gpt-5.5",
++                thinkingLevel: "xhigh",
++              },
++            },
++          },
++        },
++      } as unknown as OpenClawConfig,
++      channel: "discord",
++      groupId: "1494790764134273195",
++    });
++
++    expect(resolved).toMatchObject({
++      channel: "discord",
++      model: "openai/gpt-5.5",
++      matchKey: "1494790764134273195",
++    });
++    expect(logWarn).toHaveBeenCalledOnce();
++    expect(logWarn).toHaveBeenCalledWith(
++      expect.stringContaining("channels.modelByChannel"),
++      expect.objectContaining({
++        proposalId: "proposal-20260724-083714-6c9e68",
++        channel: "discord",
++        matchKey: "1494790764134273195",
++      }),
++    );
+   });
+ 
+   it("does not inherit legacy modelByChannel when runtime profile has no model", () => {
+diff --git a/src/channels/model-overrides.ts b/src/channels/model-overrides.ts
+index 522744a891..224856d952 100644
+--- a/src/channels/model-overrides.ts
++++ b/src/channels/model-overrides.ts
+@@ -9,6 +9,7 @@ import {
+ } from "@openclaw/normalization-core/string-coerce";
+ import type { ChannelRuntimeProfileConfig } from "../config/types.channels.js";
+ import type { OpenClawConfig } from "../config/types.openclaw.js";
++import { createSubsystemLogger } from "../logging/subsystem.js";
+ import {
+   parseRawSessionConversationRef,
+   parseThreadSessionSuffix,
+@@ -38,6 +39,8 @@ export type ChannelModelOverride = {
+ type ChannelModelByChannelConfig = Record<string, Record<string, string>>;
+ type ChannelRuntimeByChannelConfig = Record<string, Record<string, ChannelRuntimeProfileConfig>>;
+ 
++const log = createSubsystemLogger("channels/model-overrides");
++
+ type ChannelModelOverrideParams = {
+   cfg: OpenClawConfig;
+   channel?: string | null;
+@@ -228,8 +231,7 @@ export function resolveChannelRuntimeProfile(
+   return { ...match.entry, matchKey: match.matchKey, matchSource: match.matchSource };
+ }
+ 
+-/** Resolves a channel-scoped model override from direct, parent, and wildcard config entries. */
+-export function resolveChannelModelOverride(
++function resolveConfiguredChannelModelOverride(
+   params: ChannelModelOverrideParams,
+ ): ChannelModelOverride | null {
+   const channel = normalizeOptionalString(params.channel);
+@@ -288,3 +290,41 @@ export function resolveChannelModelOverride(
+     matchSource: match.matchSource,
+   };
+ }
++
++// Transitional fallback for proposal-20260724-083714-6c9e68. Slice 3 removes this seam.
++function resolveRuntimeChannelModelFallback(
++  params: ChannelModelOverrideParams,
++): ChannelModelOverride | null {
++  const channel = normalizeOptionalString(params.channel);
++  const profile = resolveChannelRuntimeProfile(params);
++  const model = normalizeOptionalString(profile?.model);
++  if (!channel || !model) {
++    return null;
++  }
++  const normalizedChannel =
++    normalizeMessageChannel(channel) ?? normalizeOptionalLowercaseString(channel) ?? "";
++  log.warn(
++    "Channel model resolved from deprecated channels.runtimeByChannel model; migrate it to channels.modelByChannel",
++    {
++      proposalId: "proposal-20260724-083714-6c9e68",
++      channel: normalizedChannel,
++      matchKey: profile?.matchKey,
++      matchSource: profile?.matchSource,
++    },
++  );
++  return {
++    channel: normalizedChannel,
++    model,
++    matchKey: profile?.matchKey,
++    matchSource: profile?.matchSource,
++  };
++}
++
++/** Resolves a channel-scoped model override from direct, parent, and wildcard config entries. */
++export function resolveChannelModelOverride(
++  params: ChannelModelOverrideParams,
++): ChannelModelOverride | null {
++  return (
++    resolveConfiguredChannelModelOverride(params) ?? resolveRuntimeChannelModelFallback(params)
++  );
++}
+diff --git a/src/gateway/session-utils.test.ts b/src/gateway/session-utils.test.ts
+index ac76974fe7..5839e84c75 100644
+--- a/src/gateway/session-utils.test.ts
++++ b/src/gateway/session-utils.test.ts
+@@ -520,6 +520,52 @@ describe("gateway session utils", () => {
+     expect(row.reasoningLevel).toBe("on");
+   });
+ 
++  test("session row prefers modelByChannel while retaining supplemental runtime fields", () => {
++    const target = "1494790764134273195";
++    const cfg = {
++      agents: {
++        defaults: {
++          model: { primary: "openai/gpt-5.4" },
++        },
++      },
++      channels: {
++        modelByChannel: {
++          discord: { [target]: "openai/gpt-5.6-sol" },
++        },
++        runtimeByChannel: {
++          discord: {
++            [target]: {
++              model: "openai/gpt-5.5",
++              thinkingLevel: "xhigh",
++              reasoningLevel: "on",
++            },
++          },
++        },
++      },
++    } as OpenClawConfig;
++    const entry = {
++      sessionId: "einstein-reconstructed",
++      updatedAt: Date.now(),
++      channel: "discord",
++      groupId: target,
++      chatType: "channel",
++    } satisfies SessionEntry;
++
++    const row = buildGatewaySessionRow({
++      cfg,
++      storePath: "",
++      store: {},
++      key: `agent:main:discord:channel:${target}`,
++      entry,
++      lightweightListRow: true,
++    });
++
++    expect(row.modelProvider).toBe("openai");
++    expect(row.model).toBe("gpt-5.6-sol");
++    expect(row.thinkingLevel).toBe("xhigh");
++    expect(row.reasoningLevel).toBe("on");
++  });
++
+   test("session list thinking cache preserves case-distinct model catalog entries", () => {
+     const cfg = createModelDefaultsConfig({ primary: "custom/CaseModel" });
+     const modelCatalog = [
+diff --git a/src/gateway/session-utils.ts b/src/gateway/session-utils.ts
+index 9b04df872b..ec77dd951b 100644
+--- a/src/gateway/session-utils.ts
++++ b/src/gateway/session-utils.ts
+@@ -51,7 +51,10 @@ import {
+   shouldKeepSubagentRunChildLink,
+ } from "../agents/subagent-run-liveness.js";
+ import { listThinkingLevelOptions } from "../auto-reply/thinking.js";
+-import { resolveChannelRuntimeProfile } from "../channels/model-overrides.js";
++import {
++  resolveChannelModelOverride,
++  resolveChannelRuntimeProfile,
++} from "../channels/model-overrides.js";
+ import { getRuntimeConfig } from "../config/io.js";
+ import { resolveAgentModelFallbackValues } from "../config/model-input.js";
+ import { resolveStateDir } from "../config/paths.js";
+@@ -1902,7 +1905,7 @@ export function buildGatewaySessionRow(params: {
+     entry?.label ??
+     originLabel;
+   const deliveryFields = normalizeSessionDeliveryFields(entry);
+-  const channelRuntimeProfile = resolveChannelRuntimeProfile({
++  const channelResolutionParams = {
+     cfg,
+     channel: channel ?? deliveryFields.lastChannel ?? entry?.origin?.provider,
+     groupId: entry?.groupId ?? id,
+@@ -1910,7 +1913,9 @@ export function buildGatewaySessionRow(params: {
+     groupChannel,
+     groupSubject: subject,
+     parentSessionKey: entry?.parentSessionKey,
+-  });
++  };
++  const channelRuntimeProfile = resolveChannelRuntimeProfile(channelResolutionParams);
++  const channelModelOverride = resolveChannelModelOverride(channelResolutionParams);
+   const parsedAgent = parseAgentSessionKey(key);
+   const sessionAgentId = normalizeAgentId(
+     parsedAgent?.agentId ?? params.agentId ?? resolveDefaultAgentId(cfg),
+@@ -1976,14 +1981,14 @@ export function buildGatewaySessionRow(params: {
+   });
+   const runtimeModelPresent =
+     Boolean(entry?.model?.trim()) || Boolean(entry?.modelProvider?.trim());
+-  const channelProfileModel =
+-    !selectedModel && !runtimeModelPresent && channelRuntimeProfile?.model
+-      ? parseModelRef(channelRuntimeProfile.model, DEFAULT_PROVIDER, {
++  const channelOverrideModel =
++    !selectedModel && !runtimeModelPresent && channelModelOverride
++      ? parseModelRef(channelModelOverride.model, DEFAULT_PROVIDER, {
+           allowPluginNormalization: !lightweight,
+         })
+       : undefined;
+-  const resolvedModel = channelProfileModel
+-    ? channelProfileModel
++  const resolvedModel = channelOverrideModel
++    ? channelOverrideModel
+     : resolveSessionModelIdentityRef(cfg, entry, sessionAgentId, subagentRun?.model, {
+         allowPluginNormalization: !lightweight,
+       });
+```

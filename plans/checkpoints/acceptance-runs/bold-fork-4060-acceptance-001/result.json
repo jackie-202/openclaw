@@ -1,0 +1,46 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The required caller-owned canonical repository Test Gate evidence is still absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller declares Test Gate status not run and states that no Test Gate evidence exists. The supplied final note instead labels locally executed commands as local:test-gate:bold-fork-4060:2026-07-25 after remote providers did not provision, which is not the required caller-owned canonical Test Gate result.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "This follow-up's blocking acceptance requirement is a concrete result from the caller-owned canonical Test Gate workflow. Local build, check, repository test, and focused test records cannot substitute for that canonical reference, and Acceptance may not reinterpret their failures or outcomes.",
+      "required": "Provide a concrete canonical Test Gate result and reference covering the repository test/build gate through the caller-owned Test Gate workflow.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-9860.final-note.md:Canonical-Test-Gate"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-24_followup-acceptance-fix-slice-3-remove-transitional-fallback-reject-m.md:finding-001"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Slice 3: Remove transitional fallback, reject `model` in fork runtime profile: goal-00"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-fork-4060-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-fork-4060"
+}

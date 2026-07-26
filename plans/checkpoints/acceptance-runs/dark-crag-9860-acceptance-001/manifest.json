@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-24T21:58:58+00:00",
+    "implementingStartedAt": "2026-07-24T21:51:40+00:00",
+    "taskFile": "plans/tasks/2026-07-24_followup-slice-3-remove-transitional-fallback-reject-model-in-fork-ru.md",
+    "taskId": "dark-crag-9860",
+    "title": "[acceptance-fix] Slice 3: Remove transitional fallback, reject `model` in fork runtime profile: goal-001: Slice 3: Remov"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Slice 3: Remove transitional fallback, reject `model` in fork runtime profile: goal-001: Slice 3: Remov"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-crag-9860-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-crag-9860",
+  "tddRequired": false
+}

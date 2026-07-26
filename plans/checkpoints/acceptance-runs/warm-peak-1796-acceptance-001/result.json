@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] [acceptance-fix] Slice 1: Upstream model authority with transitional fallback: goal-001: Slice 1: Upstr"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-peak-1796-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "warm-peak-1796"
+}

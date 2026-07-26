@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-24T18:07:57+00:00",
+    "implementingStartedAt": "2026-07-24T17:52:56+00:00",
+    "taskFile": "plans/tasks/2026-07-24_followup-acceptance-fix-slice-1-upstream-model-authority-with-transit.md",
+    "taskId": "warm-peak-1796",
+    "title": "[acceptance-fix] [acceptance-fix] Slice 1: Upstream model authority with transitional fallback: goal-001: Slice 1: Upstr"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Slice 1: Upstream model authority with transitional fallback: goal-001: Slice 1: Upstr"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-peak-1796-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-peak-1796",
+  "tddRequired": false
+}

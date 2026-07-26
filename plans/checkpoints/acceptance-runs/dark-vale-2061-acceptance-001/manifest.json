@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-25T07:31:54+00:00",
+    "implementingStartedAt": "2026-07-25T07:25:25+00:00",
+    "taskFile": "plans/tasks/2026-07-25_followup-slice-5-closure-verification-provenance-review-finding-corre.md",
+    "taskId": "dark-vale-2061",
+    "title": "[acceptance-fix] Slice 5: Closure \u2014 verification, provenance review, finding correction: goal-001: Slice 5: Closure \u2014 ve"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Slice 5: Closure \u2014 verification, provenance review, finding correction: goal-001: Slice 5: Closure \u2014 ve"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-vale-2061-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-vale-2061",
+  "tddRequired": false
+}

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-24T17:41:13+00:00",
+    "implementingStartedAt": "2026-07-24T17:18:13+00:00",
+    "taskFile": "plans/tasks/2026-07-24_followup-slice-1-upstream-model-authority-with-transitional-fallback.md",
+    "taskId": "swift-dune-1559",
+    "title": "[acceptance-fix] Slice 1: Upstream model authority with transitional fallback: goal-001: Slice 1: Upstream model authori"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Slice 1: Upstream model authority with transitional fallback: goal-001: Slice 1: Upstream model authori"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-dune-1559-acceptance-002",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-dune-1559",
+  "tddRequired": false
+}

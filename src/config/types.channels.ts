@@ -36,9 +36,7 @@ export type ChannelDefaultsConfig = {
 /** Provider/channel/target model override map used by channel dispatch. */
 export type ChannelModelByChannelConfig = Record<string, Record<string, string>>;
 
-
 export type ChannelRuntimeProfileConfig = {
-  model?: string;
   thinkingLevel?: string;
   reasoningLevel?: string;
   textVerbosity?: "low" | "medium" | "high";

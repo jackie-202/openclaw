@@ -8803,7 +8803,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  it("uses runtime-only channel models before Codex first-turn delivery defaults", async () => {
+  it("uses modelByChannel for first-turn delivery defaults", async () => {
     setNoAbort();
     registerAgentHarness({
       id: "codex",
@@ -8818,8 +8818,8 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     sessionStoreMocks.currentEntry = undefined;
     const dispatcher = createDispatcher();
     const replyResolver = vi.fn(async (_ctx: MsgContext, opts?: GetReplyOptions) => {
-      expect(opts?.sourceReplyDeliveryMode).toBe("automatic");
-      return { text: "visible channel-model reply" } satisfies ReplyPayload;
+      expect(opts?.sourceReplyDeliveryMode).toBe("message_tool_only");
+      return { text: "private channel-model reply" } satisfies ReplyPayload;
     });
 
     const result = await dispatchReplyFromConfig({
@@ -8832,9 +8832,9 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       }),
       cfg: {
         channels: {
-          runtimeByChannel: {
+          modelByChannel: {
             telegram: {
-              "*": { model: "anthropic/claude-sonnet-4.6" },
+              "*": "codex/gpt-5.5",
             },
           },
         },
@@ -8844,11 +8844,11 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     });
 
     expect(replyResolver).toHaveBeenCalledTimes(1);
-    expect(result.queuedFinal).toBe(true);
-    expect(firstFinalReplyPayload(dispatcher)?.text).toBe("visible channel-model reply");
+    expect(result.queuedFinal).toBe(false);
+    expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  it("uses runtime channel models before cached Codex runtime defaults", async () => {
+  it("does not treat supplemental runtime profiles as model overrides", async () => {
     setNoAbort();
     registerAgentHarness({
       id: "codex",
@@ -8887,7 +8887,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
         channels: {
           runtimeByChannel: {
             telegram: {
-              "*": { model: "anthropic/claude-sonnet-4.6" },
+              "*": { thinkingLevel: "high" },
             },
           },
         },

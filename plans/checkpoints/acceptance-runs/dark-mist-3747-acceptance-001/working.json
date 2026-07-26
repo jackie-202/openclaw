@@ -1,0 +1,39 @@
+{
+  "findings": [
+    {
+      "claim": "The append-only architecture-review correction requires completed byte-integrity verification.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The closure report records the original 6,776-byte SHA-256 but states that validation must confirm the corrected file prefix; none of the supplied artifacts records the post-append prefix digest comparison or its outcome.",
+      "rationale": "Without the required after-edit prefix-hash result, the supplied material does not demonstrate that the original architecture report remained byte-for-byte unchanged, despite append-only preservation being an explicit task constraint and planned validation step.",
+      "required": "Record durable evidence that hashing the first 6,776 bytes of the corrected architecture report yields 394b08f04e58b78608936e65d024e120bae5ce1e9b009912eb8a3f1058bd75fb.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": ".architecture-reviews/reports/2026-07-24-option-a-closure.md:44-46"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-25_dark-mist-3747_slice-5-closure-verification-provenance-review-finding.md:step-14"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Slice 5: Closure \u2014 verification, provenance review, finding correction"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-3747-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "dark-mist-3747"
+}

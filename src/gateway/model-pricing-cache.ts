@@ -1010,20 +1010,6 @@ export function collectConfiguredModelPricingRefs(
       });
     }
   }
-  for (const channelMap of Object.values(config.channels?.runtimeByChannel ?? {})) {
-    if (!channelMap || typeof channelMap !== "object") {
-      continue;
-    }
-    for (const profile of Object.values(channelMap)) {
-      addResolvedModelRef({
-        raw: profile && typeof profile === "object" ? profile.model : undefined,
-        aliasIndex,
-        refs,
-        ...normalizationParams,
-      });
-    }
-  }
-
   addConfiguredWebSearchPluginModels({
     config,
     aliasIndex,

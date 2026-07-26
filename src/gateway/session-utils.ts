@@ -51,7 +51,10 @@ import {
   shouldKeepSubagentRunChildLink,
 } from "../agents/subagent-run-liveness.js";
 import { listThinkingLevelOptions } from "../auto-reply/thinking.js";
-import { resolveChannelRuntimeProfile } from "../channels/model-overrides.js";
+import {
+  resolveChannelModelOverride,
+  resolveChannelRuntimeProfile,
+} from "../channels/model-overrides.js";
 import { getRuntimeConfig } from "../config/io.js";
 import { resolveAgentModelFallbackValues } from "../config/model-input.js";
 import { resolveStateDir } from "../config/paths.js";
@@ -1902,7 +1905,7 @@ export function buildGatewaySessionRow(params: {
     entry?.label ??
     originLabel;
   const deliveryFields = normalizeSessionDeliveryFields(entry);
-  const channelRuntimeProfile = resolveChannelRuntimeProfile({
+  const channelResolutionParams = {
     cfg,
     channel: channel ?? deliveryFields.lastChannel ?? entry?.origin?.provider,
     groupId: entry?.groupId ?? id,
@@ -1910,7 +1913,9 @@ export function buildGatewaySessionRow(params: {
     groupChannel,
     groupSubject: subject,
     parentSessionKey: entry?.parentSessionKey,
-  });
+  };
+  const channelRuntimeProfile = resolveChannelRuntimeProfile(channelResolutionParams);
+  const channelModelOverride = resolveChannelModelOverride(channelResolutionParams);
   const parsedAgent = parseAgentSessionKey(key);
   const sessionAgentId = normalizeAgentId(
     parsedAgent?.agentId ?? params.agentId ?? resolveDefaultAgentId(cfg),
@@ -1976,14 +1981,14 @@ export function buildGatewaySessionRow(params: {
   });
   const runtimeModelPresent =
     Boolean(entry?.model?.trim()) || Boolean(entry?.modelProvider?.trim());
-  const channelProfileModel =
-    !selectedModel && !runtimeModelPresent && channelRuntimeProfile?.model
-      ? parseModelRef(channelRuntimeProfile.model, DEFAULT_PROVIDER, {
+  const channelOverrideModel =
+    !selectedModel && !runtimeModelPresent && channelModelOverride
+      ? parseModelRef(channelModelOverride.model, DEFAULT_PROVIDER, {
           allowPluginNormalization: !lightweight,
         })
       : undefined;
-  const resolvedModel = channelProfileModel
-    ? channelProfileModel
+  const resolvedModel = channelOverrideModel
+    ? channelOverrideModel
     : resolveSessionModelIdentityRef(cfg, entry, sessionAgentId, subagentRun?.model, {
         allowPluginNormalization: !lightweight,
       });

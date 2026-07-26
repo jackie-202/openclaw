@@ -6,7 +6,7 @@ import {
   resolveThinkingDefaultWithRuntimeCatalog,
   type ModelAliasIndex,
 } from "../../agents/model-selection.js";
-import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
+import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 import type { SkillCommandSpec } from "../../skills/types.js";
@@ -110,7 +110,7 @@ export async function maybeResolveNativeSlashCommandFastReply(params: {
     commandAuthorized: params.commandAuthorized,
     workspaceDir: params.workspaceDir,
   });
-  const channelRuntimeProfile = resolveChannelRuntimeProfile({
+  const channelModelOverride = resolveChannelModelOverride({
     cfg: params.cfg,
     channel:
       sessionState.sessionEntry.channel ??
@@ -124,9 +124,9 @@ export async function maybeResolveNativeSlashCommandFastReply(params: {
     groupSubject: sessionState.sessionEntry.subject ?? params.ctx.GroupSubject,
     parentSessionKey: sessionState.sessionKey,
   });
-  const channelModelRef = channelRuntimeProfile?.model
+  const channelModelRef = channelModelOverride
     ? resolveModelRefFromString({
-        raw: channelRuntimeProfile.model,
+        raw: channelModelOverride.model,
         defaultProvider: params.defaultProvider,
         aliasIndex: params.aliasIndex,
       })?.ref

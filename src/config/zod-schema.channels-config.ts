@@ -10,7 +10,12 @@ const ChannelModelByChannelSchema = z
 
 const ChannelRuntimeProfileSchema = z
   .object({
-    model: z.string().trim().min(1).optional(),
+    model: z
+      .never({
+        error:
+          "channels.runtimeByChannel profiles cannot contain model; use channels.modelByChannel instead.",
+      })
+      .optional(),
     thinkingLevel: z
       .enum(["off", "minimal", "low", "medium", "high", "xhigh", "adaptive", "max"])
       .optional(),

@@ -223,7 +223,7 @@ describe("resolveChannelModelOverride", () => {
     expect(resolved?.matchKey).toBe("-100123");
   });
 
-  it("keeps runtime and legacy model resolvers separate", () => {
+  it("resolves the canonical model and supplemental runtime profile independently", () => {
     const cfg = {
       channels: {
         modelByChannel: {
@@ -234,7 +234,6 @@ describe("resolveChannelModelOverride", () => {
         runtimeByChannel: {
           discord: {
             "1494790764134273195": {
-              model: "openai/gpt-5.5",
               thinkingLevel: "xhigh",
               reasoningLevel: "on",
               textVerbosity: "low",
@@ -257,7 +256,6 @@ describe("resolveChannelModelOverride", () => {
 
     expect(runtimeProfile).toEqual(
       expect.objectContaining({
-        model: "openai/gpt-5.5",
         thinkingLevel: "xhigh",
         reasoningLevel: "on",
         textVerbosity: "low",
@@ -267,15 +265,40 @@ describe("resolveChannelModelOverride", () => {
     expect(modelOverride?.model).toBe("openai/gpt-5.4");
   });
 
-  it("does not inherit legacy modelByChannel when runtime profile has no model", () => {
+  it("does not resolve a model from runtimeByChannel", () => {
+    const cfg = {
+      channels: {
+        runtimeByChannel: {
+          discord: {
+            "1494790764134273195": {
+              model: "openai/gpt-5.5",
+              thinkingLevel: "xhigh",
+            },
+          },
+        },
+      },
+    } as unknown as OpenClawConfig;
+
+    expect(
+      resolveChannelModelOverride({
+        cfg,
+        channel: "discord",
+        groupId: "1494790764134273195",
+      }),
+    ).toBeNull();
+    expect(
+      resolveChannelRuntimeProfile({
+        cfg,
+        channel: "discord",
+        groupId: "1494790764134273195",
+      }),
+    ).toEqual(expect.objectContaining({ thinkingLevel: "xhigh" }));
+  });
+
+  it("resolves a model-free runtime profile without modelByChannel", () => {
     const resolved = resolveChannelRuntimeProfile({
       cfg: {
         channels: {
-          modelByChannel: {
-            discord: {
-              "1494790764134273195": "openai/gpt-5.4",
-            },
-          },
           runtimeByChannel: {
             discord: {
               "1494790764134273195": {
@@ -294,6 +317,5 @@ describe("resolveChannelModelOverride", () => {
         thinkingLevel: "xhigh",
       }),
     );
-    expect(resolved?.model).toBeUndefined();
   });
 });

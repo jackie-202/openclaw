@@ -39,7 +39,7 @@ import {
   touchConversationBindingRecord,
 } from "../../bindings/records.js";
 import { normalizeChatType } from "../../channels/chat-type.js";
-import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
+import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
 import { shouldSuppressLocalExecApprovalPrompt } from "../../channels/plugins/exec-approval-local.js";
 import { applyMergePatch } from "../../config/merge-patch.js";
 import { resolveGroupSessionKey } from "../../config/sessions/group.js";
@@ -517,7 +517,7 @@ function resolveChannelModelCandidate(params: {
     ctx: params.ctx,
     entry: params.entry,
   });
-  const channelRuntimeProfile = resolveChannelRuntimeProfile({
+  const channelModelOverride = resolveChannelModelOverride({
     cfg: params.cfg,
     channel,
     groupId: params.entry?.groupId,
@@ -526,12 +526,12 @@ function resolveChannelModelCandidate(params: {
     groupSubject: params.entry?.subject ?? params.ctx.GroupSubject,
     parentSessionKey: params.parentSessionKey,
   });
-  if (!channelRuntimeProfile?.model) {
+  if (!channelModelOverride) {
     return undefined;
   }
 
   return resolveModelRefFromString({
-    raw: channelRuntimeProfile.model,
+    raw: channelModelOverride.model,
     defaultProvider: params.defaultProvider,
     aliasIndex: params.aliasIndex,
   })?.ref;

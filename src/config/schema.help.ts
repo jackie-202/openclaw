@@ -1957,7 +1957,7 @@ export const FIELD_HELP: Record<string, string> = {
   "channels.modelByChannel":
     "Map provider -> channel id -> model override (values are provider/model or aliases).",
   "channels.runtimeByChannel":
-    "Map provider -> channel id -> message-time runtime profile with model, thinkingLevel, reasoningLevel, and textVerbosity.",
+    "Map provider -> channel id -> message-time runtime profile with thinkingLevel, reasoningLevel, and textVerbosity.",
   "messages.suppressToolErrors":
     "When true, suppress ⚠️ tool-error warnings from being shown to the user. The agent already sees errors in context and can retry. Default: false.",
   "messages.ackReaction": "Emoji reaction used to acknowledge inbound messages (empty disables).",

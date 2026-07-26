@@ -1694,7 +1694,6 @@ describe("config plugin validation", () => {
         runtimeByChannel: {
           discord: {
             "1494790764134273195": {
-              model: "openai/gpt-5.5",
               thinkingLevel: "xhigh",
               reasoningLevel: "on",
               textVerbosity: "low",
@@ -1705,6 +1704,25 @@ describe("config plugin validation", () => {
       plugins: { enabled: false, entries: { discord: { enabled: true } } },
     });
     expect(res.ok).toBe(true);
+  });
+
+  it("rejects model in a channel runtime profile", () => {
+    const res = validateInSuite({
+      channels: {
+        runtimeByChannel: {
+          discord: { "channel-123": { model: "openai/gpt-5.5" } },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.issues).toContainEqual({
+        path: "channels.runtimeByChannel.discord.channel-123.model",
+        message:
+          "channels.runtimeByChannel profiles cannot contain model; use channels.modelByChannel instead.",
+      });
+    }
   });
 
   it("accepts plugin heartbeat targets", () => {

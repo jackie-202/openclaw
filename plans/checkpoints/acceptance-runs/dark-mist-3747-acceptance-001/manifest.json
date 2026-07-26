@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-25T07:09:50+00:00",
+    "implementingStartedAt": "2026-07-25T07:02:03+00:00",
+    "taskFile": "plans/tasks/2026-07-24_slice-5-closure-verification-provenance-review-finding-corre.md",
+    "taskId": "dark-mist-3747",
+    "title": "Slice 5: Closure \u2014 verification, provenance review, finding correction"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Slice 5: Closure \u2014 verification, provenance review, finding correction"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-3747-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-mist-3747",
+  "tddRequired": false
+}

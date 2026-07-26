@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The required implementation and focused-test diff is referenced but not present in the caller-supplied review material.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied task-scoped diff contains architecture-review, trajectory-pointer, changelog, backup, and proposal changes only. The acceptance evidence summary names plans/checkpoints/swift-dune-1559.source-and-tests.diff and maps requirements to its line ranges, but the raw artifact contents are not supplied for semantic inspection.",
+      "rationale": "The goal requires inspectable evidence of upstream modelByChannel precedence, the single transitional runtimeByChannel fallback seam and warning, shared target matching, unchanged non-model fields, and routing across reply, native slash, dispatch, agent-command, status, and Gateway paths. Summaries, checksums, reverse-apply claims, and historical test outcomes cannot establish those code semantics without the referenced diff content.",
+      "required": "Supply the complete contents of plans/checkpoints/swift-dune-1559.source-and-tests.diff, or equivalent caller-supplied source and focused-test hunks, in the semantic review material.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-dune-1559.acceptance-evidence.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/tasks/2026-07-24_followup-slice-1-upstream-model-authority-with-transitional-fallback.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Slice 1: Upstream model authority with transitional fallback: goal-001: Slice 1: Upstream model authori"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-dune-1559-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "swift-dune-1559"
+}

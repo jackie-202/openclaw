@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-24T21:36:21+00:00",
+    "implementingStartedAt": "2026-07-24T21:18:39+00:00",
+    "taskFile": "plans/tasks/2026-07-24_slice-3-remove-transitional-fallback-reject-model-in-fork-ru.md",
+    "taskId": "dark-dune-1632",
+    "title": "Slice 3: Remove transitional fallback, reject `model` in fork runtime profile"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Slice 3: Remove transitional fallback, reject `model` in fork runtime profile"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-dune-1632-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-dune-1632",
+  "tddRequired": true
+}

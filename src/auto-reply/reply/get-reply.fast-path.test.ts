@@ -334,7 +334,7 @@ describe("getReplyFromConfig fast test bootstrap", () => {
     expect(stored.pendingFinalDeliveryAttemptCount).toBeUndefined();
   });
 
-  it("selects fresh Discord channel runtime models with session-first precedence", async () => {
+  it("selects fresh Discord models from modelByChannel and thinking from runtime profiles", async () => {
     vi.stubEnv("OPENCLAW_ALLOW_SLOW_REPLY_TESTS", "1");
     vi.mocked(resolveDefaultModelMock).mockReturnValue({
       defaultProvider: "openai",
@@ -352,28 +352,27 @@ describe("getReplyFromConfig fast test bootstrap", () => {
       {
         name: "live session override",
         sessionEntry: { modelOverride: "gpt-5.7", providerOverride: "openai" },
-        runtimeProfile: { model: "openai/gpt-5.6-sol" },
+        runtimeProfile: { thinkingLevel: "medium" },
         legacyModel: "openai/gpt-5.4",
         expectedModel: "gpt-5.7",
       },
       {
-        name: "runtime profile",
+        name: "fresh model and thinking ownership",
         sessionEntry: {},
         runtimeProfile: {
-          model: "openai/gpt-5.6-sol",
           thinkingLevel: "high",
           reasoningLevel: "on",
           textVerbosity: "low" as const,
         },
         legacyModel: "openai/gpt-5.4",
-        expectedModel: "gpt-5.6-sol",
+        expectedModel: "gpt-5.4",
       },
       {
-        name: "legacy channel model ignored",
+        name: "modelByChannel without runtime model",
         sessionEntry: {},
         runtimeProfile: { thinkingLevel: "high" },
         legacyModel: "openai/gpt-5.4",
-        expectedModel: "gpt-5.5",
+        expectedModel: "gpt-5.4",
       },
       {
         name: "global default",
@@ -442,13 +441,14 @@ describe("getReplyFromConfig fast test bootstrap", () => {
             })
           : null,
       );
-      if (testCase.name === "runtime profile") {
+      if (testCase.name === "fresh model and thinking ownership") {
         expect(directiveParams.sessionEntry?.modelOverride).toBeUndefined();
+        expect(directiveParams.channelRuntimeProfile?.thinkingLevel).toBe("high");
       }
     }
   });
 
-  it("keeps the Einstein runtime profile authoritative over stale fallback state", async () => {
+  it("keeps the canonical channel model authoritative over stale fallback state", async () => {
     vi.stubEnv("OPENCLAW_ALLOW_SLOW_REPLY_TESTS", "1");
     vi.mocked(resolveDefaultModelMock).mockReturnValue({
       defaultProvider: "openai",
@@ -497,7 +497,7 @@ describe("getReplyFromConfig fast test bootstrap", () => {
       {
         name: "ordinary stale runtime metadata",
         sessionEntry: staleRuntime,
-        profileModel: "copilot/claude-fable-5",
+        channelModel: "copilot/claude-fable-5",
         expectedProvider: "copilot",
         expectedModel: "claude-fable-5",
       },
@@ -511,7 +511,7 @@ describe("getReplyFromConfig fast test bootstrap", () => {
           modelOverrideFallbackOriginProvider: "openai",
           modelOverrideFallbackOriginModel: "gpt-5.6-sol",
         },
-        profileModel: "copilot/claude-fable-5",
+        channelModel: "copilot/claude-fable-5",
         expectedProvider: "copilot",
         expectedModel: "claude-fable-5",
       },
@@ -523,14 +523,14 @@ describe("getReplyFromConfig fast test bootstrap", () => {
           modelOverride: "qwen3-coder-next-q6k:latest",
           modelOverrideSource: "user" as const,
         },
-        profileModel: "copilot/claude-fable-5",
+        channelModel: "copilot/claude-fable-5",
         expectedProvider: "ollama",
         expectedModel: "qwen3-coder-next-q6k:latest",
       },
       {
         name: "unprofiled channel",
         sessionEntry: staleRuntime,
-        profileModel: undefined,
+        channelModel: undefined,
         expectedProvider: "openai",
         expectedModel: "gpt-5.5",
       },
@@ -559,10 +559,10 @@ describe("getReplyFromConfig fast test bootstrap", () => {
       );
       const cfg = {
         agents: { defaults: { model: "openai/gpt-5.5" } },
-        channels: testCase.profileModel
+        channels: testCase.channelModel
           ? {
-              runtimeByChannel: {
-                discord: { [target]: { model: testCase.profileModel } },
+              modelByChannel: {
+                discord: { [target]: testCase.channelModel },
               },
             }
           : {},
@@ -684,6 +684,57 @@ describe("getReplyFromConfig fast test bootstrap", () => {
     expect(mocks.initSessionState).not.toHaveBeenCalled();
     expect(mocks.resolveReplyDirectives).not.toHaveBeenCalled();
     expect(vi.mocked(runPreparedReplyMock)).not.toHaveBeenCalled();
+  });
+
+  it("uses modelByChannel for native /status", async () => {
+    const home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-status-channel-model-"));
+    const targetSessionKey = "agent:main:telegram:123";
+    const cfg = markCompleteReplyConfig({
+      agents: {
+        defaults: {
+          model: "openai/gpt-5.5",
+          workspace: path.join(home, "workspace"),
+        },
+      },
+      channels: {
+        modelByChannel: { telegram: { "*": "openai/gpt-5.4" } },
+        runtimeByChannel: {
+          telegram: { "*": { thinkingLevel: "high" } },
+        },
+      },
+      session: { store: path.join(home, "sessions.json") },
+    } as OpenClawConfig);
+    vi.mocked(resolveDefaultModelMock).mockReturnValueOnce({
+      defaultProvider: "openai",
+      defaultModel: "gpt-5.5",
+      aliasIndex: emptyAliasIndex(),
+    });
+    vi.mocked(resolveModelRefFromStringMock).mockImplementation(({ raw }) => {
+      const [provider, ...modelParts] = raw.split("/");
+      const model = modelParts.join("/");
+      return provider && model ? ({ ref: { provider, model } } as never) : null;
+    });
+
+    const reply = await getReplyFromConfig(
+      buildGetReplyCtx({
+        Body: "/status",
+        BodyForAgent: "/status",
+        RawBody: "/status",
+        CommandBody: "/status",
+        CommandSource: "native",
+        CommandAuthorized: true,
+        SessionKey: "telegram:slash:123",
+        CommandTargetSessionKey: targetSessionKey,
+      }),
+      undefined,
+      cfg,
+    );
+
+    expect(Array.isArray(reply)).toBe(false);
+    if (!reply || Array.isArray(reply)) {
+      throw new Error("expected single reply payload");
+    }
+    expect(reply.text).toContain("Model: openai/gpt-5.4");
   });
 
   it("uses the target session thinking override for native /status", async () => {

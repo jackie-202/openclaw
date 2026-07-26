@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-24T23:18:45+00:00",
+    "implementingStartedAt": "2026-07-24T22:55:04+00:00",
+    "taskFile": "plans/tasks/2026-07-24_followup-acceptance-fix-slice-3-remove-transitional-fallback-reject-m.md",
+    "taskId": "bold-fork-4060",
+    "title": "[acceptance-fix] [acceptance-fix] Slice 3: Remove transitional fallback, reject `model` in fork runtime profile: goal-00"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Slice 3: Remove transitional fallback, reject `model` in fork runtime profile: goal-00"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-fork-4060-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-fork-4060",
+  "tddRequired": false
+}

@@ -40,7 +40,7 @@ vi.mock("../../channels/model-overrides.js", async () => {
   );
   return {
     ...actual,
-    resolveChannelModelOverride: vi.fn(() => undefined),
+    resolveChannelModelOverride: vi.fn(actual.resolveChannelModelOverride),
   };
 });
 

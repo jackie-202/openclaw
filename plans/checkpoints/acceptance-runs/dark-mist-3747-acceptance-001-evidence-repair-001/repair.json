@@ -1,0 +1,27 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/dark-mist-3747.evidence.md",
+      "provenance": "evidence_repair:dark-mist-3747-acceptance-001-evidence-repair-001",
+      "size": 331
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/dark-mist-3747.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/dark-mist-3747-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "dc43c20df50c843537e39f77789b3994d534e579",
+  "escalationReason": "exact_command_outcome_evidence_unavailable",
+  "finishedAt": "2026-07-25T07:16:01.500935+00:00",
+  "gaps": [],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [],
+  "repairRunId": "dark-mist-3747-acceptance-001-evidence-repair-001",
+  "sourceRunId": "dark-mist-3747-acceptance-001",
+  "startedAt": "2026-07-25T07:15:57.504512+00:00",
+  "status": "escalated"
+}

@@ -14,7 +14,10 @@ import {
 import { resolveModelRefFromString } from "../../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
-import { resolveChannelRuntimeProfile } from "../../channels/model-overrides.js";
+import {
+  resolveChannelModelOverride,
+  resolveChannelRuntimeProfile,
+} from "../../channels/model-overrides.js";
 import { type OpenClawConfig, getRuntimeConfig } from "../../config/config.js";
 import { logVerbose } from "../../globals.js";
 import { measureDiagnosticsTimelineSpan } from "../../infra/diagnostics-timeline.js";
@@ -563,7 +566,7 @@ export async function getReplyFromConfig(
     });
   }
 
-  const channelRuntimeProfile = resolveChannelRuntimeProfile({
+  const channelResolutionParams = {
     cfg,
     channel:
       groupResolution?.channel ??
@@ -578,11 +581,13 @@ export async function getReplyFromConfig(
     groupChannel: sessionEntry.groupChannel ?? sessionCtx.GroupChannel ?? finalized.GroupChannel,
     groupSubject: sessionEntry.subject ?? sessionCtx.GroupSubject ?? finalized.GroupSubject,
     parentSessionKey: sessionCtx.ModelParentSessionKey ?? sessionCtx.ParentSessionKey,
-  });
+  };
+  const channelRuntimeProfile = resolveChannelRuntimeProfile(channelResolutionParams);
+  const channelModelOverride = resolveChannelModelOverride(channelResolutionParams);
   const resolvedChannelModelOverride =
-    channelRuntimeProfile?.model && !hasResolvedHeartbeatModelOverride
+    channelModelOverride && !hasResolvedHeartbeatModelOverride
       ? resolveModelRefFromString({
-          raw: channelRuntimeProfile.model,
+          raw: channelModelOverride.model,
           defaultProvider,
           aliasIndex,
         })

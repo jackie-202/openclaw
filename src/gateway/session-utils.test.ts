@@ -477,7 +477,7 @@ describe("gateway session utils", () => {
     expect(resolveThinkingProfile).toHaveBeenCalled();
   });
 
-  test("session row applies channel runtime profile when reconstructed fields are missing", () => {
+  test("session row applies supplemental channel runtime fields when reconstructed fields are missing", () => {
     const cfg = {
       agents: {
         defaults: {
@@ -488,7 +488,6 @@ describe("gateway session utils", () => {
         runtimeByChannel: {
           discord: {
             "1494790764134273195": {
-              model: "openai/gpt-5.5",
               thinkingLevel: "xhigh",
               reasoningLevel: "on",
               textVerbosity: "low",
@@ -515,7 +514,52 @@ describe("gateway session utils", () => {
     });
 
     expect(row.modelProvider).toBe("openai");
-    expect(row.model).toBe("gpt-5.5");
+    expect(row.model).toBe("gpt-5.4");
+    expect(row.thinkingLevel).toBe("xhigh");
+    expect(row.reasoningLevel).toBe("on");
+  });
+
+  test("session row prefers modelByChannel while retaining supplemental runtime fields", () => {
+    const target = "1494790764134273195";
+    const cfg = {
+      agents: {
+        defaults: {
+          model: { primary: "openai/gpt-5.4" },
+        },
+      },
+      channels: {
+        modelByChannel: {
+          discord: { [target]: "openai/gpt-5.6-sol" },
+        },
+        runtimeByChannel: {
+          discord: {
+            [target]: {
+              thinkingLevel: "xhigh",
+              reasoningLevel: "on",
+            },
+          },
+        },
+      },
+    } as OpenClawConfig;
+    const entry = {
+      sessionId: "einstein-reconstructed",
+      updatedAt: Date.now(),
+      channel: "discord",
+      groupId: target,
+      chatType: "channel",
+    } satisfies SessionEntry;
+
+    const row = buildGatewaySessionRow({
+      cfg,
+      storePath: "",
+      store: {},
+      key: `agent:main:discord:channel:${target}`,
+      entry,
+      lightweightListRow: true,
+    });
+
+    expect(row.modelProvider).toBe("openai");
+    expect(row.model).toBe("gpt-5.6-sol");
     expect(row.thinkingLevel).toBe("xhigh");
     expect(row.reasoningLevel).toBe("on");
   });

@@ -1,0 +1,55 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/swift-dune-1559.evidence.md",
+      "provenance": "evidence_repair:swift-dune-1559-acceptance-001-evidence-repair-001",
+      "size": 2077
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/swift-dune-1559.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/swift-dune-1559-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "dc43c20df50c843537e39f77789b3994d534e579",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-07-24T17:40:31.901667+00:00",
+  "gaps": [
+    "command_lines_truncated",
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=swift-dune-1559 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test src/channels/model-overrides.test.ts src/auto-reply/reply/get-reply.fast-path.te",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=quick-reef-5974 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test src/channels/model-overrides.test.ts src/auto-reply/reply/get-reply.fast-path.test",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=quick-reef-5974 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test src/channels/model-overrides.test.ts src/auto-reply/reply/get-reply.fast-path.te",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "OPENCLAW_VITEST_MAX_WORKERS=1 TASK_ID=quick-reef-5974 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test src/channels/model-overrides.test.ts src/auto-repl",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "OPENCLAW_VITEST_MAX_WORKERS=1 TASK_ID=quick-reef-5974 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test src/channels/model-overrides.test.ts src/auto-repl",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/save-learning/add-frontmatter.py\" --title \"V\u00edceprojektov\u00e9 testovac\u00ed p\u0159\u00edkazy mohou zahrnout nesouvisej\u00edc\u00ed testy\" --category \"tooling\" --component \"ci-cd\" ",
+      "outcome": "- Focused GREEN: 776 passed across four Vitest shards."
+    }
+  ],
+  "repairRunId": "swift-dune-1559-acceptance-001-evidence-repair-001",
+  "sourceRunId": "swift-dune-1559-acceptance-001",
+  "startedAt": "2026-07-24T17:40:27.127841+00:00",
+  "status": "escalated"
+}

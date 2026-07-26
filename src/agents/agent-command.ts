@@ -1332,22 +1332,21 @@ async function agentCommandInternal(
     const channelOverrideGroupId = currentRunModelChannel
       ? (runContext.groupId ?? sessionEntry?.groupId ?? runContext.currentChannelId)
       : (sessionEntry?.groupId ?? runContext.groupId ?? runContext.currentChannelId);
-    const channelModelOverride =
-      cfg.channels?.modelByChannel && !hasExplicitRunOverride
-        ? resolveChannelModelOverride({
-            cfg,
-            channel:
-              currentRunModelChannel ??
-              sessionEntry?.channel ??
-              sessionEntry?.lastChannel ??
-              sessionEntry?.origin?.provider,
-            groupId: channelOverrideGroupId,
-            groupChatType: sessionEntry?.chatType ?? sessionEntry?.origin?.chatType,
-            groupChannel: runContext.groupChannel ?? sessionEntry?.groupChannel,
-            groupSubject: sessionEntry?.subject,
-            parentSessionKey: sessionEntry?.parentSessionKey ?? sessionKey,
-          })
-        : null;
+    const channelModelOverride = !hasExplicitRunOverride
+      ? resolveChannelModelOverride({
+          cfg,
+          channel:
+            currentRunModelChannel ??
+            sessionEntry?.channel ??
+            sessionEntry?.lastChannel ??
+            sessionEntry?.origin?.provider,
+          groupId: channelOverrideGroupId,
+          groupChatType: sessionEntry?.chatType ?? sessionEntry?.origin?.chatType,
+          groupChannel: runContext.groupChannel ?? sessionEntry?.groupChannel,
+          groupSubject: sessionEntry?.subject,
+          parentSessionKey: sessionEntry?.parentSessionKey ?? sessionKey,
+        })
+      : null;
     const normalizedChannelOverride = channelModelOverride
       ? parseAgentCommandModelRef(
           cfg,

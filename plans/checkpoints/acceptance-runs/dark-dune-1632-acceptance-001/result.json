@@ -1,0 +1,67 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required canonical repository verification gate has no acceptance evidence.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The canonical Test Gate reference is explicitly not run and contains no Test Gate evidence, while the task requires the repository canonical test/build gate after focused verification.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Focused RED/GREEN proof satisfies the caller-owned TDD requirement but cannot substitute for the separately required canonical gate evidence.",
+      "required": "Provide the canonical Test Gate result covering the repository test/build gate through the caller-owned Test Gate workflow.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:not-run"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-24_dark-dune-1632_slice-3-remove-transitional-fallback-reject-model-in-fork.md:Verification"
+        }
+      ]
+    },
+    {
+      "claim": "The required final task note was not supplied.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The task contract requires a final note recording dispositions for fork commits 9c09c25952, 435059f7d6, and 0529559822 and a brief before/after upstream/main diff-stat comparison; the supplied artifacts include a plan, checkpoint, TDD proof, and learning, but no final task note containing those results.",
+      "policyRule": "catalog:required_artifact_missing:blocking",
+      "rationale": "Those recorded dispositions and the measured affected-surface comparison are explicit task deliverables, not optional verification prose, and the plan's proposed table does not establish the final implementation disposition or after-state measurement.",
+      "required": "Provide the final task note with the three commit dispositions and the actual before/after affected-surface diff-stat comparison.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-24_slice-3-remove-transitional-fallback-reject-model-in-fork-ru.md:Requirements"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-24_dark-dune-1632_slice-3-remove-transitional-fallback-reject-model-in-fork.md:Implementation"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Slice 3: Remove transitional fallback, reject `model` in fork runtime profile"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-dune-1632-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-dune-1632"
+}
