@@ -285,6 +285,11 @@
   - changed-files:
       - any-glob-to-any-file:
           - "extensions/diagnostics-prometheus/**"
+"extensions: deliberation":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "extensions/deliberation/**"
+          - "docs/plugins/reference/deliberation.md"
 "extensions: llm-task":
   - changed-files:
       - any-glob-to-any-file:

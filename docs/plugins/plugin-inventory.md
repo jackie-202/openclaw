@@ -51,7 +51,7 @@ Each entry lists the package, distribution route, and description.
 
 ## Core npm package
 
-90 plugins
+91 plugins
 
 - **[admin-http-rpc](/plugins/reference/admin-http-rpc)** (`@openclaw/admin-http-rpc`) - included in OpenClaw. OpenClaw admin HTTP RPC endpoint.
 
@@ -90,6 +90,8 @@ Each entry lists the package, distribution route, and description.
 - **[deepinfra](/plugins/reference/deepinfra)** (`@openclaw/deepinfra-provider`) - included in OpenClaw. Adds DeepInfra model provider support to OpenClaw.
 
 - **[deepseek](/plugins/reference/deepseek)** (`@openclaw/deepseek-provider`) - included in OpenClaw. Adds DeepSeek model provider support to OpenClaw.
+
+- **[deliberation](/plugins/reference/deliberation)** (`@openclaw/deliberation`) - included in OpenClaw. Fail-closed Discord intake and KM-authorized delivery.
 
 - **[document-extract](/plugins/reference/document-extract)** (`@openclaw/document-extract-plugin`) - included in OpenClaw. Extract text and fallback page images from local document attachments.
 
