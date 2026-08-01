@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-28T01:34:42+00:00",
+    "implementingStartedAt": "2026-07-28T00:11:43+00:00",
+    "taskFile": "plans/tasks/2026-07-28_followup-cool-vale-5964-deliberation-v2-plugin-consuming-the-accepted-km-wire.md",
+    "taskId": "cool-vale-5964",
+    "title": "[acceptance-fix] Deliberation v2 plugin consuming the accepted KM wire: goal-001: Deliberation v2 plugin consuming the a"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation v2 plugin consuming the accepted KM wire: goal-001: Deliberation v2 plugin consuming the a"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-vale-5964-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-vale-5964",
+  "tddRequired": true
+}

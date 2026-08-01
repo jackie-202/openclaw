@@ -1,0 +1,80 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The canonical Deliberation wire convergence required by goals 001 and 002 was not delivered in the supplied target material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-002"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The canonical task records that the executable client, contract fixtures, provenance, and documentation use the retired header and route family; the supplied plan remains DRAFT, identifies an unresolved contract blocker, and directs implementation to stop before product edits if unresolved. The supplied task-scoped diff contains no target-relevant change under extensions/deliberation or docs/plugins/reference/deliberation.md.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "With no supplied implementation replacing the retired header and routes, neither the zero-residue requirement nor canonical-header/six-endpoint client behavior is present for semantic acceptance.",
+      "required": "Deliver the target-relevant contract, client, caller, test, provenance, and documentation changes so retired literals are removed and requests use X-Deliberation-Protocol-Version: 1 with only the six canonical endpoints.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-31_deliberation-v2-converge-fork-wire-contract-on-km-authority.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-31_fresh-vale-7676_deliberation-v2-converge-fork-wire-contract-on-km-authority.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD RED/GREEN proof is absent.",
+      "crossCutting": true,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The immutable manifest declares tddRequired true, while the caller-supplied TDD proof/provenance section explicitly states that no TDD proof was supplied.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The catalog requires blocking evidence when mandatory TDD proof is absent; neither the planned focused RED nor a fresh GREEN is available for review.",
+      "required": "Supply a valid run-scoped RED/GREEN proof for the focused canonical header and reservations-route behavior.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/fresh-vale-7676-acceptance-001/manifest.json:28"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-tdd-proof-provenance"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Grep for `x-deliberation-protocol`, `\"/deliveries\"`, `\"/attempts\"`, `\"/control\"` under `extensions/deliberation/` and `docs/plugins/reference/deliberation.md` returns zero matches (excluding historical plans/checkpoints)."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "Client requests use `X-Deliberation-Protocol-Version: 1` and the six canonical endpoints only."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "All listed verification commands pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-vale-7676-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "fresh-vale-7676"
+}

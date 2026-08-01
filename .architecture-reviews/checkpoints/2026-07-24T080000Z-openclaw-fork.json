@@ -1,0 +1,18 @@
+{
+  "run_id": "2026-07-24T080000Z-openclaw-fork",
+  "time": "2026-07-24T08:29:00Z",
+  "project": "openclaw-fork",
+  "question": "Does modelByChannel remain a competing runtime authority after its advertised removal?",
+  "verified_evidence": [
+    "Current local config has runtimeByChannel with 11 Discord entries and no modelByChannel.",
+    "Message dispatch, fresh/normal reply, native slash fast path, gateway session display and harness defaults resolve runtimeByChannel.",
+    "Agent command model selection and status attribution still resolve modelByChannel; the old key also remains in schema, types, help, labels, validation, SDK exports and tests.",
+    "The focused resolver test intentionally proves disagreement for the same target: runtimeByChannel returns openai/gpt-5.5 and modelByChannel returns openai/gpt-5.4.",
+    "Commit 435059f7d6 is titled remove legacy channel model overrides but deliberately kept the old resolver independent; no migration or doctor path joins the two authorities.",
+    "The backup changelog file is untracked and unignored local residue, not a committed architectural authority.",
+    "Focused Vitest gate passed: 4 test files, 127 tests."
+  ],
+  "conclusion_so_far": "Verified finding: the fork exposes two model-selection authorities whose consumers can disagree. Retire modelByChannel in the fork after a one-time compatibility check/migration, and make runtimeByChannel the single authority across execution and status paths.",
+  "next_trace": null,
+  "continuable": false
+}

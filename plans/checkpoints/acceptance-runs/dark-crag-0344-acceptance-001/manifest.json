@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-27T23:54:50+00:00",
+    "implementingStartedAt": "2026-07-27T23:48:57+00:00",
+    "taskFile": "plans/tasks/2026-07-27_deliberation-v2-plugin-consume-accepted-km-wire.md",
+    "taskId": "dark-crag-0344",
+    "title": "Deliberation v2 plugin consuming the accepted KM wire"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation v2 plugin consuming the accepted KM wire"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-crag-0344-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-crag-0344",
+  "tddRequired": true
+}

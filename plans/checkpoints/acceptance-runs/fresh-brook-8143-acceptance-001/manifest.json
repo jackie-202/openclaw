@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-29T11:51:33+00:00",
+    "implementingStartedAt": "2026-07-29T11:43:00+00:00",
+    "taskFile": "plans/tasks/2026-07-29_prepare-deliberation-v2-for-a-bounded-live-test-after-safe-s.md",
+    "taskId": "fresh-brook-8143",
+    "title": "Prepare Deliberation v2 for a bounded live test after safe silence"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Prepare Deliberation v2 for a bounded live test after safe silence"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-brook-8143-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-brook-8143",
+  "tddRequired": true
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@openclaw/deliberation",
+  "version": "2026.6.5",
+  "description": "OpenClaw Deliberation v2 integration.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openclaw/openclaw"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@openclaw/plugin-sdk": "workspace:*"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

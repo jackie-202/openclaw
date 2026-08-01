@@ -1,0 +1,70 @@
+{
+  "findings": [
+    {
+      "claim": "The required Deliberation v2 plugin and its accepted KM contract integration were not delivered.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint states that no extensions/deliberation tree exists and that implementation stopped at the prerequisite contract gate; all implementation and acceptance behaviors remain incomplete.",
+      "rationale": "Goal goal-001 requires a loadable plugin with four hooks, one worker, strict configuration, KM intake and reconciliation, a sole durable-send adapter, controls, documentation, and registration surfaces. The supplied material explicitly confirms that none of this production implementation was created.",
+      "required": "Provide the accepted repository-local KM wire/control fixtures, then implement the complete Deliberation v2 plugin and required repository integration surfaces against that contract.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-0344.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-28_dark-crag-0344_deliberation-v2-plugin-consuming-the-accepted-km-wire.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-27_deliberation-v2-plugin-consume-accepted-km-wire.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD RED/GREEN proof is invalid because no TDD cycle was executed.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied proof says TDD was not started, contains no assertion-level RED output, and says GREEN was not run.",
+      "rationale": "The run manifest declares tddRequired true and the canonical task requires helper-captured assertion-level RED followed by GREEN. A blocker narrative with RED/GREEN headings does not establish the required TDD cycle.",
+      "required": "After the accepted contract prerequisite is available, execute the prescribed behavioral RED and GREEN cycles through the TDD proof helper and record genuine command and assertion evidence in the task proof artifact.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-0344.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:TDD-proof/provenance"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-27_deliberation-v2-plugin-consume-accepted-km-wire.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Deliberation v2 plugin consuming the accepted KM wire"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-crag-0344-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "dark-crag-0344"
+}

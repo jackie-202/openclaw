@@ -1,0 +1,83 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required Deliberation v2 plugin and accepted KM wire integration are absent from the supplied implementation material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff supplies only a labeler rule for extensions/deliberation and no contract fixtures, plugin package or entry, four hook implementations, KM client, serialized worker, sole durable-send adapter, controls, documentation, or registration surfaces required by the canonical task and plan. The completion checkpoint asserts these exist but supplies no implementation content establishing them.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal goal-001 requires a loadable, fail-closed Deliberation v2 plugin consuming the accepted repository-local KM contract; metadata that labels hypothetical paths and a completion narrative do not deliver or demonstrate those required components.",
+      "required": "Supply the accepted KM/control contract fixtures and the complete Deliberation v2 implementation and repository integration surfaces described by the canonical task.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:task-scoped-diff"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-28_followup-cool-vale-5964-deliberation-v2-plugin-consuming-the-accepted-km-wire.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-28_dark-crag-0344_deliberation-v2-plugin-consuming-the-accepted-km-wire.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-5964.checkpoint.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is incomplete for the delivered-behavior claim.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied proof contains one genuine RED/GREEN cycle only for initial plugin registration: four hook names and one service. The supplied plan requires each subsequent behavior group to be introduced through its own RED/GREEN cycle, but no proof is supplied for strict configuration, KM intake and reconciliation, fail-closed silence and guards, worker races and recovery, durable-send outcomes, controls, redaction, or sole-send ownership.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The manifest declares tddRequired true, and the canonical plan explicitly requires behavior-by-behavior RED/GREEN evidence after the first registration GREEN. A registration-only cycle cannot establish the mandatory TDD process for the claimed complete implementation.",
+      "required": "Provide genuine helper-captured RED/GREEN cycles for the required behavior groups, preserving the supplied registration cycle as provenance and recording fresh GREEN evidence under this task.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-5964.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:TDD-proof/provenance"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-28_dark-crag-0344_deliberation-v2-plugin-consuming-the-accepted-km-wire.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-28_followup-cool-vale-5964-deliberation-v2-plugin-consuming-the-accepted-km-wire.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation v2 plugin consuming the accepted KM wire: goal-001: Deliberation v2 plugin consuming the a"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-vale-5964-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-vale-5964"
+}

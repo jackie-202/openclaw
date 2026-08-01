@@ -1,0 +1,13 @@
+{
+  "acceptedBy": "cool-brook-7690 KM authority convergence",
+  "acceptedAt": "2026-08-01",
+  "scope": "KM-owned Deliberation v2 wire contract and fixtures",
+  "sources": {
+    "km-wire-v1.json": "km-system/contracts/deliberation-v2/v1/contract.json",
+    "cutover-controls-v1.json": "km-system/contracts/deliberation-v2/v1/fixtures.json"
+  },
+  "files": {
+    "km-wire-v1.json": "e1f3ed030d69f24b7117ca55edb7aa63fd18152b515fa9e047404d495306aebf",
+    "cutover-controls-v1.json": "1f62540db97714cfe2cca72b25f2e2c7bd50200284557595991f8c357c85b9c1"
+  }
+}

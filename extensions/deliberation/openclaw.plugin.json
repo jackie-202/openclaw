@@ -1,0 +1,72 @@
+{
+  "id": "deliberation",
+  "name": "Deliberation",
+  "description": "Fail-closed Discord intake backed by the Deliberation KM.",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["enabled", "failClosed", "sources", "processingSource", "km", "restrictedSessionKeys"],
+    "properties": {
+      "enabled": { "type": "boolean" },
+      "failClosed": { "const": true },
+      "sources": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "$ref": "#/$defs/route" }
+      },
+      "processingSource": { "$ref": "#/$defs/route" },
+      "km": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["endpoint", "credential", "requestTimeoutMs"],
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^(?:https://[^/?#@]+|http://(?:127\\.0\\.0\\.1|\\[::1\\])(?::[0-9]+)?)(?:/[^?#]*)?$"
+          },
+          "credential": { "$ref": "#/$defs/secretRef" },
+          "requestTimeoutMs": { "type": "integer", "minimum": 100, "maximum": 30000 }
+        }
+      },
+      "restrictedSessionKeys": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": { "type": "string", "minLength": 1 }
+      }
+    },
+    "$defs": {
+      "secretRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "provider", "id"],
+        "properties": {
+          "source": { "enum": ["env", "file", "exec"] },
+          "provider": { "type": "string", "minLength": 1 },
+          "id": { "type": "string", "minLength": 1 }
+        }
+      },
+      "route": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["channel", "accountId", "target"],
+        "properties": {
+          "channel": { "const": "discord" },
+          "accountId": { "type": "string", "minLength": 1 },
+          "target": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "configContracts": {
+    "secretInputs": {
+      "paths": [
+        { "path": "km.credential", "expected": "string" }
+      ]
+    }
+  }
+}

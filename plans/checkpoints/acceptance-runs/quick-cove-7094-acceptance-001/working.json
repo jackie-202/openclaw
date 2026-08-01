@@ -1,0 +1,47 @@
+{
+  "findings": [
+    {
+      "claim": "The canonical Deliberation wire-contract repair is not delivered in the caller-supplied target implementation material.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff contains unrelated architecture-review and session-pointer additions but supplies no source or documentation changes under extensions/deliberation/ or docs/plugins/reference/deliberation.md. The supplied checkpoints and RED/GREEN proofs assert that the canonical header and six endpoints are implemented, but they do not expose the target implementation needed for semantic review.",
+      "rationale": "Goal-001 requires a real, commit-ready convergence on the KM-authoritative wire contract. Without supplied source and documentation changes, acceptance cannot establish removal of the retired header and route family or exclusive production use of the canonical protocol surface; plans, checkpoints, and test summaries are not implementation.",
+      "required": "Supply the task-scoped Deliberation source, tests, contract mirrors, and documentation changes that use X-Deliberation-Protocol-Version: 1 and only the six canonical endpoints while removing the retired wire surface.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/quick-cove-7094.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/quick-cove-7094.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-31_followup-quick-cove-7094-acceptance-fix-deliberation-v2-converge-fork-wire-contract-o.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation v2: converge fork wire contract on KM authority (real fix + commit-ready"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-cove-7094-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-cove-7094"
+}

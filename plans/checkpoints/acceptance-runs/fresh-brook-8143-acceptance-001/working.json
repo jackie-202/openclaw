@@ -1,0 +1,70 @@
+{
+  "findings": [
+    {
+      "claim": "Prepare Deliberation v2 for a bounded live test after safe silence",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint states no production, fixture, or docs edits were made because the canonical KM contract could not be reconstructed, and the task remains failed closed at the contract gate.",
+      "rationale": "The task acceptance required a canonical OpenClaw-side wire/control implementation, fail-closed preparation mode, install/config/operator documentation, focused tests, and checkpoint evidence. A fail-closed stop with no implementation/docs/fixture edits names a blocker but does not prepare Deliberation v2 for the bounded live test.",
+      "required": "Deliver the fork-owned Deliberation wire/control implementation, preparation-mode behavior, docs, fixtures/tests, and checkpoint evidence, or supply a task contract that explicitly accepts the blocked fail-closed checkpoint as completion.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-brook-8143.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-brook-8143.red-green-proof.md"
+        },
+        {
+          "kind": "task",
+          "reference": "plans/tasks/2026-07-29_prepare-deliberation-v2-for-a-bounded-live-test-after-safe-s.md"
+        }
+      ]
+    },
+    {
+      "claim": "TDD required for fresh-brook-8143",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied RED/GREEN proof says the RED phase was only a contract-gate blocker and that no production code changed after it; it does not provide an actual failing focused test command/result before implementation followed by a passing result after implementation.",
+      "rationale": "The manifest has tddRequired=true and the plan required creating/updating km-client.test.ts, running the focused Vitest command to verify RED, implementing the smallest passing change, and recording RED/GREEN evidence. The supplied proof does not demonstrate that cycle.",
+      "required": "Provide a valid task-owned RED/GREEN TDD proof with exact failing and passing focused command evidence, or do not mark the TDD-required task as satisfied.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-brook-8143.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-29_fresh-brook-8143_prepare-deliberation-v2-for-a-bounded-live-test-after-safe.md"
+        },
+        {
+          "kind": "manifest",
+          "reference": "manifest.json"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Prepare Deliberation v2 for a bounded live test after safe silence"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-brook-8143-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "fresh-brook-8143"
+}

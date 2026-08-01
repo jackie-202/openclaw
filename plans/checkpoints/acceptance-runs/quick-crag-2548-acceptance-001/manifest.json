@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-27T17:08:42+00:00",
+    "implementingStartedAt": "2026-07-27T17:00:38+00:00",
+    "taskFile": "plans/tasks/2026-07-27_followup-quick-crag-2548-acceptance-fix-deliberation-v2-standard-plugin-intake-silenc.md",
+    "taskId": "quick-crag-2548",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation v2 \u2014 standard plugin intake, silence and bounded final delivery: goal-001"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation v2 \u2014 standard plugin intake, silence and bounded final delivery: goal-001"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-crag-2548-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-crag-2548",
+  "tddRequired": true
+}

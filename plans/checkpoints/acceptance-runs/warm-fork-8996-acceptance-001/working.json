@@ -1,0 +1,113 @@
+{
+  "findings": [
+    {
+      "claim": "The required KM-owner-approved wire and control contract bundle is absent.",
+      "crossCutting": false,
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The acceptance-repair plan makes authoritative KM-owner fixtures and approval provenance blocking, and the supplied completion checkpoint leaves that step incomplete while stating that extensions/deliberation/contracts/provenance.json remains self-accepted. No owner-approved schemas, fixtures, or immutable provenance are supplied.",
+      "rationale": "Goal goal-001 requires the plugin to consume the accepted KM wire; self-authored fixtures and adjacent hashes cannot establish an accepted external-authority contract or safe interoperability.",
+      "required": "Supply the KM-owner-approved immutable wire/control bundle with complete schemas, conflict, lease, CAS, recovery semantics, fixtures, and owner-identifiable provenance, then align the plugin to it.",
+      "sources": [
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-28_warm-fork-8996_acceptance-fix-deliberation-v2-plugin-consuming-the.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-fork-8996.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-fork-8996.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "learnings/tooling/warm-fork-8996-task-scoped-evidence-must-include-untracked-files.md"
+        }
+      ]
+    },
+    {
+      "claim": "The required Deliberation v2 implementation is not present in the supplied task-scoped implementation material.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff includes a deliberation labeler rule but no extensions/deliberation package, contract fixtures, hooks, KM client, serialized worker, durable-send adapter, controls, tests, documentation, registration, or checkpoint/proof changes. Checkpoint prose says these surfaces exist in the worktree, but source content for them is not supplied for semantic review.",
+      "rationale": "Goal goal-001 requires a loadable fail-closed Deliberation v2 plugin consuming the accepted KM wire. Narratives and verification summaries cannot substitute for supplied implementation material establishing those required components and behaviors.",
+      "required": "Supply the complete task-scoped Deliberation implementation and repository integration surfaces, including preserved untracked files, so the required behavior can be semantically evaluated.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:task-scoped-diff"
+        },
+        {
+          "kind": "file",
+          "reference": ".github/labeler.yml"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-fork-8996.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "learnings/tooling/warm-fork-8996-task-scoped-evidence-must-include-untracked-files.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof does not cover the claimed Deliberation behavior repairs.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The supplied provenance contains the parent's registration RED/GREEN and one fresh RED/GREEN for rejecting unknown control-response fields. The checkpoint additionally claims repairs for secrets-runtime credentials, two-worker CAS and safe-silence behavior, and worker-error redaction, while the canonical repair plan requires separate helper-captured cycles for missing behavior slices. No RED/GREEN cycles for those claimed repairs or the remaining required worker, delivery, controls, route, guard, and recovery behavior groups are supplied.",
+      "rationale": "The manifest declares tddRequired true, and registration plus one parser assertion cannot establish the mandatory TDD process for the broader implementation and repair claims.",
+      "required": "Provide genuine helper-captured RED/GREEN cycles for each newly repaired or still-unproved behavior slice, retaining the historical registration cycle only as provenance and using fresh GREEN evidence for preserved behavior.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-fork-8996.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-5964.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-fork-8996.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-28_warm-fork-8996_acceptance-fix-deliberation-v2-plugin-consuming-the.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-28_followup-warm-fork-8996-acceptance-fix-deliberation-v2-plugin-consuming-the-accepted.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation v2 plugin consuming the accepted KM wire: goal-001: Deliberation v2 plugi"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-fork-8996-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-fork-8996"
+}

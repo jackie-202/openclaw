@@ -1,0 +1,240 @@
+{
+  "name": "km-deliberation-v2-wire",
+  "protocolVersion": 1,
+  "authority": "state/deliberation-v2/spool.sqlite3",
+  "initializationCommand": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts:lib .venv/bin/python3 scripts/deliberation-v2.py health",
+  "mediaType": "application/json",
+  "closedSchemas": true,
+  "applicationHeaders": ["Authorization", "X-Deliberation-Protocol-Version", "Accept", "Content-Type"],
+  "transportHeaders": ["Host", "Content-Length", "Connection", "User-Agent", "Accept-Encoding"],
+  "authentication": {
+    "comparison": "constant-time",
+    "credentialArguments": ["--credential-file", "DELIBERATION_V2_CREDENTIAL_FILE"],
+    "credentialFile": "regular file, no symlink, mode 0600 or stricter, one UTF-8 line, 16..256 bytes",
+    "diagnostics": "credential value and path are never returned or logged"
+  },
+  "listener": {
+    "hosts": ["127.0.0.1", "::1"],
+    "explicitHostRequired": true,
+    "maxBodyBytes": 65536,
+    "headerReadSeconds": 5,
+    "bodyReadSeconds": 10,
+    "sqliteBusyTimeoutSeconds": 30
+  },
+  "schemas": {
+    "getHeaders": {
+      "type": "object",
+      "properties": {
+        "Authorization": {"type": "string", "minLength": 23, "maxLength": 263, "pattern": "^Bearer [^\\s]+$"},
+        "X-Deliberation-Protocol-Version": {"type": "string", "const": "1"},
+        "Accept": {"type": "string", "const": "application/json"}
+      },
+      "required": ["Authorization", "X-Deliberation-Protocol-Version", "Accept"],
+      "additionalProperties": false
+    },
+    "postHeaders": {
+      "type": "object",
+      "properties": {
+        "Authorization": {"type": "string", "minLength": 23, "maxLength": 263, "pattern": "^Bearer [^\\s]+$"},
+        "X-Deliberation-Protocol-Version": {"type": "string", "const": "1"},
+        "Accept": {"type": "string", "const": "application/json"},
+        "Content-Type": {"type": "string", "const": "application/json"}
+      },
+      "required": ["Authorization", "X-Deliberation-Protocol-Version", "Accept", "Content-Type"],
+      "additionalProperties": false
+    },
+    "emptyQuery": {"type": "object", "properties": {}, "required": [], "additionalProperties": false},
+    "readyQuery": {
+      "type": "object",
+      "properties": {
+        "limit": {"type": "string", "minLength": 1, "maxLength": 3, "pattern": "^(100|[1-9][0-9]?)$"},
+        "cursor": {"type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9_-]+$"}
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "noBody": {"type": "null"},
+    "intakeBody": {
+      "type": "object",
+      "properties": {
+        "provider": {"type": "string", "minLength": 1, "maxLength": 256},
+        "providerEventId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "sourceTarget": {"type": "string", "minLength": 1, "maxLength": 256},
+        "senderId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "occurredAt": {"type": "string", "minLength": 20, "maxLength": 64},
+        "receivedAt": {"type": "string", "minLength": 20, "maxLength": 64},
+        "content": {"type": "string", "minLength": 1, "maxLength": 65536},
+        "eventType": {"type": "string", "enum": ["message", "edit", "delete"]},
+        "debounceSeconds": {"type": "integer", "minimum": 0, "maximum": 86400}
+      },
+      "required": ["provider", "providerEventId", "sourceTarget", "senderId", "occurredAt", "receivedAt", "content"],
+      "additionalProperties": false
+    },
+    "reservationBody": {
+      "type": "object",
+      "properties": {
+        "recordId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "expectedVersion": {"type": "integer", "minimum": 1},
+        "owner": {"type": "string", "minLength": 1, "maxLength": 256},
+        "idempotencyKey": {"type": "string", "minLength": 1, "maxLength": 256},
+        "leaseSeconds": {"type": "integer", "minimum": 1, "maximum": 900}
+      },
+      "required": ["recordId", "expectedVersion", "owner", "idempotencyKey"],
+      "additionalProperties": false
+    },
+    "completionBody": {
+      "type": "object",
+      "properties": {
+        "recordId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "attemptId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "owner": {"type": "string", "minLength": 1, "maxLength": 256},
+        "leaseToken": {"type": "string", "minLength": 1, "maxLength": 256},
+        "outcome": {"type": "string", "enum": ["SENT", "NOT_SENT", "DELIVERY_UNKNOWN"]},
+        "idempotencyKey": {"type": "string", "minLength": 1, "maxLength": 256},
+        "providerAttemptId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "providerReceiptId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "providerMessageId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "proofReference": {"type": "string", "minLength": 1, "maxLength": 256}
+      },
+      "required": ["recordId", "attemptId", "owner", "leaseToken", "outcome", "idempotencyKey", "providerAttemptId"],
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"outcome": {"const": "SENT"}}}, "then": {"required": ["providerReceiptId", "providerMessageId"]}}
+      ]
+    },
+    "reconciliationBody": {
+      "type": "object",
+      "properties": {
+        "recordId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "attemptId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "outcome": {"type": "string", "enum": ["SENT", "NOT_SENT"]},
+        "idempotencyKey": {"type": "string", "minLength": 1, "maxLength": 256},
+        "proofReference": {"type": "string", "minLength": 1, "maxLength": 256},
+        "providerReceiptId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "providerMessageId": {"type": "string", "minLength": 1, "maxLength": 256}
+      },
+      "required": ["recordId", "attemptId", "outcome", "idempotencyKey", "proofReference"],
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"outcome": {"const": "SENT"}}}, "then": {"required": ["providerReceiptId", "providerMessageId"]}}
+      ]
+    },
+    "controls": {
+      "type": "object",
+      "properties": {
+        "source-intake": {"type": "boolean"},
+        "claims": {"type": "boolean"},
+        "review": {"type": "boolean"},
+        "sender": {"type": "boolean"}
+      },
+      "required": ["source-intake", "claims", "review", "sender"],
+      "additionalProperties": false
+    },
+    "readyItem": {
+      "type": "object",
+      "properties": {
+        "recordId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "version": {"type": "integer", "minimum": 1},
+        "text": {"type": "string", "minLength": 1, "maxLength": 65536},
+        "candidateRevision": {"type": "integer", "minimum": 0},
+        "updatedAt": {"type": "string", "minLength": 20, "maxLength": 64}
+      },
+      "required": ["recordId", "version", "text", "candidateRevision", "updatedAt"],
+      "additionalProperties": false
+    },
+    "reservation": {
+      "type": "object",
+      "properties": {
+        "recordId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "attemptId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "ordinal": {"type": "integer", "minimum": 1},
+        "version": {"type": "integer", "minimum": 1},
+        "owner": {"type": "string", "minLength": 1, "maxLength": 256},
+        "leaseToken": {"type": "string", "minLength": 1, "maxLength": 256},
+        "leaseExpiresAt": {"type": "string", "minLength": 20, "maxLength": 64},
+        "candidateRevision": {"type": "integer", "minimum": 0},
+        "reviewedTextHash": {"type": "string", "minLength": 64, "maxLength": 64}
+      },
+      "required": ["recordId", "attemptId", "ordinal", "version", "owner", "leaseToken", "leaseExpiresAt", "candidateRevision", "reviewedTextHash"],
+      "additionalProperties": false
+    },
+    "deliveryAttempt": {
+      "type": "object",
+      "properties": {
+        "ordinal": {"type": "integer", "minimum": 1},
+        "attemptId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "candidateRevision": {"type": "integer", "minimum": 0},
+        "reviewedTextHash": {"type": "string", "minLength": 64, "maxLength": 64},
+        "reservedRecordVersion": {"type": "integer", "minimum": 1},
+        "owner": {"type": "string", "minLength": 1, "maxLength": 256},
+        "leaseExpiresAt": {"type": "string", "minLength": 20, "maxLength": 64},
+        "completionOutcome": {"type": ["string", "null"], "enum": ["SENT", "NOT_SENT", "DELIVERY_UNKNOWN", null]},
+        "outcome": {"type": ["string", "null"], "enum": ["SENT", "NOT_SENT", "DELIVERY_UNKNOWN", null]},
+        "providerAttemptId": {"type": ["string", "null"], "maxLength": 256},
+        "providerReceiptId": {"type": ["string", "null"], "maxLength": 256},
+        "providerMessageId": {"type": ["string", "null"], "maxLength": 256},
+        "proofReference": {"type": ["string", "null"], "maxLength": 256},
+        "reservedAt": {"type": "string", "minLength": 20, "maxLength": 64},
+        "completedAt": {"type": ["string", "null"], "maxLength": 64},
+        "reconciledAt": {"type": ["string", "null"], "maxLength": 64}
+      },
+      "required": ["ordinal", "attemptId", "completionOutcome", "outcome", "providerAttemptId", "providerReceiptId", "providerMessageId", "proofReference", "completedAt"],
+      "additionalProperties": false
+    },
+    "record": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {"type": "integer", "const": 1},
+        "recordId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "inboundId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "sourceTarget": {"type": "string", "minLength": 1, "maxLength": 256},
+        "messages": {"type": "array", "items": {"type": "object", "properties": {"inboundId": {"type": "string"}, "provider": {"type": "string"}, "providerEventId": {"type": "string"}, "senderId": {"type": "string"}, "eventType": {"type": "string"}, "occurredAt": {"type": "string"}, "receivedAt": {"type": "string"}, "content": {"type": "string"}}, "required": ["inboundId", "provider", "providerEventId", "senderId", "eventType", "occurredAt", "receivedAt", "content"], "additionalProperties": false}},
+        "openedAt": {"type": "string"},
+        "updatedAt": {"type": "string"},
+        "debounceUntil": {"type": "string"},
+        "effectiveDebounceSeconds": {"type": "integer"},
+        "closedAt": {"type": ["string", "null"]},
+        "state": {"type": "string", "enum": ["READY_TO_SEND", "SENDING", "SENT", "DELIVERY_UNKNOWN"]},
+        "version": {"type": "integer", "minimum": 1},
+        "duplicateCount": {"type": "integer", "minimum": 0},
+        "lease": {"type": ["object", "null"], "properties": {"owner": {"type": "string"}, "token": {"type": "string"}, "expiresAt": {"type": "string"}}, "required": ["owner", "token", "expiresAt"], "additionalProperties": false},
+        "drafting": {"type": ["object", "null"], "properties": {"attempt": {"type": "integer"}, "correlationId": {"type": "string"}, "payloadPath": {"type": "string"}, "resultPath": {"type": "string"}, "outcome": {"type": ["string", "null"]}, "diagnostic": {"type": ["object", "null"], "properties": {}, "additionalProperties": false}, "blocked": {"type": "boolean"}, "result": {"type": ["object", "null"], "properties": {"decision": {"type": "string"}, "draft": {"type": "string"}}, "additionalProperties": false}, "purpose": {"type": "string"}, "candidateRevision": {"type": "integer"}, "technicalAttempt": {"type": "integer"}}, "additionalProperties": false},
+        "review": {"type": ["object", "null"], "properties": {"candidateRevision": {"type": "integer"}, "rewriteCount": {"type": "integer"}, "attempts": {"type": "array", "items": {"type": "object", "properties": {"attempt": {"type": "integer"}, "technicalAttempt": {"type": "integer"}, "candidateRevision": {"type": "integer"}, "correlationId": {"type": "string"}, "startedAt": {"type": "string"}, "completedAt": {"type": ["string", "null"]}, "sessionId": {"type": ["string", "null"]}, "provider": {"type": ["string", "null"]}, "model": {"type": ["string", "null"]}, "freshnessCount": {"type": "integer"}, "freshnessHash": {"type": ["string", "null"]}, "freshnessCutoff": {"type": ["string", "null"]}, "freshnessComplete": {"type": "boolean"}, "verdict": {"type": ["string", "null"]}, "reason": {"type": ["string", "null"]}, "outcome": {"type": ["string", "null"]}}, "additionalProperties": false}}}, "additionalProperties": false},
+        "delivery": {"type": "object", "properties": {"attempts": {"type": "array", "items": {"$ref": "#/schemas/deliveryAttempt"}}}, "required": ["attempts"], "additionalProperties": false},
+        "candidateRevision": {"type": "integer", "minimum": 0},
+        "rewriteCount": {"type": "integer", "minimum": 0},
+        "retryStage": {"type": ["string", "null"]},
+        "retryDeadline": {"type": ["string", "null"]},
+        "terminalReason": {"type": ["string", "null"]},
+        "history": {"type": "array", "items": {"type": "object", "properties": {"sequence": {"type": "integer"}, "event": {"type": "string"}, "fromState": {"type": ["string", "null"]}, "toState": {"type": ["string", "null"]}, "version": {"type": "integer"}, "occurredAt": {"type": "string"}, "details": {"type": ["object", "null"], "properties": {"attemptId": {"type": "string"}, "ordinal": {"type": "integer"}, "owner": {"type": "string"}, "outcome": {"type": "string"}, "proofReference": {"type": "string"}}, "additionalProperties": false}}, "required": ["sequence", "event", "fromState", "toState", "version", "occurredAt", "details"], "additionalProperties": false}},
+        "valid": {"type": "boolean"},
+        "validationError": {"type": "string", "maxLength": 512}
+      },
+      "required": ["recordId", "state", "version", "delivery"],
+      "additionalProperties": false
+    },
+    "healthResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "status": {"type": "string", "const": "ok"}, "controls": {"$ref": "#/schemas/controls"}}, "required": ["protocolVersion", "status", "controls"], "additionalProperties": false},
+    "intakeResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "recordId": {"type": "string"}, "inboundId": {"type": "string"}, "duplicate": {"type": "boolean"}}, "required": ["protocolVersion", "recordId", "inboundId", "duplicate"], "additionalProperties": false},
+    "readyResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "items": {"type": "array", "items": {"$ref": "#/schemas/readyItem"}}, "nextCursor": {"type": ["string", "null"], "maxLength": 512}}, "required": ["protocolVersion", "items", "nextCursor"], "additionalProperties": false},
+    "reservationResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "reservation": {"$ref": "#/schemas/reservation"}}, "required": ["protocolVersion", "reservation"], "additionalProperties": false},
+    "recordResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "record": {"$ref": "#/schemas/record"}}, "required": ["protocolVersion", "record"], "additionalProperties": false},
+    "errorResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "error": {"type": "object", "properties": {"code": {"type": "string", "enum": ["SCHEMA_INVALID", "AUTH_MISSING", "AUTH_INVALID", "ROUTE_NOT_FOUND", "RECORD_NOT_FOUND", "MEDIA_TYPE_INVALID", "CAS_CONFLICT", "CONTROL_DISABLED", "VERSION_UNSUPPORTED"]}, "message": {"type": "string", "minLength": 1, "maxLength": 256}}, "required": ["code", "message"], "additionalProperties": false}}, "required": ["protocolVersion", "error"], "additionalProperties": false}
+  },
+  "errorResponse": {"$ref": "#/schemas/errorResponse"},
+  "endpoints": [
+    {"method": "GET", "path": "/deliberation/v1/health", "request": {"headers": {"$ref": "#/schemas/getHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/noBody"}}, "responses": {"200": {"$ref": "#/schemas/healthResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
+    {"method": "GET", "path": "/deliberation/v1/ready", "request": {"headers": {"$ref": "#/schemas/getHeaders"}, "query": {"$ref": "#/schemas/readyQuery"}, "body": {"$ref": "#/schemas/noBody"}}, "responses": {"200": {"$ref": "#/schemas/readyResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
+    {"method": "POST", "path": "/deliberation/v1/intake", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/intakeBody"}}, "responses": {"200": {"$ref": "#/schemas/intakeResponse"}, "201": {"$ref": "#/schemas/intakeResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
+    {"method": "POST", "path": "/deliberation/v1/reservations", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/reservationBody"}}, "responses": {"201": {"$ref": "#/schemas/reservationResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "404": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
+    {"method": "POST", "path": "/deliberation/v1/completions", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/completionBody"}}, "responses": {"200": {"$ref": "#/schemas/recordResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "404": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
+    {"method": "POST", "path": "/deliberation/v1/reconciliations", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/reconciliationBody"}}, "responses": {"200": {"$ref": "#/schemas/recordResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "404": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}}
+  ],
+  "readyPagination": {"order": ["updatedAt", "recordId"], "limit": {"minimum": 1, "maximum": 100, "default": 100}, "cursor": "unpadded base64url JSON array [updatedAt,recordId]", "cursorSemantics": "exclusive keyset cursor over aggregate-valid READY_TO_SEND records"},
+  "reservation": {"cas": ["recordId", "expectedVersion", "state=READY_TO_SEND"], "leaseSeconds": {"minimum": 1, "maximum": 900, "default": 60}, "identity": "fresh opaque attemptId per successful reservation", "idempotency": "recordId plus idempotencyKey; expectedVersion, owner, and leaseSeconds must exactly match; mismatch is 409"},
+  "completion": {"fence": ["recordId", "attemptId", "owner", "leaseToken", "unexpired lease"], "outcomes": ["SENT", "NOT_SENT", "DELIVERY_UNKNOWN"], "SENT": "requires providerAttemptId, providerReceiptId, providerMessageId", "NOT_SENT": "requires providerAttemptId; closes the attempt and returns READY_TO_SEND", "DELIVERY_UNKNOWN": "requires providerAttemptId; closes in non-retriable DELIVERY_UNKNOWN"},
+  "reconciliation": {"from": "DELIVERY_UNKNOWN", "outcomes": ["SENT", "NOT_SENT"], "proofReferenceRequired": true, "SENT": "also requires providerReceiptId and providerMessageId", "NOT_SENT": "returns READY_TO_SEND; the next reservation creates a different attemptId"},
+  "transitions": ["READY_TO_SEND -> SENDING", "SENDING -> SENT", "SENDING -> READY_TO_SEND (NOT_SENT)", "SENDING -> DELIVERY_UNKNOWN", "DELIVERY_UNKNOWN -> SENT (reconciled SENT)", "DELIVERY_UNKNOWN -> READY_TO_SEND (reconciled NOT_SENT)"],
+  "errors": {"400": ["SCHEMA_INVALID"], "401": ["AUTH_MISSING", "AUTH_INVALID"], "404": ["ROUTE_NOT_FOUND", "RECORD_NOT_FOUND"], "406": ["MEDIA_TYPE_INVALID"], "409": ["CAS_CONFLICT", "CONTROL_DISABLED"], "415": ["MEDIA_TYPE_INVALID"], "426": ["VERSION_UNSUPPORTED"]},
+  "controls": {"defaults": {"source-intake": false, "claims": true, "review": true, "sender": false}, "commands": ["health", "synthetic-intake", "list-ready", "reserve", "complete", "reconcile", "control source-intake|claims|review|sender enable|disable|status", "inflight", "quarantine", "unquarantine"]},
+  "listenerCommand": "scripts/deliberation-v2-listener.py --host 127.0.0.1 --port 8765 --credential-file FILE"
+}

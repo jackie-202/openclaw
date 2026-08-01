@@ -1,0 +1,29 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-31T22:10:06+00:00",
+    "implementingStartedAt": "2026-07-31T22:03:31+00:00",
+    "taskFile": "plans/tasks/2026-07-31_deliberation-v2-converge-fork-wire-contract-on-km-authority.md",
+    "taskId": "fresh-vale-7676",
+    "title": "Deliberation v2: converge fork wire contract on KM authority (real fix + commit-ready working tree)"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Grep for `x-deliberation-protocol`, `\"/deliveries\"`, `\"/attempts\"`, `\"/control\"` under `extensions/deliberation/` and `docs/plugins/reference/deliberation.md` returns zero matches (excluding historical plans/checkpoints)."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Client requests use `X-Deliberation-Protocol-Version: 1` and the six canonical endpoints only."
+    },
+    {
+      "id": "goal-003",
+      "summary": "All listed verification commands pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-vale-7676-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-vale-7676",
+  "tddRequired": true
+}

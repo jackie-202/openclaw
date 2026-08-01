@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-31T23:00:21+00:00",
+    "implementingStartedAt": "2026-07-31T22:31:05+00:00",
+    "taskFile": "plans/tasks/2026-07-31_followup-cool-brook-7690-deliberation-v2-converge-fork-wire-contract-on-km-authority.md",
+    "taskId": "cool-brook-7690",
+    "title": "[acceptance-fix] Deliberation v2: converge fork wire contract on KM authority (real fix + commit-ready working tree): go"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation v2: converge fork wire contract on KM authority (real fix + commit-ready working tree): go"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-brook-7690-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-brook-7690",
+  "tddRequired": true
+}

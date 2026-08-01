@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-31T23:56:23+00:00",
+    "implementingStartedAt": "2026-07-31T23:20:41+00:00",
+    "taskFile": "plans/tasks/2026-07-31_followup-quick-cove-7094-acceptance-fix-deliberation-v2-converge-fork-wire-contract-o.md",
+    "taskId": "quick-cove-7094",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation v2: converge fork wire contract on KM authority (real fix + commit-ready "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation v2: converge fork wire contract on KM authority (real fix + commit-ready"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-cove-7094-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-cove-7094",
+  "tddRequired": true
+}

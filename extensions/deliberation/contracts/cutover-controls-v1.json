@@ -1,0 +1,146 @@
+{
+  "protocolVersion": 1,
+  "notes": "Every case is a complete synthetic exchange. Each case starts from its declared concrete precondition; cases do not share runtime state.",
+  "cases": [
+    {
+      "name": "health.success",
+      "request": {"method": "GET", "path": "/deliberation/v1/health", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json"}, "query": {}, "body": null},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "status": "ok", "controls": {"source-intake": false, "claims": true, "review": true, "sender": false}}}
+    },
+    {
+      "name": "auth.missing",
+      "request": {"method": "GET", "path": "/deliberation/v1/health", "headers": {"X-Deliberation-Protocol-Version": "1", "Accept": "application/json"}, "query": {}, "body": null},
+      "response": {"status": 401, "body": {"protocolVersion": 1, "error": {"code": "AUTH_MISSING", "message": "authorization is required"}}}
+    },
+    {
+      "name": "auth.invalid",
+      "request": {"method": "GET", "path": "/deliberation/v1/health", "headers": {"Authorization": "Bearer synthetic-wrong-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json"}, "query": {}, "body": null},
+      "response": {"status": 401, "body": {"protocolVersion": 1, "error": {"code": "AUTH_INVALID", "message": "authorization is invalid"}}}
+    },
+    {
+      "name": "version.unsupported",
+      "request": {"method": "GET", "path": "/deliberation/v1/health", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "2", "Accept": "application/json"}, "query": {}, "body": null},
+      "response": {"status": 426, "body": {"protocolVersion": 1, "error": {"code": "VERSION_UNSUPPORTED", "message": "protocol version 1 is required"}}}
+    },
+    {
+      "name": "schema.unknown-field",
+      "request": {"method": "POST", "path": "/deliberation/v1/intake", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"provider": "test", "providerEventId": "event-001", "sourceTarget": "test:channel:001", "senderId": "sender-001", "occurredAt": "2026-07-27T12:00:00Z", "receivedAt": "2026-07-27T12:00:00Z", "content": "synthetic input", "unknown": true}},
+      "response": {"status": 400, "body": {"protocolVersion": 1, "error": {"code": "SCHEMA_INVALID", "message": "request body does not match the closed schema"}}}
+    },
+    {
+      "name": "intake.success",
+      "precondition": {"controls": {"source-intake": true}},
+      "request": {"method": "POST", "path": "/deliberation/v1/intake", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"provider": "test", "providerEventId": "event-001", "sourceTarget": "test:channel:001", "senderId": "sender-001", "occurredAt": "2026-07-27T12:00:00Z", "receivedAt": "2026-07-27T12:00:01Z", "content": "synthetic input", "eventType": "message", "debounceSeconds": 60}},
+      "response": {"status": 201, "body": {"protocolVersion": 1, "recordId": "record-001", "inboundId": "inbound-001", "duplicate": false}}
+    },
+    {
+      "name": "intake.duplicate",
+      "precondition": {"controls": {"source-intake": true}, "existingInboundId": "inbound-001"},
+      "request": {"method": "POST", "path": "/deliberation/v1/intake", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"provider": "test", "providerEventId": "event-001", "sourceTarget": "test:channel:001", "senderId": "sender-001", "occurredAt": "2026-07-27T12:00:00Z", "receivedAt": "2026-07-27T12:00:01Z", "content": "synthetic input", "eventType": "message", "debounceSeconds": 60}},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "recordId": "record-001", "inboundId": "inbound-001", "duplicate": true}}
+    },
+    {
+      "name": "ready.empty",
+      "precondition": {"readyRecordIds": []},
+      "request": {"method": "GET", "path": "/deliberation/v1/ready", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json"}, "query": {}, "body": null},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "items": [], "nextCursor": null}}
+    },
+    {
+      "name": "ready.page",
+      "precondition": {"readyRecordIds": ["record-001", "record-002"]},
+      "request": {"method": "GET", "path": "/deliberation/v1/ready", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json"}, "query": {"limit": "1"}, "body": null},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "items": [{"recordId": "record-001", "version": 7, "text": "synthetic reviewed response one", "candidateRevision": 1, "updatedAt": "2026-07-27T12:01:01Z"}], "nextCursor": "WyIyMDI2LTA3LTI3VDEyOjAxOjAxWiIsInJlY29yZC0wMDEiXQ"}}
+    },
+    {
+      "name": "ready.cursor",
+      "precondition": {"readyRecordIds": ["record-001", "record-002"]},
+      "request": {"method": "GET", "path": "/deliberation/v1/ready", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json"}, "query": {"limit": "1", "cursor": "WyIyMDI2LTA3LTI3VDEyOjAxOjAxWiIsInJlY29yZC0wMDEiXQ"}, "body": null},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "items": [{"recordId": "record-002", "version": 7, "text": "synthetic reviewed response two", "candidateRevision": 1, "updatedAt": "2026-07-27T12:01:02Z"}], "nextCursor": null}}
+    },
+    {
+      "name": "reserve.success",
+      "precondition": {"controls": {"sender": true}, "record": {"recordId": "record-001", "state": "READY_TO_SEND", "version": 7}},
+      "request": {"method": "POST", "path": "/deliberation/v1/reservations", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-001", "expectedVersion": 7, "owner": "sender-001", "idempotencyKey": "reserve-001", "leaseSeconds": 60}},
+      "response": {"status": 201, "body": {"protocolVersion": 1, "reservation": {"recordId": "record-001", "attemptId": "attempt-001", "ordinal": 1, "version": 8, "owner": "sender-001", "leaseToken": "lease-token-001", "leaseExpiresAt": "2026-07-27T12:02:00Z", "candidateRevision": 1, "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}}
+    },
+    {
+      "name": "reserve.replay",
+      "precondition": {"persistedReservation": {"recordId": "record-001", "idempotencyKey": "reserve-001", "leaseSeconds": 60}},
+      "request": {"method": "POST", "path": "/deliberation/v1/reservations", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-001", "expectedVersion": 7, "owner": "sender-001", "idempotencyKey": "reserve-001", "leaseSeconds": 60}},
+      "response": {"status": 201, "body": {"protocolVersion": 1, "reservation": {"recordId": "record-001", "attemptId": "attempt-001", "ordinal": 1, "version": 8, "owner": "sender-001", "leaseToken": "lease-token-001", "leaseExpiresAt": "2026-07-27T12:02:00Z", "candidateRevision": 1, "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}}
+    },
+    {
+      "name": "reserve.cas-conflict",
+      "precondition": {"record": {"recordId": "record-001", "state": "READY_TO_SEND", "version": 7}},
+      "request": {"method": "POST", "path": "/deliberation/v1/reservations", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-001", "expectedVersion": 6, "owner": "sender-001", "idempotencyKey": "reserve-002", "leaseSeconds": 60}},
+      "response": {"status": 409, "body": {"protocolVersion": 1, "error": {"code": "CAS_CONFLICT", "message": "record is not reservable at expected version"}}}
+    },
+    {
+      "name": "reserve.lease-conflict",
+      "precondition": {"persistedReservation": {"recordId": "record-001", "idempotencyKey": "reserve-001", "leaseSeconds": 60}},
+      "request": {"method": "POST", "path": "/deliberation/v1/reservations", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-001", "expectedVersion": 7, "owner": "sender-001", "idempotencyKey": "reserve-001", "leaseSeconds": 61}},
+      "response": {"status": 409, "body": {"protocolVersion": 1, "error": {"code": "CAS_CONFLICT", "message": "reservation idempotency key conflicts with persisted request"}}}
+    },
+    {
+      "name": "complete.sent",
+      "precondition": {"record": {"recordId": "record-001", "state": "SENDING", "version": 8}, "attemptId": "attempt-001"},
+      "request": {"method": "POST", "path": "/deliberation/v1/completions", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-001", "attemptId": "attempt-001", "owner": "sender-001", "leaseToken": "lease-token-001", "outcome": "SENT", "idempotencyKey": "complete-001", "providerAttemptId": "provider-attempt-001", "providerReceiptId": "provider-receipt-001", "providerMessageId": "provider-message-001"}},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "record": {"recordId": "record-001", "state": "SENT", "version": 9, "delivery": {"attempts": [{"attemptId": "attempt-001", "ordinal": 1, "completionOutcome": "SENT", "outcome": "SENT", "providerAttemptId": "provider-attempt-001", "providerReceiptId": "provider-receipt-001", "providerMessageId": "provider-message-001", "proofReference": null, "completedAt": "2026-07-27T12:01:10Z"}]}}}}
+    },
+    {
+      "name": "complete.not-sent",
+      "precondition": {"record": {"recordId": "record-002", "state": "SENDING", "version": 8}, "attemptId": "attempt-002"},
+      "request": {"method": "POST", "path": "/deliberation/v1/completions", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-002", "attemptId": "attempt-002", "owner": "sender-001", "leaseToken": "lease-token-002", "outcome": "NOT_SENT", "idempotencyKey": "complete-002", "providerAttemptId": "provider-attempt-002", "proofReference": "proof-not-sent-002"}},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "record": {"recordId": "record-002", "state": "READY_TO_SEND", "version": 9, "delivery": {"attempts": [{"attemptId": "attempt-002", "ordinal": 1, "completionOutcome": "NOT_SENT", "outcome": "NOT_SENT", "providerAttemptId": "provider-attempt-002", "providerReceiptId": null, "providerMessageId": null, "proofReference": "proof-not-sent-002", "completedAt": "2026-07-27T12:01:10Z"}]}}}}
+    },
+    {
+      "name": "complete.delivery-unknown",
+      "precondition": {"record": {"recordId": "record-003", "state": "SENDING", "version": 8}, "attemptId": "attempt-003"},
+      "request": {"method": "POST", "path": "/deliberation/v1/completions", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-003", "attemptId": "attempt-003", "owner": "sender-001", "leaseToken": "lease-token-003", "outcome": "DELIVERY_UNKNOWN", "idempotencyKey": "complete-003", "providerAttemptId": "provider-attempt-003"}},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "record": {"recordId": "record-003", "state": "DELIVERY_UNKNOWN", "version": 9, "delivery": {"attempts": [{"attemptId": "attempt-003", "ordinal": 1, "completionOutcome": "DELIVERY_UNKNOWN", "outcome": "DELIVERY_UNKNOWN", "providerAttemptId": "provider-attempt-003", "providerReceiptId": null, "providerMessageId": null, "proofReference": null, "completedAt": "2026-07-27T12:01:10Z"}]}}}}
+    },
+    {
+      "name": "complete.replay",
+      "precondition": {"persistedCompletion": {"attemptId": "attempt-001", "idempotencyKey": "complete-001", "outcome": "SENT"}},
+      "request": {"method": "POST", "path": "/deliberation/v1/completions", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-001", "attemptId": "attempt-001", "owner": "sender-001", "leaseToken": "lease-token-001", "outcome": "SENT", "idempotencyKey": "complete-001", "providerAttemptId": "provider-attempt-001", "providerReceiptId": "provider-receipt-001", "providerMessageId": "provider-message-001"}},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "record": {"recordId": "record-001", "state": "SENT", "version": 9, "delivery": {"attempts": [{"attemptId": "attempt-001", "ordinal": 1, "completionOutcome": "SENT", "outcome": "SENT", "providerAttemptId": "provider-attempt-001", "providerReceiptId": "provider-receipt-001", "providerMessageId": "provider-message-001", "proofReference": null, "completedAt": "2026-07-27T12:01:10Z"}]}}}}
+    },
+    {
+      "name": "complete.conflict",
+      "precondition": {"persistedCompletion": {"attemptId": "attempt-001", "idempotencyKey": "complete-001", "outcome": "SENT"}},
+      "request": {"method": "POST", "path": "/deliberation/v1/completions", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-001", "attemptId": "attempt-001", "owner": "sender-001", "leaseToken": "lease-token-001", "outcome": "NOT_SENT", "idempotencyKey": "complete-001", "providerAttemptId": "provider-attempt-001", "proofReference": "proof-conflict-001"}},
+      "response": {"status": 409, "body": {"protocolVersion": 1, "error": {"code": "CAS_CONFLICT", "message": "completion conflicts with persisted result"}}}
+    },
+    {
+      "name": "reconcile.sent",
+      "precondition": {"record": {"recordId": "record-003", "state": "DELIVERY_UNKNOWN", "version": 9}, "attemptId": "attempt-003"},
+      "request": {"method": "POST", "path": "/deliberation/v1/reconciliations", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-003", "attemptId": "attempt-003", "outcome": "SENT", "idempotencyKey": "reconcile-001", "proofReference": "proof-reconcile-sent-001", "providerReceiptId": "provider-receipt-003", "providerMessageId": "provider-message-003"}},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "record": {"recordId": "record-003", "state": "SENT", "version": 10, "delivery": {"attempts": [{"attemptId": "attempt-003", "ordinal": 1, "completionOutcome": "DELIVERY_UNKNOWN", "outcome": "SENT", "providerAttemptId": "provider-attempt-003", "providerReceiptId": "provider-receipt-003", "providerMessageId": "provider-message-003", "proofReference": "proof-reconcile-sent-001", "completedAt": "2026-07-27T12:01:10Z", "reconciledAt": "2026-07-27T12:05:00Z"}]}}}}
+    },
+    {
+      "name": "reconcile.not-sent",
+      "precondition": {"record": {"recordId": "record-004", "state": "DELIVERY_UNKNOWN", "version": 9}, "attemptId": "attempt-004"},
+      "request": {"method": "POST", "path": "/deliberation/v1/reconciliations", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-004", "attemptId": "attempt-004", "outcome": "NOT_SENT", "idempotencyKey": "reconcile-002", "proofReference": "proof-reconcile-not-sent-002"}},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "record": {"recordId": "record-004", "state": "READY_TO_SEND", "version": 10, "delivery": {"attempts": [{"attemptId": "attempt-004", "ordinal": 1, "completionOutcome": "DELIVERY_UNKNOWN", "outcome": "NOT_SENT", "providerAttemptId": "provider-attempt-004", "providerReceiptId": null, "providerMessageId": null, "proofReference": "proof-reconcile-not-sent-002", "completedAt": "2026-07-27T12:01:10Z", "reconciledAt": "2026-07-27T12:05:00Z"}]}}}}
+    },
+    {
+      "name": "reconcile.replay",
+      "precondition": {"persistedReconciliation": {"attemptId": "attempt-003", "idempotencyKey": "reconcile-001", "outcome": "SENT"}},
+      "request": {"method": "POST", "path": "/deliberation/v1/reconciliations", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-003", "attemptId": "attempt-003", "outcome": "SENT", "idempotencyKey": "reconcile-001", "proofReference": "proof-reconcile-sent-001", "providerReceiptId": "provider-receipt-003", "providerMessageId": "provider-message-003"}},
+      "response": {"status": 200, "body": {"protocolVersion": 1, "record": {"recordId": "record-003", "state": "SENT", "version": 10, "delivery": {"attempts": [{"attemptId": "attempt-003", "ordinal": 1, "completionOutcome": "DELIVERY_UNKNOWN", "outcome": "SENT", "providerAttemptId": "provider-attempt-003", "providerReceiptId": "provider-receipt-003", "providerMessageId": "provider-message-003", "proofReference": "proof-reconcile-sent-001", "completedAt": "2026-07-27T12:01:10Z", "reconciledAt": "2026-07-27T12:05:00Z"}]}}}}
+    },
+    {
+      "name": "reconcile.conflict",
+      "precondition": {"persistedReconciliation": {"attemptId": "attempt-003", "idempotencyKey": "reconcile-001", "outcome": "SENT"}},
+      "request": {"method": "POST", "path": "/deliberation/v1/reconciliations", "headers": {"Authorization": "Bearer synthetic-test-token", "X-Deliberation-Protocol-Version": "1", "Accept": "application/json", "Content-Type": "application/json"}, "query": {}, "body": {"recordId": "record-003", "attemptId": "attempt-003", "outcome": "NOT_SENT", "idempotencyKey": "reconcile-001", "proofReference": "proof-conflict-003"}},
+      "response": {"status": 409, "body": {"protocolVersion": 1, "error": {"code": "CAS_CONFLICT", "message": "reconciliation conflicts with persisted result"}}}
+    }
+  ],
+  "operatorCases": [
+    {"name": "control.status", "argv": ["control", "sender", "status"], "exitCode": 0, "stdout": {"name": "sender", "enabled": false}},
+    {"name": "control.enable-disable", "argv": ["control", "sender", "enable"], "exitCode": 0, "stdout": {"name": "sender", "enabled": true}},
+    {"name": "inflight.list", "argv": ["inflight"], "exitCode": 0, "stdout": {"items": [], "states": ["SENDING", "DELIVERY_UNKNOWN"]}},
+    {"name": "quarantine.enable", "argv": ["quarantine", "--record-id", "record-001", "--reason", "synthetic-review"], "exitCode": 0, "stdout": {"recordId": "record-001", "active": true}},
+    {"name": "quarantine.disable", "argv": ["unquarantine", "--record-id", "record-001"], "exitCode": 0, "stdout": {"recordId": "record-001", "active": false}}
+  ]
+}

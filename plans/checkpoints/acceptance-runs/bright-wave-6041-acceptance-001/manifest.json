@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-27T16:20:37+00:00",
+    "implementingStartedAt": "2026-07-27T16:12:48+00:00",
+    "taskFile": "plans/tasks/2026-07-27_deliberation-v2-channel-intake-gate-final-send-adapter.md",
+    "taskId": "bright-wave-6041",
+    "title": "Deliberation v2 \u2014 standard plugin intake, silence and bounded final delivery"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation v2 \u2014 standard plugin intake, silence and bounded final delivery"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-wave-6041-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-wave-6041",
+  "tddRequired": true
+}

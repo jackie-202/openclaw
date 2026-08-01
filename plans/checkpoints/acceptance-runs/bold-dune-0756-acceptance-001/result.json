@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Deliberation plugin: allow loopback HTTP endpoint in km.endpoint schema"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-dune-0756-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-dune-0756"
+}

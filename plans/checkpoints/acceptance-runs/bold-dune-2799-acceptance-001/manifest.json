@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-07-29T12:22:25+00:00",
+    "implementingStartedAt": "2026-07-29T12:11:04+00:00",
+    "taskFile": "plans/tasks/2026-07-29_followup-bold-dune-2799-prepare-deliberation-v2-for-a-bounded-live-test-after-safe-s.md",
+    "taskId": "bold-dune-2799",
+    "title": "[acceptance-fix] Prepare Deliberation v2 for a bounded live test after safe silence: goal-001: Prepare Deliberation v2 f"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Prepare Deliberation v2 for a bounded live test after safe silence: goal-001: Prepare Deliberation v2 f"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-dune-2799-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-dune-2799",
+  "tddRequired": true
+}

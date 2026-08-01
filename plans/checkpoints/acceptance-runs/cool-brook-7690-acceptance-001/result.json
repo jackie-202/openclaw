@@ -1,0 +1,50 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The canonical Deliberation wire convergence is not delivered in the caller-supplied target implementation material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff contains unrelated architecture-review and session-pointer additions but no source or documentation changes under extensions/deliberation/ or docs/plugins/reference/deliberation.md. The supplied checkpoint and RED/GREEN proof assert completion and focused behavior, but they do not supply the implementation needed to semantically establish removal of the retired header/routes or exclusive use of the six canonical endpoints.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal-001 requires a real, commit-ready wire-contract repair. Without supplied target source changes, semantic acceptance cannot establish that the retired protocol surface was removed or that production client requests use only the canonical header and endpoints; completion narratives and proof output are not implementation.",
+      "required": "Supply the task-scoped implementation and documentation changes that remove the retired header and route family and make production requests use X-Deliberation-Protocol-Version: 1 with only the six canonical endpoints.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/cool-brook-7690.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/cool-brook-7690.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-07-31_followup-cool-brook-7690-deliberation-v2-converge-fork-wire-contract-on-km-authority.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation v2: converge fork wire contract on KM authority (real fix + commit-ready working tree): go"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-brook-7690-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-brook-7690"
+}

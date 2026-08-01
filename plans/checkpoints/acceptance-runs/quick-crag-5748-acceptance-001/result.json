@@ -1,0 +1,75 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required Deliberation v2 plugin boundary and behaviors were not delivered.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied quick-crag-5748 checkpoint states that extensions/deliberation is absent and that implementation stopped before executable tests or production code because the owner-approved KM wire contract remains unavailable. The proof likewise states that production implementation and GREEN verification are not available.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal-001 requires configured-source intake, terminal silence, restricted-session outbound guards, and one KM-reserved bounded final-delivery attempt. With the plugin package and production modules absent, none of these required behaviors is delivered.",
+      "required": "Supply the authoritative repository-local KM contract, then implement the external-compatible Deliberation plugin with the required intake, silence, outbound guards, reservation, send, reporting, and reconciliation behavior.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-crag-5748.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-crag-5748.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-07-27_quick-crag-5748_deliberation-v2-standard-plugin-intake-silence-and-bounded.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is invalid because the follow-up has no genuine behavioral RED or production GREEN for the evaluation target.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true. The supplied follow-up proof says executable RED was blocked, cites the parent's missing-test-file result only as historical provenance, and states that production GREEN is unavailable. It correctly does not present the adjacent baseline as target GREEN.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "A blocked or missing target and historical provenance do not demonstrate a test-first failing behavior followed by the same target passing against the required production implementation.",
+      "required": "After the prerequisite KM contract is supplied, retain a genuine target-scoped behavioral RED captured before implementation and a passing GREEN for the implemented Deliberation plugin in the follow-up proof.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-crag-5748.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-wave-6041.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/quick-crag-5748-acceptance-001/manifest.json:20"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation v2 \u2014 standard plugin intake, silence and bounded final delivery: goal-001: Deliberation v2"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-crag-5748-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "quick-crag-5748"
+}

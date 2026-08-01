@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Prepare Deliberation v2 for a bounded live test after safe silence: goal-001: Prepare Deliberation v2 f"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-dune-2799-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-dune-2799"
+}

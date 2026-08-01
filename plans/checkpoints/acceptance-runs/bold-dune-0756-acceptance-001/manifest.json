@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-01T00:26:44+00:00",
+    "implementingStartedAt": "2026-08-01T00:09:39+00:00",
+    "taskFile": "plans/tasks/deliberation-loopback-endpoint-schema.md",
+    "taskId": "bold-dune-0756",
+    "title": "Deliberation plugin: allow loopback HTTP endpoint in km.endpoint schema"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation plugin: allow loopback HTTP endpoint in km.endpoint schema"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-dune-0756-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-dune-0756",
+  "tddRequired": true
+}
