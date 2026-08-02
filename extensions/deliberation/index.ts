@@ -14,7 +14,7 @@ export default definePluginEntry({
     const config = parseDeliberationConfig(api.pluginConfig);
     const client = createKmClient({ config, openclawConfig: api.config });
     const hookOptions = { priority: FAIL_CLOSED_HOOK_PRIORITY };
-    api.on("inbound_claim", createInboundClaimHandler(config, client), hookOptions);
+    api.on("inbound_claim", createInboundClaimHandler(config, client, api.logger), hookOptions);
     api.on("before_dispatch", createBeforeDispatchHandler(config), hookOptions);
     api.on("before_tool_call", createBeforeToolCallHandler(config), hookOptions);
     api.on("message_sending", createMessageSendingHandler(config), hookOptions);

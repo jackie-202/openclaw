@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-01T21:08:48+00:00",
+    "implementingStartedAt": "2026-08-01T20:59:07+00:00",
+    "taskFile": "plans/tasks/2026-08-01_followup-fresh-mist-9906-acceptance-fix-fix-deliberation-plugin-inbound-claim-intake.md",
+    "taskId": "fresh-mist-9906",
+    "title": "[acceptance-fix] [acceptance-fix] Fix: Deliberation plugin inbound_claim intake nezapisuje zpr\u00e1vy do KM spoolu: goal-003"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix: Deliberation plugin inbound_claim intake nezapisuje zpr\u00e1vy do KM spoolu: goal-003"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-mist-9906-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-mist-9906",
+  "tddRequired": false
+}

@@ -1,0 +1,50 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/quick-wave-2023.evidence.md",
+      "provenance": "evidence_repair:quick-wave-2023-acceptance-001-evidence-repair-001",
+      "size": 1544
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/quick-wave-2023.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/quick-wave-2023-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "120dc9059c0ba6416516390310188982eb15e598",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-01T20:50:25.205682+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/recall-knowledge/scripts/search.py\" \"Deliberation acceptance Test Gate full plugin Vitest evidence verification\" --project-root .",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "pnpm exec vitest run extensions/deliberation",
+      "outcome": "Test Files  6 passed (6)"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/save-learning/add-frontmatter.py\" --title \"Run the exact acceptance command when command identity is part of the goal\" --category \"tooling\" --component \"",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=calm-dune-8979 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/hooks.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=calm-dune-8979 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/hooks.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "quick-wave-2023-acceptance-001-evidence-repair-001",
+  "sourceRunId": "quick-wave-2023-acceptance-001",
+  "startedAt": "2026-08-01T20:50:19.678789+00:00",
+  "status": "escalated"
+}

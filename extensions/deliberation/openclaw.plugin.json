@@ -28,7 +28,7 @@
             "format": "uri",
             "pattern": "^(?:https://[^/?#@]+|http://(?:127\\.0\\.0\\.1|\\[::1\\])(?::[0-9]+)?)(?:/[^?#]*)?$"
           },
-          "credential": { "$ref": "#/$defs/secretRef" },
+          "credential": { "type": ["string", "object"] },
           "requestTimeoutMs": { "type": "integer", "minimum": 100, "maximum": 30000 }
         }
       },
@@ -40,16 +40,6 @@
       }
     },
     "$defs": {
-      "secretRef": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["source", "provider", "id"],
-        "properties": {
-          "source": { "enum": ["env", "file", "exec"] },
-          "provider": { "type": "string", "minLength": 1 },
-          "id": { "type": "string", "minLength": 1 }
-        }
-      },
       "route": {
         "type": "object",
         "additionalProperties": false,

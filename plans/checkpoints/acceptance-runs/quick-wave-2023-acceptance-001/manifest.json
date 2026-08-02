@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-01T20:48:14+00:00",
+    "implementingStartedAt": "2026-08-01T20:37:06+00:00",
+    "taskFile": "plans/tasks/2026-08-01_followup-quick-wave-2023-fix-deliberation-plugin-inbound-claim-intake-nezapisuje-zprv.md",
+    "taskId": "quick-wave-2023",
+    "title": "[acceptance-fix] Fix: Deliberation plugin inbound_claim intake nezapisuje zpr\u00e1vy do KM spoolu: goal-003: `pnpm exec vite"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix: Deliberation plugin inbound_claim intake nezapisuje zpr\u00e1vy do KM spoolu: goal-003: `pnpm exec vite"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-wave-2023-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-wave-2023",
+  "tddRequired": false
+}

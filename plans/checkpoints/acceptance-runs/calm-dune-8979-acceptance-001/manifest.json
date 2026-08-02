@@ -1,0 +1,29 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-01T20:25:58+00:00",
+    "implementingStartedAt": "2026-08-01T20:10:13+00:00",
+    "taskFile": "plans/tasks/2026-08-01_fix-deliberation-plugin-inbound-claim-intake-nezapisuje-zpra.md",
+    "taskId": "calm-dune-8979",
+    "title": "Fix: Deliberation plugin inbound_claim intake nezapisuje zpr\u00e1vy do KM spoolu"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Unit testy pokr\u00fdvaj\u00ed realn\u00fd event tvar a projdou."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Skip v\u011btve maj\u00ed log s d\u016fvodem."
+    },
+    {
+      "id": "goal-003",
+      "summary": "`pnpm exec vitest run extensions/deliberation` zelen\u00e9."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-dune-8979-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-dune-8979",
+  "tddRequired": true
+}

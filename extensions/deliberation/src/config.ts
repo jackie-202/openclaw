@@ -1,4 +1,4 @@
-import type { SecretInput } from "openclaw/plugin-sdk/secret-input-runtime";
+import { buildSecretInputSchema, type SecretInput } from "openclaw/plugin-sdk/secret-input";
 import { z } from "zod";
 
 const routeSchema = z
@@ -9,13 +9,10 @@ const routeSchema = z
   })
   .strict();
 
-const secretRefSchema = z
-  .object({
-    source: z.enum(["env", "file", "exec"]),
-    provider: z.string().trim().min(1),
-    id: z.string().trim().min(1),
-  })
-  .strict();
+const secretInputSchema = buildSecretInputSchema().refine(
+  (value) => typeof value !== "string" || value.trim().length > 0,
+  "KM credential must not be empty",
+);
 
 const configSchema = z
   .object({
@@ -47,7 +44,7 @@ const configSchema = z
               !url.hash
             );
           }, "KM endpoint must be credential-free HTTPS or literal-loopback HTTP without query or fragment"),
-        credential: secretRefSchema,
+        credential: secretInputSchema,
         requestTimeoutMs: z.number().int().min(100).max(30_000),
       })
       .strict(),

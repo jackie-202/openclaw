@@ -42,13 +42,22 @@ describe("parseDeliberationConfig", () => {
     expect(parsed.restrictedSessionKeySet.has("agent:reviewer")).toBe(true);
   });
 
+  it("accepts a credential materialized by the secrets runtime", () => {
+    const parsed = parseDeliberationConfig({
+      ...valid,
+      km: { ...valid.km, credential: "runtime-secret" },
+    });
+
+    expect(parsed.km.credential).toBe("runtime-secret");
+  });
+
   it.each([
     [{ ...valid, unknown: true }, "unknown keys"],
     [{ ...valid, failClosed: false }, "non-fail-closed mode"],
     [{ ...valid, sources: [...valid.sources, ...valid.sources] }, "duplicate routes"],
     [{ ...valid, processingSource: valid.sources[0] }, "processing overlap"],
     [{ ...valid, km: { ...valid.km, endpoint: "http://km.invalid" } }, "non-loopback HTTP KM"],
-    [{ ...valid, km: { ...valid.km, credential: "plaintext" } }, "plaintext credential"],
+    [{ ...valid, km: { ...valid.km, credential: "" } }, "empty credential"],
     [{ ...valid, km: { ...valid.km, pollIntervalMs: 1000 } }, "retired polling config"],
   ])("rejects %s (%s)", (input, _description) => {
     expect(() => parseDeliberationConfig(input)).toThrow();
@@ -81,5 +90,21 @@ describe("parseDeliberationConfig", () => {
         expect(parse).toThrow();
       }
     }
+  });
+
+  it("keeps the manifest credential schema aligned with secrets materialization", async () => {
+    const extensionDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+    const manifest = JSON.parse(
+      await readFile(join(extensionDir, "openclaw.plugin.json"), "utf8"),
+    ) as {
+      configSchema: {
+        properties: { km: { properties: { credential: { type: string[] } } } };
+      };
+    };
+
+    expect(manifest.configSchema.properties.km.properties.credential.type).toEqual([
+      "string",
+      "object",
+    ]);
   });
 });

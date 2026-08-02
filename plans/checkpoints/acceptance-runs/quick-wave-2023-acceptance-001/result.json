@@ -1,0 +1,46 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The required full Deliberation command `pnpm exec vitest run extensions/deliberation` is green.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The canonical Test Gate status is not run and supplies no execution evidence. The supplied checkpoint and learning assert 51/51, but they are local artifacts rather than canonical Test Gate evidence; the historical TDD proof covers only `extensions/deliberation/src/hooks.test.ts` via a different command.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The goal is explicitly a test-artifact goal requiring the named full-plugin command to be green, and the caller requires such goals to be assessed only from supplied artifacts and the canonical Test Gate reference. No canonical execution evidence exists.",
+      "required": "Provide canonical Test Gate evidence that `pnpm exec vitest run extensions/deliberation` completed successfully.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical-status:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-wave-2023.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-dune-8979.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Fix: Deliberation plugin inbound_claim intake nezapisuje zpr\u00e1vy do KM spoolu: goal-003: `pnpm exec vite"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-wave-2023-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "quick-wave-2023"
+}

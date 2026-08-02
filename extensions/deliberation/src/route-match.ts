@@ -10,7 +10,10 @@ type RouteCandidate = {
 
 export function candidateRoute(candidate: RouteCandidate): DeliberationRoute | undefined {
   const channel = candidate.channelId ?? candidate.channel;
-  const target = candidate.conversationId ?? candidate.target;
+  const runtimeTarget = candidate.conversationId ?? candidate.target;
+  const target = runtimeTarget?.startsWith("channel:")
+    ? runtimeTarget.slice("channel:".length)
+    : runtimeTarget;
   if (channel !== "discord" || !candidate.accountId || !target) {
     return undefined;
   }
@@ -20,9 +23,4 @@ export function candidateRoute(candidate: RouteCandidate): DeliberationRoute | u
 export function matchesSource(config: DeliberationConfig, candidate: RouteCandidate): boolean {
   const route = candidateRoute(candidate);
   return route ? config.sourceKeys.has(routeKey(route)) : false;
-}
-
-export function matchesProcessing(config: DeliberationConfig, candidate: RouteCandidate): boolean {
-  const route = candidateRoute(candidate);
-  return route ? routeKey(route) === routeKey(config.processingSource) : false;
 }

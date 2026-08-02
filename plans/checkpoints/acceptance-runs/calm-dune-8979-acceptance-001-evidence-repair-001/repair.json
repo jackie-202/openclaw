@@ -1,0 +1,36 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/calm-dune-8979.evidence.md",
+      "provenance": "evidence_repair:calm-dune-8979-acceptance-001-evidence-repair-001",
+      "size": 754
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/calm-dune-8979.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/calm-dune-8979-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "120dc9059c0ba6416516390310188982eb15e598",
+  "escalationReason": "exact_command_outcome_evidence_unavailable",
+  "finishedAt": "2026-08-01T20:28:07.920938+00:00",
+  "gaps": [],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=calm-dune-8979 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/hooks.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=calm-dune-8979 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/hooks.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "calm-dune-8979-acceptance-001-evidence-repair-001",
+  "sourceRunId": "calm-dune-8979-acceptance-001",
+  "startedAt": "2026-08-01T20:28:03.470083+00:00",
+  "status": "escalated"
+}

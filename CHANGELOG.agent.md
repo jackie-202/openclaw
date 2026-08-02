@@ -1,5 +1,9 @@
 # Agent Changelog
 
+## 2026-07-27
+
+**Standard plugin intake with silent, bounded final delivery**
+
 ## 2026-07-24
 
 **Fork runtime profile rejects `model` and removes the transitional fallback**

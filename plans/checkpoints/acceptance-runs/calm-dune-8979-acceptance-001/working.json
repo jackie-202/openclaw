@@ -1,0 +1,49 @@
+{
+  "findings": [
+    {
+      "claim": "The required full Deliberation Vitest command is green.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-003"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The canonical Test Gate status is not run and supplies no evidence for pnpm exec vitest run extensions/deliberation; the supplied focused TDD proof covers only hooks.test.ts, while the checkpoint assertion is not canonical Test Gate evidence.",
+      "rationale": "Goal goal-003 explicitly requires a green full-plugin test run, and the caller requires explicit test-artifact goals to be assessed from supplied artifacts and the canonical Test Gate reference. That canonical reference contains no execution evidence.",
+      "required": "Provide canonical Test Gate evidence that pnpm exec vitest run extensions/deliberation completed successfully.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical-status:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-dune-8979.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Unit testy pokr\u00fdvaj\u00ed realn\u00fd event tvar a projdou."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "Skip v\u011btve maj\u00ed log s d\u016fvodem."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "`pnpm exec vitest run extensions/deliberation` zelen\u00e9."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-dune-8979-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "calm-dune-8979"
+}

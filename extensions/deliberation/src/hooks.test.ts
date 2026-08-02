@@ -18,10 +18,25 @@ const config = parseDeliberationConfig({
 
 const sourceContext = { channelId: "discord", accountId: "acct", conversationId: "source" };
 
+function createLogger() {
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
+}
+
+function loggedMessages(logger: ReturnType<typeof createLogger>): string[] {
+  return [logger.debug, logger.info, logger.warn, logger.error].flatMap((log) =>
+    log.mock.calls.map(([message]) => String(message)),
+  );
+}
+
 describe("deliberation hooks", () => {
   it("excludes processing before KM intake and never claims", async () => {
     const intake = vi.fn();
-    const handler = createInboundClaimHandler(config, { intake } as never);
+    const handler = createInboundClaimHandler(config, { intake } as never, createLogger());
     const result = await handler(
       { channel: "discord", content: "message", isGroup: true },
       { ...sourceContext, conversationId: "processing", messageId: "m1" },
@@ -38,7 +53,7 @@ describe("deliberation hooks", () => {
       inboundId: "inbound-1",
       duplicate: true,
     });
-    const handler = createInboundClaimHandler(config, { intake } as never);
+    const handler = createInboundClaimHandler(config, { intake } as never, createLogger());
     await expect(
       handler(
         {
@@ -65,9 +80,167 @@ describe("deliberation hooks", () => {
     vi.useRealTimers();
   });
 
+  it("intakes the canonical Discord channel event shape", async () => {
+    const intake = vi.fn().mockResolvedValue({
+      recordId: "record-1",
+      inboundId: "inbound-1",
+      duplicate: false,
+    });
+    const handler = createInboundClaimHandler(config, { intake } as never, createLogger());
+
+    await handler(
+      {
+        channel: "discord",
+        accountId: "acct",
+        conversationId: "channel:source",
+        content: "message",
+        isGroup: true,
+        messageId: "m1",
+        senderId: "sender-1",
+      },
+      {
+        channelId: "discord",
+        accountId: "acct",
+        conversationId: "channel:source",
+        messageId: "m1",
+        senderId: "sender-1",
+      },
+    );
+
+    expect(intake).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerEventId: "m1",
+        sourceTarget: "acct:source",
+        content: "message",
+      }),
+    );
+  });
+
+  it("intakes blank-text audio with a MIME-only placeholder", async () => {
+    const intake = vi.fn().mockResolvedValue({
+      recordId: "record-1",
+      inboundId: "inbound-1",
+      duplicate: false,
+    });
+    const logger = createLogger();
+    const handler = createInboundClaimHandler(config, { intake } as never, logger);
+
+    await handler(
+      {
+        channel: "discord",
+        content: "",
+        isGroup: true,
+        messageId: "m-audio",
+        senderId: "sender-1",
+        metadata: {
+          mediaTypes: ["audio/ogg"],
+          mediaPaths: ["/private/spool/secret-audio.ogg"],
+        },
+      },
+      { ...sourceContext, messageId: "m-audio", senderId: "sender-1" },
+    );
+
+    expect(intake).toHaveBeenCalledWith(expect.objectContaining({ content: "[media: audio/ogg]" }));
+    expect(loggedMessages(logger).join("\n")).not.toContain("/private/spool/secret-audio.ogg");
+  });
+
+  it.each([
+    {
+      name: "disabled config",
+      expectedReason: "disabled",
+      buildConfig: () =>
+        parseDeliberationConfig({
+          enabled: false,
+          failClosed: true,
+          sources: [{ channel: "discord", accountId: "acct", target: "source" }],
+          processingSource: { channel: "discord", accountId: "acct", target: "processing" },
+          km: {
+            endpoint: "https://km.invalid",
+            credential: { source: "env", provider: "default", id: "KM_TOKEN" },
+            requestTimeoutMs: 1000,
+          },
+          restrictedSessionKeys: ["agent:reviewer"],
+        }),
+      context: sourceContext,
+      event: { content: "message", messageId: "m1", senderId: "sender-1" },
+    },
+    {
+      name: "processing route",
+      expectedReason: "processing-route",
+      buildConfig: () => config,
+      context: { ...sourceContext, conversationId: "channel:processing" },
+      event: { content: "message", messageId: "m1", senderId: "sender-1" },
+    },
+    {
+      name: "unmatched route",
+      expectedReason: "unmatched-route",
+      buildConfig: () => config,
+      context: { ...sourceContext, conversationId: "channel:other" },
+      event: { content: "message", messageId: "m1", senderId: "sender-1" },
+    },
+    {
+      name: "missing message id",
+      expectedReason: "missing-message-id",
+      buildConfig: () => config,
+      context: sourceContext,
+      event: { content: "message", senderId: "sender-1" },
+    },
+    {
+      name: "missing sender id",
+      expectedReason: "missing-sender-id",
+      buildConfig: () => config,
+      context: { ...sourceContext, messageId: "m1" },
+      event: { content: "message" },
+    },
+    {
+      name: "empty content",
+      expectedReason: "empty-content",
+      buildConfig: () => config,
+      context: { ...sourceContext, messageId: "m1", senderId: "sender-1" },
+      event: { content: "" },
+    },
+  ])(
+    "logs the $name skip without intake",
+    async ({ buildConfig, context, event, expectedReason }) => {
+      const intake = vi.fn();
+      const logger = createLogger();
+      const handler = createInboundClaimHandler(buildConfig(), { intake } as never, logger);
+
+      await handler({ channel: "discord", isGroup: true, ...event }, context);
+
+      expect(intake).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith(
+        `deliberation intake skipped: reason=${expectedReason}`,
+      );
+    },
+  );
+
+  it("warns about KM failure without leaking message or media values", async () => {
+    const intake = vi.fn().mockRejectedValue(new Error("secret message /private/audio.ogg"));
+    const logger = createLogger();
+    const handler = createInboundClaimHandler(config, { intake } as never, logger);
+
+    await expect(
+      handler(
+        {
+          channel: "discord",
+          content: "secret message",
+          isGroup: true,
+          metadata: { mediaPath: "/private/audio.ogg" },
+        },
+        { ...sourceContext, messageId: "m1", senderId: "sender-1" },
+      ),
+    ).resolves.toEqual({ handled: false });
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      "deliberation intake failed: reason=km-request-failed error=Error",
+    );
+    expect(loggedMessages(logger).join("\n")).not.toMatch(/secret message|private\/audio/);
+  });
+
   it("silences but does not intake a source event without a stable message ID", async () => {
     const intake = vi.fn();
-    const handler = createInboundClaimHandler(config, { intake } as never);
+    const handler = createInboundClaimHandler(config, { intake } as never, createLogger());
     await expect(
       handler({ channel: "discord", content: "message", isGroup: true }, sourceContext),
     ).resolves.toEqual({ handled: false });
@@ -77,6 +250,12 @@ describe("deliberation hooks", () => {
 
   it("silences exact sources independently of KM", () => {
     expect(createBeforeDispatchHandler(config)({}, sourceContext)).toEqual({ handled: true });
+    expect(
+      createBeforeDispatchHandler(config)(
+        {},
+        { ...sourceContext, conversationId: "channel:source" },
+      ),
+    ).toEqual({ handled: true });
   });
 
   it("blocks send tools and canonical sends for restricted sessions", () => {
