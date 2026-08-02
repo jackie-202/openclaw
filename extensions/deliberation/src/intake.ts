@@ -95,6 +95,7 @@ export function createInboundClaimHandler(
         content,
         eventType: "message",
       });
+      return { handled: true };
     } catch (error) {
       // Intake is fail-closed by the independent before_dispatch hook.
       const errorType = error instanceof Error ? "Error" : "Unknown";

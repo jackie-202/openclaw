@@ -329,7 +329,7 @@ export async function buildDiscordMessageProcessContext(params: {
     timestamp: resolveTimestampMs(message.timestamp),
     from: effectiveFrom,
     sender: {
-      id: sender.id,
+      id: sender.id ?? author.id,
       name: senderName,
       username: senderUsername,
       tag: sender.tag,

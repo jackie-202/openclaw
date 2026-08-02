@@ -205,6 +205,12 @@ OpenClaw's loader acceptance gates. Add at least one loader-backed smoke test
 for each registration surface your plugin depends on, especially hooks and
 exclusive capabilities such as memory.
 
+Bundled-plugin integration tests can use `loadOpenClawPluginsForTest` and
+`setBundledPluginsDirOverrideForTest` from
+`openclaw/plugin-sdk/plugin-test-runtime` before entering the production path
+under test. Reset the bundled-directory override, plugin runtime, and global
+hook runner after each test so later tests cannot inherit the loaded registry.
+
 The real loader fails plugin registration when required metadata is missing or a
 plugin calls a capability API it does not own. For example,
 `api.registerHook(...)` requires a hook name, and

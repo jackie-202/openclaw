@@ -4931,15 +4931,11 @@ describe("dispatchReplyFromConfig", () => {
       expect.objectContaining({
         channel: "telegram",
         accountId: "default",
-        conversationId: "-10099:topic:77",
-        parentConversationId: "-10099",
         content: "who are you",
       }),
       expect.objectContaining({
         channelId: "telegram",
         accountId: "default",
-        conversationId: "-10099:topic:77",
-        parentConversationId: "-10099",
       }),
     );
     expect(hookMocks.runner.runMessageReceived).toHaveBeenCalledWith(
@@ -4963,6 +4959,8 @@ describe("dispatchReplyFromConfig", () => {
     );
     expect(internalHookMocks.triggerInternalHook).not.toHaveBeenCalled();
     expect(replyResolver).not.toHaveBeenCalled();
+    expect(dispatcher.sendToolResult).not.toHaveBeenCalled();
+    expect(dispatcher.sendBlockReply).not.toHaveBeenCalled();
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
@@ -5688,7 +5686,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(result).toEqual({ queuedFinal: true, counts: { tool: 0, block: 0, final: 0 } });
     expect(sessionBindingMocks.touch).toHaveBeenCalledWith("binding-command-escape-1");
     expect(hookMocks.runner.runInboundClaimForPluginOutcome).not.toHaveBeenCalled();
-    expect(hookMocks.runner.runInboundClaim).not.toHaveBeenCalled();
+    expect(hookMocks.runner.runInboundClaim).toHaveBeenCalledTimes(1);
     expect(replyResolver).toHaveBeenCalledTimes(1);
     expect(firstFinalReplyPayload(dispatcher)?.text).toBe("detached");
   });

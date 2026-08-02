@@ -29,6 +29,8 @@ import { recordInboundSession } from "openclaw/plugin-sdk/conversation-runtime";
 import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/markdown-table-runtime";
 import { getAgentScopedMediaLocalRoots } from "openclaw/plugin-sdk/media-runtime";
 import { resolveChunkMode } from "openclaw/plugin-sdk/reply-chunking";
+import { dispatchReplyWithBufferedBlockDispatcher } from "openclaw/plugin-sdk/reply-dispatch-runtime";
+import type { ReplyPayload } from "openclaw/plugin-sdk/reply-dispatch-runtime";
 import { createChannelHistoryWindow } from "openclaw/plugin-sdk/reply-history";
 import {
   buildTtsSupplementMediaPayload,
@@ -36,7 +38,7 @@ import {
   isReplyPayloadNonTerminalToolErrorWarning,
   resolveSendableOutboundReplyParts,
 } from "openclaw/plugin-sdk/reply-payload";
-import type { ReplyDispatchKind, ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+import type { ReplyDispatchKind } from "openclaw/plugin-sdk/reply-runtime";
 import { danger, logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk/runtime-env";
 import {
   loadSessionStore,
@@ -78,13 +80,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
-}
-
-let replyRuntimePromise: Promise<typeof import("openclaw/plugin-sdk/reply-runtime")> | undefined;
-
-async function loadReplyRuntime() {
-  replyRuntimePromise ??= import("openclaw/plugin-sdk/reply-runtime");
-  return await replyRuntimePromise;
 }
 
 function isProcessAborted(abortSignal?: AbortSignal): boolean {
@@ -245,7 +240,6 @@ async function processDiscordMessageInner(
   if (boundThreadId && typeof threadBindings.touchThread === "function") {
     threadBindings.touchThread({ threadId: boundThreadId });
   }
-  const { dispatchReplyWithBufferedBlockDispatcher } = await loadReplyRuntime();
   const sourceReplyDeliveryMode = resolveChannelMessageSourceReplyDeliveryMode({
     cfg,
     ctx: {

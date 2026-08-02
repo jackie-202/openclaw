@@ -1,5 +1,11 @@
 # Agent Changelog
 
+## 2026-07-28
+
+**Deliberation v2 plugin consumes the accepted KM wire**
+
+The Deliberation v2 plugin now consumes the accepted KM wire contract directly.
+
 ## 2026-07-27
 
 **Standard plugin intake with silent, bounded final delivery**

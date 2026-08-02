@@ -45,7 +45,7 @@ describe("deliberation hooks", () => {
     expect(intake).not.toHaveBeenCalled();
   });
 
-  it("submits exact source intake once and remains non-claiming", async () => {
+  it("submits exact source intake once and claims it", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-01T12:00:01Z"));
     const intake = vi.fn().mockResolvedValue({
@@ -65,7 +65,7 @@ describe("deliberation hooks", () => {
         },
         { ...sourceContext, messageId: "m1" },
       ),
-    ).resolves.toEqual({ handled: false });
+    ).resolves.toEqual({ handled: true });
     expect(intake).toHaveBeenCalledTimes(1);
     expect(intake).toHaveBeenCalledWith({
       provider: "discord",
@@ -114,6 +114,63 @@ describe("deliberation hooks", () => {
         content: "message",
       }),
     );
+  });
+
+  it("queues and terminally claims the configured Discord source only", async () => {
+    const sourceId = "1494265174389948538";
+    const exactConfig = parseDeliberationConfig({
+      enabled: true,
+      failClosed: true,
+      sources: [{ channel: "discord", accountId: "default", target: sourceId }],
+      processingSource: { channel: "discord", accountId: "default", target: "processing" },
+      km: {
+        endpoint: "https://km.invalid",
+        credential: { source: "env", provider: "default", id: "KM_TOKEN" },
+        requestTimeoutMs: 1000,
+      },
+      restrictedSessionKeys: ["agent:reviewer"],
+    });
+    const intake = vi.fn().mockResolvedValue({
+      recordId: "record-1",
+      inboundId: "inbound-1",
+      duplicate: false,
+    });
+    const handler = createInboundClaimHandler(exactConfig, { intake } as never, createLogger());
+    const event = {
+      channel: "discord",
+      accountId: "default",
+      conversationId: `channel:${sourceId}`,
+      content: "message",
+      isGroup: true,
+      messageId: "1533408285770649783",
+      senderId: "sender-1",
+    };
+
+    const result = await handler(event, {
+      channelId: "discord",
+      accountId: "default",
+      conversationId: `channel:${sourceId}`,
+      messageId: event.messageId,
+      senderId: event.senderId,
+    });
+
+    expect(result).toEqual({ handled: true });
+    expect(result).not.toHaveProperty("reply");
+    expect(intake).toHaveBeenCalledTimes(1);
+
+    await expect(
+      handler(
+        { ...event, conversationId: "channel:other", messageId: "other-message" },
+        {
+          channelId: "discord",
+          accountId: "default",
+          conversationId: "channel:other",
+          messageId: "other-message",
+          senderId: event.senderId,
+        },
+      ),
+    ).resolves.toEqual({ handled: false });
+    expect(intake).toHaveBeenCalledTimes(1);
   });
 
   it("intakes blank-text audio with a MIME-only placeholder", async () => {

@@ -14,11 +14,15 @@ export {
   resolveWebSearchProviderContractEntriesForPluginId,
 } from "../plugins/contracts/registry.js";
 export { loadPluginManifestRegistry } from "../plugins/manifest-registry.js";
+export { setBundledPluginsDirOverrideForTest } from "../plugins/bundled-dir.js";
+export { loadOpenClawPlugins as loadOpenClawPluginsForTest } from "../plugins/loader.js";
 export { emitInternalDiagnosticEvent as emitInternalDiagnosticEventForTest } from "../infra/diagnostic-events.js";
 export { runWithDiagnosticTraceContext } from "../infra/diagnostic-trace-context.js";
 export { logMessageDispatchStarted, logMessageProcessed } from "../logging/diagnostic.js";
 export { resolveBundledExplicitProviderContractsFromPublicArtifacts } from "../plugins/provider-contract-public-artifacts.js";
 export {
+  getGlobalHookRunner,
+  getGlobalPluginRegistry,
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
 } from "../plugins/hook-runner-global.js";
