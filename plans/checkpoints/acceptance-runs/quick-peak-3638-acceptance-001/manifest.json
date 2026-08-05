@@ -1,0 +1,33 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-04T07:41:47+00:00",
+    "implementingStartedAt": "2026-08-04T07:36:04+00:00",
+    "taskFile": "plans/tasks/2026-08-04_fix-deliberation-live-intake-canonical-utc-timestamps.md",
+    "taskId": "quick-peak-3638",
+    "title": "Fix Deliberation live intake canonical UTC timestamps"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A live-shaped event timestamp at an exact second produces canonical `...ssZ` for both occurred/received timestamps where applicable."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Non-zero fractional timestamps follow the canonical wire format."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Existing routing, duplicate handling, and fail-closed behavior remain unchanged."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Tests fail against the old `Date.toISOString()` behavior and pass with the fix."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-peak-3638-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-peak-3638",
+  "tddRequired": true
+}

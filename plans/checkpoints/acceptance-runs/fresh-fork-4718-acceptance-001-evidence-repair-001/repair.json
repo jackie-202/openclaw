@@ -1,0 +1,39 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/fresh-fork-4718.evidence.md",
+      "provenance": "evidence_repair:fresh-fork-4718-acceptance-001-evidence-repair-001",
+      "size": 1120
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/fresh-fork-4718.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/fresh-fork-4718-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "b734b8e3ee4683ffd46f9f291605ba612ac8dc53",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-02T15:09:07.917276+00:00",
+  "gaps": [
+    "log_unavailable: swift-mist-6938",
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=bright-mist-1370 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/discord/src/monitor/message-handler.process.test.ts -- --reporter=verb",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=bright-mist-1370 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/discord/src/monitor/message-handler.process.test.ts -- --reporter=ve",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "fresh-fork-4718-acceptance-001-evidence-repair-001",
+  "sourceRunId": "fresh-fork-4718-acceptance-001",
+  "startedAt": "2026-08-02T15:09:02.145478+00:00",
+  "status": "escalated"
+}

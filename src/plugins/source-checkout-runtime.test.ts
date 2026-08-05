@@ -169,7 +169,7 @@ describe("source checkout bundled plugin runtime", () => {
     expect(JSON.parse(requestInit.body)).toMatchObject({
       provider: "discord",
       providerEventId: "1533451497218506752",
-      sourceTarget: `default:${sourceId}`,
+      sourceTarget: `discord:channel:${sourceId}`,
       senderId: "sender-1",
       occurredAt: "2026-08-02T12:28:47.088Z",
       content: "Tak schvalne",

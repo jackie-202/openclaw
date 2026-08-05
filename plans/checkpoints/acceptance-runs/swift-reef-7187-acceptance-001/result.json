@@ -1,0 +1,75 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The authoritative KM listener compatibility behavior was not delivered.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task checkpoint and TDD proof state that the KM authority was not patched and that an authenticated Node global-fetch health probe against the running listener still received HTTP 400; the supplied diff changes only the OpenClaw mirror, provenance, and consumer tests.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal 001 requires the characterized Node fetch request to stop receiving HTTP 400 solely because of standard automatic transport metadata, but the listener that enforces the header contract remains unchanged and exhibits the rejected behavior.",
+      "required": "Update the KM-owned listener and canonical contract to accept only the supported Sec-Fetch-Mode: cors transport metadata while preserving unknown application-header rejection, then synchronize the consumer mirror from that authority.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-7187.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-7187.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/contracts/km-wire-v1.json"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof lacks a valid GREEN for the delivered compatibility seam.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The proof records a genuine RED and a passing repository loopback test after editing the mirrored allowlist, but its External Listener Verification explicitly reports that the authenticated Node global-fetch request still receives HTTP 400 and says the focused GREEN is not production listener GREEN evidence.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "With tddRequired true, a fake listener derived from the edited consumer mirror proves mirror synchronization only; it does not provide the required RED-to-GREEN evidence that the authoritative listener now accepts the characterized Node transport metadata.",
+      "required": "Preserve the historical RED and capture fresh GREEN evidence from the changed KM listener using Node global fetch, together with the unknown-application-header rejection control, without exposing credentials.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-7187.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-peak-4405.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "learnings/tooling/swift-reef-7187-mirror-green-is-not-listener-green.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Fix Deliberation KM compatibility with Node fetch transport headers: goal-001: The characterized Node `"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-reef-7187-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "swift-reef-7187"
+}

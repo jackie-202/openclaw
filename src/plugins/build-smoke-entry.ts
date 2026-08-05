@@ -6,3 +6,8 @@ export {
   matchPluginCommand,
 } from "./commands.js";
 export { loadOpenClawPlugins } from "./loader.js";
+export {
+  getGlobalHookRunner,
+  initializeGlobalHookRunner,
+  resetGlobalHookRunner,
+} from "./hook-runner-global.js";

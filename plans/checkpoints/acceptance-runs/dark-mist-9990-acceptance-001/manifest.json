@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-02T10:38:21+00:00",
+    "implementingStartedAt": "2026-08-02T10:32:47+00:00",
+    "taskFile": "plans/tasks/2026-08-02_followup-dark-mist-9990-fix-deliberation-intake-to-enqueue-silently.md",
+    "taskId": "dark-mist-9990",
+    "title": "[acceptance-fix] Fix deliberation intake to enqueue silently: goal-005: Existing fail-closed guard tests remain green."
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix deliberation intake to enqueue silently: goal-005: Existing fail-closed guard tests remain green."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-9990-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-mist-9990",
+  "tddRequired": false
+}

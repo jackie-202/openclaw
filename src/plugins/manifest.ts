@@ -25,6 +25,7 @@ import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 import type { JsonSchemaObject } from "../shared/json-schema.types.js";
 import { isRecord } from "../utils.js";
 import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
+import { isPluginHookName, type PluginHookName } from "./hook-types.js";
 import {
   normalizeManifestCommandAliases,
   type PluginManifestCommandAlias,
@@ -317,6 +318,8 @@ export type PluginManifestConfigContracts = {
 export type PluginManifest = {
   id: string;
   configSchema: JsonSchemaObject;
+  /** Typed hooks that a successful runtime registration must install. */
+  expectedHooks?: PluginHookName[];
   /** Plugin ids that must also be installed for this plugin to have effect. */
   requiresPlugins?: string[];
   enabledByDefault?: boolean;
@@ -1767,6 +1770,18 @@ export function loadPluginManifest(
   }
 
   const requiresPlugins = normalizeTrimmedStringList(raw.requiresPlugins);
+  if (
+    raw.expectedHooks !== undefined &&
+    (!Array.isArray(raw.expectedHooks) ||
+      raw.expectedHooks.some((entry) => !isPluginHookName(entry) || entry === "deactivate"))
+  ) {
+    return cacheResult({
+      ok: false,
+      error: "plugin manifest expectedHooks must contain only canonical typed hook names",
+      manifestPath,
+    });
+  }
+  const expectedHooks = [...new Set((raw.expectedHooks ?? []) as PluginHookName[])];
   const kind = parsePluginKind(raw.kind);
   const enabledByDefault = raw.enabledByDefault === true;
   const enabledByDefaultOnPlatforms = normalizeManifestDefaultPlatforms(
@@ -1838,6 +1853,7 @@ export function loadPluginManifest(
     manifest: {
       id,
       configSchema,
+      ...(expectedHooks.length > 0 ? { expectedHooks } : {}),
       ...(requiresPlugins.length > 0 ? { requiresPlugins } : {}),
       ...(enabledByDefault ? { enabledByDefault } : {}),
       ...(enabledByDefaultOnPlatforms.length > 0 ? { enabledByDefaultOnPlatforms } : {}),

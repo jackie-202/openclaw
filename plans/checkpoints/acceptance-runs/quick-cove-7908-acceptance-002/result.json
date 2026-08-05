@@ -1,0 +1,72 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The required fail-closed guard, focused deliberation plugin, and core dispatch test pass evidence is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-005",
+        "goal-006"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The canonical Test Gate status is not run and supplies no evidence; the supplied RED/GREEN artifact covers only extensions/deliberation/src/hooks.test.ts, while the task evidence reports both proof-capture outcomes as unavailable.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goals goal-005 and goal-006 explicitly require these tests to remain green or pass, but no caller-supplied canonical evidence establishes those outcomes.",
+      "required": "Supply canonical Test Gate evidence establishing the required guard, focused plugin, and core dispatch test outcomes.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-cove-7908.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-cove-7908.evidence.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "A realistic Discord source-channel claim matching `channel=discord`, `accountId=default`, and `conversationId=1494265174389948538` is accepted and queued."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "The claim result is terminal (`handled: true`) and contains no public response text."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Regression coverage proves normal agent dispatch and send are not invoked after successful enqueue."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "A non-source Discord channel is not claimed."
+    },
+    {
+      "id": "goal-005",
+      "status": "UNMET",
+      "summary": "Existing fail-closed guard tests remain green."
+    },
+    {
+      "id": "goal-006",
+      "status": "UNMET",
+      "summary": "Focused deliberation plugin tests and the relevant core dispatch test pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-cove-7908-acceptance-002",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "quick-cove-7908"
+}

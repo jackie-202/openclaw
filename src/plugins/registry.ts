@@ -2537,6 +2537,7 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     }
     const timeoutMs = resolveTypedHookTimeoutMs({ hookName: effectiveHookName, opts, policy });
     record.hookCount += 1;
+    record.hookNames.push(effectiveHookName);
     registry.typedHooks.push({
       pluginId: record.id,
       hookName: effectiveHookName,

@@ -2681,6 +2681,8 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
         registrationMode,
       });
       const registrySnapshot = snapshotPluginRegistry(registry);
+      const hookNamesBeforeRegister = [...record.hookNames];
+      const hookCountBeforeRegister = record.hookCount;
       const previousAgentHarnesses = listRegisteredAgentHarnesses();
       const previousCompactionProviders = listRegisteredCompactionProviders();
       const previousDetachedTaskRuntimeRegistration = getDetachedTaskLifecycleRuntimeRegistration();
@@ -2698,6 +2700,19 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
           `${registrationMode}:register`,
           () => runPluginRegisterSync(register, api),
         );
+        const registeredHookNames = new Set(
+          registry.typedHooks
+            .filter((hook) => hook.pluginId === record.id)
+            .map((hook) => hook.hookName),
+        );
+        const missingExpectedHooks = (manifestRecord?.expectedHooks ?? []).filter(
+          (hookName) => !registeredHookNames.has(hookName),
+        );
+        if (missingExpectedHooks.length > 0) {
+          throw new Error(
+            `plugin did not register expected hooks: ${missingExpectedHooks.join(", ")}`,
+          );
+        }
         // Snapshot loads should not replace process-global runtime prompt state.
         if (!shouldActivate) {
           restoreRegisteredAgentHarnesses(previousAgentHarnesses);
@@ -2716,6 +2731,9 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
       } catch (err) {
         rollbackPluginGlobalSideEffects(record.id);
         restorePluginRegistry(registry, registrySnapshot);
+        // Keep failed-record metadata aligned with the rolled-back hook registry.
+        record.hookNames = hookNamesBeforeRegister;
+        record.hookCount = hookCountBeforeRegister;
         restoreRegisteredAgentHarnesses(previousAgentHarnesses);
         restoreRegisteredCompactionProviders(previousCompactionProviders);
         restoreDetachedTaskLifecycleRuntimeRegistration(previousDetachedTaskRuntimeRegistration);

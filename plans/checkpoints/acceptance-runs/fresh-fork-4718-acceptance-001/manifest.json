@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-02T15:06:48+00:00",
+    "implementingStartedAt": "2026-08-02T14:57:56+00:00",
+    "taskFile": "plans/tasks/2026-08-02_followup-fresh-fork-4718-fix-live-discord-deliberation-intake-hook-wiring.md",
+    "taskId": "fresh-fork-4718",
+    "title": "[acceptance-fix] Fix live Discord deliberation intake hook wiring: goal-004: Existing deliberation and Discord inbound t"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix live Discord deliberation intake hook wiring: goal-004: Existing deliberation and Discord inbound t"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-fork-4718-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-fork-4718",
+  "tddRequired": true
+}

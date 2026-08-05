@@ -687,20 +687,23 @@ async function runDeliberationIntegrationTest() {
       senderId: "U1",
     }),
   );
+  await expect(intakeHandler.mock.results[0]?.value).resolves.toEqual({ handled: true });
   expect(fetchMock).toHaveBeenCalledTimes(1);
   const [requestUrl, requestInit] = fetchMock.mock.calls[0] ?? [];
   expect(requestUrl).toBe("https://km.invalid/deliberation/v1/intake");
   if (typeof requestInit?.body !== "string") {
     throw new Error("Deliberation intake request body was not JSON text");
   }
-  expect(JSON.parse(requestInit.body)).toMatchObject({
+  const intakeBody = JSON.parse(requestInit.body) as Record<string, unknown>;
+  expect(intakeBody).toMatchObject({
     provider: "discord",
     providerEventId: "1533451497218506752",
-    sourceTarget: `default:${sourceId}`,
+    sourceTarget: `discord:channel:${sourceId}`,
     senderId: "U1",
     occurredAt: "2026-08-02T12:28:47.088Z",
     content: "Tak schvalne",
   });
+  expect(intakeBody.sourceTarget).not.toBe(`default:${sourceId}`);
   expect(dispatchInboundMessage).not.toHaveBeenCalled();
   expect(deliverDiscordReply).not.toHaveBeenCalled();
   expect(beforeDispatchHandler).not.toHaveBeenCalled();

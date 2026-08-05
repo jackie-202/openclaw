@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import { parseDeliberationConfig } from "./config.js";
 import { createKmClient } from "./km-client.js";
@@ -25,6 +27,136 @@ function createClient(response: unknown) {
 }
 
 describe("KM contract parsing", () => {
+  it("reports an unavailable credential at the credential stage", async () => {
+    const client = createKmClient({ config, openclawConfig: {} as never, env: {} });
+
+    await expect(client.health()).rejects.toMatchObject({
+      stage: "credential",
+      status: undefined,
+      code: "UNKNOWN",
+    });
+  });
+
+  it.each([
+    {
+      name: "transport",
+      fetchImpl: vi.fn().mockRejectedValue(new Error("socket contains secret")),
+      expected: { stage: "transport", status: undefined, code: "UNKNOWN" },
+    },
+    {
+      name: "response-json",
+      fetchImpl: vi.fn().mockResolvedValue(new Response("not-json", { status: 200 })),
+      expected: { stage: "response-json", status: 200, code: "UNKNOWN" },
+    },
+    {
+      name: "http with canonical code",
+      fetchImpl: vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            protocolVersion: 1,
+            error: { code: "SCHEMA_INVALID", message: "secret body" },
+          }),
+          { status: 400 },
+        ),
+      ),
+      expected: { stage: "http", status: 400, code: "SCHEMA_INVALID" },
+    },
+    {
+      name: "http with unknown code",
+      fetchImpl: vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            protocolVersion: 1,
+            error: { code: "SECRET_CODE", message: "secret" },
+          }),
+          { status: 500 },
+        ),
+      ),
+      expected: { stage: "http", status: 500, code: "UNKNOWN" },
+    },
+  ])("reports bounded $name diagnostics", async ({ fetchImpl, expected }) => {
+    const client = createKmClient({
+      config,
+      openclawConfig: {} as never,
+      fetchImpl,
+      env: { KM_TOKEN: "test-only" },
+    });
+
+    await expect(client.health()).rejects.toMatchObject(expected);
+  });
+
+  it("reports response-schema after a successful malformed intake response", async () => {
+    const client = createClient({ protocolVersion: 1, recordId: "record-1" });
+
+    await expect(
+      client.intake({
+        provider: "discord",
+        providerEventId: "message-1",
+        sourceTarget: "discord:channel:source",
+        senderId: "sender-1",
+        occurredAt: "2026-08-04T12:50:19.483Z",
+        receivedAt: "2026-08-04T12:50:21.838Z",
+        content: "message",
+      }),
+    ).rejects.toMatchObject({ stage: "response-schema", status: 200, code: "UNKNOWN" });
+  });
+
+  it("emits only transport metadata accepted by the closed KM contract", async () => {
+    const contract = JSON.parse(
+      await readFile(new URL("../contracts/km-wire-v1.json", import.meta.url), "utf8"),
+    ) as { transportHeaders: string[] };
+    const transportHeaders = new Set(contract.transportHeaders.map((name) => name.toLowerCase()));
+    let rawHeaderNames: string[] = [];
+    const server = createServer((request, response) => {
+      rawHeaderNames = request.rawHeaders.filter((_, index) => index % 2 === 0);
+      const applicationHeaders = new Set([
+        "authorization",
+        "x-deliberation-protocol-version",
+        "accept",
+        "content-type",
+      ]);
+      const rejected = Object.keys(request.headers).some(
+        (name) => !applicationHeaders.has(name) && !transportHeaders.has(name),
+      );
+      response.writeHead(rejected ? 400 : 200, {
+        "Content-Type": "application/json",
+      });
+      response.end(
+        JSON.stringify({
+          protocolVersion: 1,
+          status: "ok",
+          controls: { "source-intake": true, claims: true, review: true, sender: false },
+        }),
+      );
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+
+    try {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        throw new Error("missing test listener address");
+      }
+      const client = createKmClient({
+        config: {
+          ...config,
+          km: { ...config.km, endpoint: `http://127.0.0.1:${address.port}` },
+        },
+        openclawConfig: {} as never,
+        env: { KM_TOKEN: "test-only" },
+      });
+
+      await expect(client.health()).resolves.toMatchObject({ protocolVersion: 1, status: "ok" });
+      expect(transportHeaders.has("accept-language")).toBe(false);
+      expect(rawHeaderNames).toEqual(
+        expect.arrayContaining(["Accept", "Authorization", "X-Deliberation-Protocol-Version"]),
+      );
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+
   it("uses the canonical protocol header and reservations route", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       new Response(

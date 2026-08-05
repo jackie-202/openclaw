@@ -6984,6 +6984,31 @@ module.exports = {
     ]);
   });
 
+  it("rejects plugins that omit a manifest-declared expected hook", () => {
+    useNoBundledPlugins();
+    const plugin = writePlugin({
+      id: "missing-expected-hook",
+      filename: "missing-expected-hook.cjs",
+      body: `module.exports = { id: "missing-expected-hook", register(api) {
+  api.on("before_dispatch", () => undefined);
+} };`,
+    });
+    updatePluginManifest(plugin, { expectedHooks: ["inbound_claim"] });
+
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: { allow: ["missing-expected-hook"] },
+    });
+
+    const record = registry.plugins.find((entry) => entry.id === "missing-expected-hook");
+    expect(record?.status).toBe("error");
+    expect(record?.failurePhase).toBe("register");
+    expect(record?.error).toContain("plugin did not register expected hooks: inbound_claim");
+    expect(record?.hookNames).toEqual([]);
+    expect(record?.hookCount).toBe(0);
+    expect(registry.typedHooks).toEqual([]);
+  });
+
   it("applies configured typed hook timeout overrides", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({

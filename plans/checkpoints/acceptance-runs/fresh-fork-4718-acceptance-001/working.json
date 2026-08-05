@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The required existing Deliberation and Discord inbound tests must have canonical evidence that they remain green.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller states that Test Gate was not run and no Test Gate evidence exists. The supplied run-scoped TDD proof reports local GREEN results, but no canonical Test Gate reference establishes the explicit test-result goal.",
+      "rationale": "The goal requires a test outcome, and acceptance may assess that outcome only from supplied artifacts and the canonical Test Gate reference. The canonical evidence is absent, while acceptance does not own test execution.",
+      "required": "Supply canonical Test Gate evidence showing the required existing Deliberation and Discord inbound tests remain green.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "status:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-fork-4718.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "manifest.json:10-20"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Fix live Discord deliberation intake hook wiring: goal-004: Existing deliberation and Discord inbound t"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-fork-4718-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "fresh-fork-4718"
+}

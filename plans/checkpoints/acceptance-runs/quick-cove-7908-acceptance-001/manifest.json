@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-02T10:10:33+00:00",
+    "implementingStartedAt": "2026-08-02T09:52:45+00:00",
+    "taskFile": "plans/tasks/fix-deliberation-silent-intake.md",
+    "taskId": "quick-cove-7908",
+    "title": "Fix deliberation intake to enqueue silently"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A realistic Discord source-channel claim matching `channel=discord`, `accountId=default`, and `conversationId=1494265174389948538` is accepted and queued."
+    },
+    {
+      "id": "goal-002",
+      "summary": "The claim result is terminal (`handled: true`) and contains no public response text."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Regression coverage proves normal agent dispatch and send are not invoked after successful enqueue."
+    },
+    {
+      "id": "goal-004",
+      "summary": "A non-source Discord channel is not claimed."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Existing fail-closed guard tests remain green."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Focused deliberation plugin tests and the relevant core dispatch test pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-cove-7908-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-cove-7908",
+  "tddRequired": true
+}

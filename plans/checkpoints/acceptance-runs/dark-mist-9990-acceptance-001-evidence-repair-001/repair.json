@@ -1,0 +1,42 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/dark-mist-9990.evidence.md",
+      "provenance": "evidence_repair:dark-mist-9990-acceptance-001-evidence-repair-001",
+      "size": 1273
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/dark-mist-9990.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/dark-mist-9990-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "b734b8e3ee4683ffd46f9f291605ba612ac8dc53",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-02T10:40:36.070579+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/save-learning/add-frontmatter.py\" --title \"Evidence-only follow-ups need fresh direct gate outcomes\" --category \"tooling\" --component \"ci-cd\" --tags \"acc",
+      "outcome": "- Deliberation hooks: 16 passed"
+    },
+    {
+      "command": "TASK_ID=quick-cove-7908 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/hooks.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=quick-cove-7908 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/hooks.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "dark-mist-9990-acceptance-001-evidence-repair-001",
+  "sourceRunId": "dark-mist-9990-acceptance-001",
+  "startedAt": "2026-08-02T10:40:30.452138+00:00",
+  "status": "escalated"
+}

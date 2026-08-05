@@ -1,5 +1,41 @@
 # Agent Changelog
 
+## 2026-08-03
+
+**Deliberation plugin registers its runtime entry in the built checkout**
+
+`openclaw plugins list --json` now reports Deliberation with its expected hooks from the built runtime entry instead of `hookCount: 0`. The plugin entry is wired into the checkout used at runtime, so the extension is discoverable with its hook registration intact.
+
+**Discord deliberation intake canonicalizes pilot-channel sourceTarget**
+
+Configured pilot-channel inbound events now emit an intake body with the exact `sourceTarget: discord:channel:1494265174389948538` value, matching the canonical Discord channel target expected by the deliberation intake path.
+
+## 2026-08-02
+
+**Node fetch transport metadata no longer triggers HTTP 400**
+
+Requests carrying standard automatic transport metadata from Node `fetch` are no longer rejected with HTTP 400 solely for those headers. The compatibility fix narrows the failure condition to the request content instead of the client-generated transport header set.
+
+**Discord deliberation intake now reaches createInboundClaimHandler for channel 1494265174389948538**
+
+A realistic Discord event from channel 1494265174389948538 is wired through the inbound hook into `createInboundClaimHandler` and KM intake. The integration path now proves a successful intake for the live deliberation event instead of stopping before handler entry.
+
+**Discord source-channel claims enqueue silently**
+
+A claim matching `channel=discord` and `accountId=default` is accepted and queued through the deliberation intake path. The delivery centers on the enqueue path for a realistic source-channel claim rather than a noisy claim response.
+
+## 2026-08-01
+
+**Deliberation plugin accepts loopback HTTP endpoints in `km.endpoint`**
+
+Loopback HTTP targets are now valid input to the `km.endpoint` schema.
+
+## 2026-07-31
+
+**Deliberation v2 makes KM authority the fork wire contract**
+
+The delivery removes the fork-specific `x-deliberation-protocol`, `/deliveries`, `/attempts`, and `/control` surface from the extension and reference docs, leaving KM authority as the contract boundary.
+
 ## 2026-07-28
 
 **Deliberation v2 plugin consumes the accepted KM wire**

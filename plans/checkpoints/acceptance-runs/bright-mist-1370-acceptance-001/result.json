@@ -1,0 +1,85 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The caller-required TDD proof must contain a valid RED and GREEN cycle for this run.",
+      "crossCutting": true,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof contains metadata and a RED phase with exit code 1, but no GREEN phase, successful focused rerun, or GREEN output is present in the supplied artifact.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The manifest declares tddRequired=true, and a RED-only capture does not demonstrate the mandatory completed RED/GREEN cycle; the checkpoint's summary assertion is not a substitute for the required proof artifact.",
+      "required": "Provide the run-scoped TDD proof with both the genuine RED capture and the subsequent GREEN capture for the declared focused command.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-mist-1370.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "manifest.json:36"
+        }
+      ]
+    },
+    {
+      "claim": "The required existing Deliberation and Discord inbound tests must have canonical evidence that they remain green.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-004"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The caller states that Test Gate was not run and that no Test Gate evidence exists; the supplied checkpoint only summarizes local verification and provides no canonical Test Gate reference establishing goal-004.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal-004 is explicitly a test-result goal, and the acceptance guidance permits assessing it only from supplied artifacts and the canonical Test Gate reference. That canonical evidence is absent.",
+      "required": "Supply canonical Test Gate evidence showing the required existing Deliberation and Discord inbound tests remain green.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "status:not-run"
+        },
+        {
+          "kind": "file",
+          "reference": "manifest.json:24-25"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "A realistic Discord event for channel `1494265174389948538` reaches `createInboundClaimHandler`/KM intake in the integration test."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "Successful intake is present in the canonical spool/audit contract and no normal agent response is dispatched."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Listener-unavailable failure is observable in logs and cannot leak into ordinary dispatch."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "Existing deliberation and Discord inbound tests remain green."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "The final task note identifies the exact live wiring cause and records focused test/typecheck results."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-mist-1370-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bright-mist-1370"
+}

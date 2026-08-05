@@ -1,0 +1,38 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/bold-cove-8557.evidence.md",
+      "provenance": "evidence_repair:bold-cove-8557-acceptance-001-evidence-repair-001",
+      "size": 831
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/bold-cove-8557.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/bold-cove-8557-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "9f6f2ad55200c82c52c9e9f9a0473fc32beb7458",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-04T13:36:09.733660+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=bold-cove-8557 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/hooks.test.ts extensions/deliberation/src/km-client.tes",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=bold-cove-8557 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/hooks.test.ts extensions/deliberation/src/km-client.t",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "bold-cove-8557-acceptance-001-evidence-repair-001",
+  "sourceRunId": "bold-cove-8557-acceptance-001",
+  "startedAt": "2026-08-04T13:36:06.040615+00:00",
+  "status": "escalated"
+}

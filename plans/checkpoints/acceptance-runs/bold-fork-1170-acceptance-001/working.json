@@ -1,0 +1,78 @@
+{
+  "findings": [
+    {
+      "claim": "The authoritative KM listener compatibility behavior was not delivered.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task checkpoint marks the authority listener and canonical contract step incomplete because access to the KM authority was denied; the task-scoped diff changes only the consumer mirror, provenance, and consumer tests, while supplied live evidence records the authoritative listener still returning HTTP 400 to Node global fetch with Sec-Fetch-Mode: cors.",
+      "rationale": "Goal 001 requires the supported Node fetch request to stop being rejected solely for standard transport metadata, but the listener enforcing that contract remains unchanged and exhibits the rejected behavior.",
+      "required": "Update the KM-owned listener and canonical contract to accept only the supported Sec-Fetch-Mode: cors transport metadata while preserving rejection of unknown application headers, then synchronize the consumer mirror from that authority.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-fork-1170.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-7187.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-7187.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/contracts/km-wire-v1.json"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof has no valid GREEN for the authoritative compatibility seam.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The bold-fork-1170 proof preserves the genuine historical listener RED but contains no GREEN phase; the supplied checkpoint explicitly forbids treating the repository fake-listener result as GREEN, and the prior proof records that the authenticated Node global-fetch probe against the running authoritative listener still received HTTP 400.",
+      "rationale": "With tddRequired true, consumer tests derived from the edited mirror prove only mirror synchronization and cannot demonstrate that the changed authoritative listener accepts the characterized transport metadata while retaining the rejection control.",
+      "required": "Preserve the historical RED and capture fresh GREEN evidence from the changed KM listener using Node global fetch, together with an unknown-application-header HTTP 400 control, without exposing credentials.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-fork-1170.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-fork-1170.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-7187.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-peak-4405.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix Deliberation KM compatibility with Node fetch transport headers: goal-001: The cha"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-fork-1170-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bold-fork-1170"
+}

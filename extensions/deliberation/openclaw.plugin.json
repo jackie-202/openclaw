@@ -2,6 +2,12 @@
   "id": "deliberation",
   "name": "Deliberation",
   "description": "Fail-closed Discord intake backed by the Deliberation KM.",
+  "expectedHooks": [
+    "inbound_claim",
+    "before_dispatch",
+    "before_tool_call",
+    "message_sending"
+  ],
   "activation": {
     "onStartup": true
   },

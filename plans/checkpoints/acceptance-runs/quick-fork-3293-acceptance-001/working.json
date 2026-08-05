@@ -1,0 +1,51 @@
+{
+  "findings": [
+    {
+      "claim": "Caller-owned canonical evidence that the existing fail-closed guard tests remain green is absent.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The canonical Test Gate status is not run and contains no Test Gate evidence. Supplied checkpoints and historical RED/GREEN artifacts report local passing commands, but the task plan and checkpoint explicitly state those local results are not the caller-owned canonical gate reference.",
+      "rationale": "Goal goal-001 requires the existing fail-closed guard tests to remain green, and the supplied constraints reserve test execution and interpretation to Test Gate. Local or historical runs cannot establish the required canonical outcome for this acceptance run.",
+      "required": "Supply an inspectable caller-owned canonical Test Gate result establishing that the existing fail-closed guard tests pass.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-fork-3293.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-fork-3293.evidence.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-cove-7908.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-02_quick-fork-3293_acceptance-fix-fix-deliberation-intake-to-enqueue-silently.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix deliberation intake to enqueue silently: goal-005: Existing fail-closed guard test"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-fork-3293-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-fork-3293"
+}

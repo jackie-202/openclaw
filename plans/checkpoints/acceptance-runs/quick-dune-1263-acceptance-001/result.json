@@ -1,0 +1,118 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required Discord source-target implementation and regression coverage are absent from the supplied task-scoped changes.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-002",
+        "goal-003"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff contains no changes to extensions/deliberation/src/intake.ts, extensions/deliberation/src/hooks.test.ts, or extensions/discord/src/monitor/message-handler.process.test.ts; it contains only unrelated architecture-review, trajectory-pointer, temporary diagnostic, and backup files.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Without the production mapping change or boundary regression assertions in the supplied diff, the material does not deliver the canonical discord:channel target, prevention of the prior default-prefixed payload, or preserved terminal handled result required by goals 001 through 003.",
+      "required": "Supply the production intake mapping and scoped regression-test changes that implement and demonstrate goals 001 through 003.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied task-scoped diff"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-03_quick-dune-1263_fix-live-discord-deliberation-intake-source-target.md:Files to Modify"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED/GREEN TDD proof is incomplete.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-002"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof records a RED phase with exit code 1 and partial stdout, but supplies no GREEN phase, GREEN command result, or completed proof section; the checkpoint's narrative completion claim is not execution provenance.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The manifest declares tddRequired true, and the catalog guidance requires RED/GREEN proof. A RED-only artifact cannot establish that the regression test passed after implementation or that the prior payload cannot recur.",
+      "required": "Provide valid run-scoped TDD provenance containing both the failing RED observation and the passing GREEN observation for the declared focused boundary command.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-dune-1263.red-green-proof.md:RED Phase"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-dune-1263.checkpoint.md:Last completed"
+        }
+      ]
+    },
+    {
+      "claim": "Required focused verification and activation-note evidence is absent from the supplied material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-005"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The canonical Test Gate status is not run and has no evidence. No final note is supplied with exact focused-test commands/results or an explicit gateway rebuild/restart activation statement; the checkpoint only gives a summary assertion and mentions an infrastructure-blocked check without exact results.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal 005 explicitly requires passing focused tests and a final note containing exact commands/results and activation requirements. Neither the canonical Test Gate reference nor another supplied final artifact contains that required evidence.",
+      "required": "Provide the canonical Test Gate result and the required final note with exact commands/results and an explicit statement of whether gateway rebuild/restart is needed.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical Test Gate status: not run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-dune-1263.checkpoint.md:Context for resume"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-03_quick-dune-1263_fix-live-discord-deliberation-intake-source-target.md:Verification"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "A configured pilot-channel inbound event sends an intake body containing exactly `sourceTarget: discord:channel:1494265174389948538`."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "Tests prove the prior `default:1494265174389948538` payload cannot recur."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "The real inbound event remains `handled: true` after successful KM intake."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "Existing routing, fail-closed suppression, processing-route isolation, auth/SecretRef, and delivery controls remain unchanged."
+    },
+    {
+      "id": "goal-005",
+      "status": "UNMET",
+      "summary": "Focused tests pass; final note includes exact commands/results and whether a gateway rebuild/restart is needed to activate the fix."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-dune-1263-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "quick-dune-1263"
+}

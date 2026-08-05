@@ -1,0 +1,18 @@
+{
+  "run_id": "2026-08-03T080000Z-openclaw-fork",
+  "run_time_utc": "2026-08-03T08:00:00Z",
+  "project": "openclaw-fork",
+  "question": "Do repository-local pipeline evidence, trajectory, and recovery artifacts create competing operational authorities or unbounded lifecycle state?",
+  "verified_evidence": [
+    "247 plans and 159 learnings are tracked; current operation adds 77 untracked plan files and 43 untracked learning files",
+    "plans/checkpoints contains 217 files, including 121 files under acceptance-runs; representative files are mutable task/session/runtime evidence keyed by external IDs",
+    "29 of 202 learning files have under 100 non-heading characters; representative auto-extracted files contain empty What happened and What to do sections",
+    "repository code, scripts, and docs have no consumer references to plans/checkpoints, plans/tasks, or learnings roots",
+    "commit 2a4a68ea339 preserved a large mixed batch of product changes and pipeline artifacts before upstream sync, coupling external run history to product commits",
+    "31 repository-local trajectory pointer files exist (29 untracked, 2 tracked), none of their referenced runtime JSONL targets exists, and neither pointer nor target pattern is ignored",
+    "the npm package files allowlist excludes these roots, so they are not required distribution content"
+  ],
+  "conclusion_so_far": "Verified: pipeline evidence and extracted learnings form an unbounded second history inside the product repository; trajectory pointers are incomplete runtime residue and a false session-state surface. Recommended boundary is canonical external task/KM storage for run evidence, curated durable docs only in product Git, and runtime trajectory state outside the checkout.",
+  "next_trace": "None; report completed. If discussed later, identify the external canonical retention location and migration policy before deleting historical artifacts.",
+  "continuable": false
+}

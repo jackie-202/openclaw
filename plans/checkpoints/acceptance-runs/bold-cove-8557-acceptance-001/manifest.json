@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-04T13:34:01+00:00",
+    "implementingStartedAt": "2026-08-04T13:14:46+00:00",
+    "taskFile": "plans/tasks/2026-08-04_fix-openclaw-deliberation-live-intake-request-failure.md",
+    "taskId": "bold-cove-8557",
+    "title": "Fix OpenClaw Deliberation live intake request failure"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Fix OpenClaw Deliberation live intake request failure"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-cove-8557-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-cove-8557",
+  "tddRequired": true
+}

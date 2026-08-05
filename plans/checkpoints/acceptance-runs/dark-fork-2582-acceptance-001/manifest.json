@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-04T08:06:29+00:00",
+    "implementingStartedAt": "2026-08-04T07:54:29+00:00",
+    "taskFile": "plans/tasks/2026-08-04_followup-dark-fork-2582-fix-deliberation-live-intake-canonical-utc-timestamps.md",
+    "taskId": "dark-fork-2582",
+    "title": "[acceptance-fix] Fix Deliberation live intake canonical UTC timestamps: goal-001: A live-shaped event timestamp at an ex"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix Deliberation live intake canonical UTC timestamps: goal-001: A live-shaped event timestamp at an ex"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-fork-2582-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-fork-2582",
+  "tddRequired": true
+}

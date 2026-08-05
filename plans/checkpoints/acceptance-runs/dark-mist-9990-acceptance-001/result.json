@@ -1,0 +1,50 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "Canonical evidence that the existing fail-closed guard tests remain green is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller-supplied canonical Test Gate status is not run and contains no Test Gate evidence. The supplied checkpoint reports local passing commands, and the historical RED/GREEN proof covers hooks.test.ts, but neither is caller-owned canonical Test Gate evidence for this acceptance run.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal goal-001 explicitly requires the existing fail-closed guard tests to remain green. Under the supplied acceptance constraints, that outcome can be established only from supplied artifacts and the canonical Test Gate reference; canonical:not-run does not establish it.",
+      "required": "Supply caller-owned canonical Test Gate evidence establishing that the existing fail-closed guard tests pass.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-mist-9990.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-cove-7908.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-02_followup-dark-mist-9990-fix-deliberation-intake-to-enqueue-silently.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Fix deliberation intake to enqueue silently: goal-005: Existing fail-closed guard tests remain green."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-9990-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-mist-9990"
+}

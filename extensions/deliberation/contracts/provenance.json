@@ -1,13 +1,13 @@
 {
-  "acceptedBy": "cool-brook-7690 KM authority convergence",
-  "acceptedAt": "2026-08-01",
-  "scope": "KM-owned Deliberation v2 wire contract and fixtures",
+  "acceptedBy": "swift-reef-7187 KM Node fetch transport compatibility",
+  "acceptedAt": "2026-08-02",
+  "scope": "KM-owned Deliberation v2 wire contract, Node fetch transport compatibility, and fixtures",
   "sources": {
     "km-wire-v1.json": "km-system/contracts/deliberation-v2/v1/contract.json",
     "cutover-controls-v1.json": "km-system/contracts/deliberation-v2/v1/fixtures.json"
   },
   "files": {
-    "km-wire-v1.json": "e1f3ed030d69f24b7117ca55edb7aa63fd18152b515fa9e047404d495306aebf",
+    "km-wire-v1.json": "731432653ab298c1fbf375fe34e234fe7dc8818df4a1fb4c878e797dc1275e3f",
     "cutover-controls-v1.json": "1f62540db97714cfe2cca72b25f2e2c7bd50200284557595991f8c357c85b9c1"
   }
 }

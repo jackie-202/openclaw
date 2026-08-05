@@ -90,7 +90,7 @@ function buildPluginRecordFromInstalledIndex(
     syntheticAuthRefs: [...(plugin.syntheticAuthRefs ?? manifest?.syntheticAuthRefs ?? [])],
     status: plugin.enabled ? "loaded" : "disabled",
     toolNames: [],
-    hookNames: [],
+    hookNames: [...(manifest?.expectedHooks ?? [])],
     channelIds: [...(manifest?.channels ?? [])],
     cliBackendIds: [...(manifest?.cliBackends ?? []), ...(manifest?.setup?.cliBackends ?? [])],
     providerIds: [...(manifest?.providers ?? [])],
@@ -115,7 +115,7 @@ function buildPluginRecordFromInstalledIndex(
     gatewayDiscoveryServiceIds: [],
     commands: [...(manifest?.commandAliases?.map((alias) => alias.name) ?? [])],
     httpRoutes: 0,
-    hookCount: 0,
+    hookCount: manifest?.expectedHooks?.length ?? 0,
     configSchema: false,
     contracts: {},
     dependencyStatus: buildSnapshotPluginDependencyStatus({

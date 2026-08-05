@@ -69,6 +69,27 @@ Every request sends `X-Deliberation-Protocol-Version: 1`. The canonical KM API h
 
 Request and response objects are closed schemas. The KM owns the `source-intake`, `claims`, `review`, and `sender` controls. Change them with KM operator tooling, not OpenClaw Gateway methods or plugin CLI commands.
 
+## Probe intake
+
+Use the fork-owned producer probe to exercise the same handler and KM client as a Discord intake hook. Put the credential in `OPENCLAW_DELIBERATION_KM_CREDENTIAL`; never include it in the event JSON or command arguments.
+
+```bash
+export OPENCLAW_DELIBERATION_KM_CREDENTIAL='<KM_CREDENTIAL>'
+printf '%s\n' '{"channelId":"<SOURCE_CHANNEL_ID>","accountId":"default","messageId":"<DISCORD_MESSAGE_ID>","senderId":"<DISCORD_SENDER_ID>","timestamp":"2026-08-04T12:50:19.483Z","content":"probe message"}' \
+  | node --import tsx extensions/deliberation/scripts/intake-producer.ts \
+      --endpoint 'http://127.0.0.1:8765'
+```
+
+The command writes one bounded JSON object to stdout:
+
+```json
+{ "handled": true, "providerEventId": "<DISCORD_MESSAGE_ID>", "duplicate": false }
+```
+
+Run the same input again to exercise listener idempotency. A conforming listener returns `"duplicate":true`; the external listener harness must also assert that its canonical store contains exactly one record for the provider event ID. The probe does not inspect listener storage and cannot send Discord messages or activate the KM sender control.
+
+Failed KM requests return `"handled":false` with a bounded `diagnostic` object. `stage` is one of `credential`, `transport`, `response-json`, `http`, or `response-schema`; `status` is present when an HTTP response exists; and `code` is a protocol-v1 KM error code or `UNKNOWN`. Output never includes the credential, endpoint, event content, sender ID, or a KM error message. Malformed probe input exits nonzero with a fixed `input` diagnostic.
+
 ## Operate
 
 Run `openclaw deliberation health` or `openclaw deliberation status` for the same read-only KM health response. The response includes protocol version, KM status, and all four controls. CLI failures use the standard command error path; Gateway health and status methods report them as unavailable. Neither path exposes request bodies or credentials.
@@ -76,6 +97,8 @@ Run `openclaw deliberation health` or `openclaw deliberation status` for the sam
 ## Fail-closed behavior
 
 Configured source traffic remains terminally silent when KM is unavailable or the plugin's KM work is disabled. The processing route is excluded before intake. Restricted sessions cannot use configured send tools or canonical outbound delivery to source targets.
+
+Runtime intake warnings use the same bounded KM stage, status, and code fields. They omit credentials, request and response bodies, endpoint values, Discord message content, and raw KM error messages.
 
 Outbound delivery is intentionally inactive. Reactivate it only after a later immutable KM contract carries the authorized destination through the ready or reservation flow. Do not infer a route, choose a default source, or maintain a second destination map in OpenClaw.
 

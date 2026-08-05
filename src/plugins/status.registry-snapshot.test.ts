@@ -130,6 +130,7 @@ describe("buildPluginRegistrySnapshotReport", () => {
         description: "Manifest-backed list metadata",
         version: "1.2.3",
         providers: ["indexed-provider"],
+        expectedHooks: ["inbound_claim", "before_dispatch"],
         contracts: {
           speechProviders: ["indexed-speech-provider"],
           realtimeTranscriptionProviders: ["indexed-transcription-provider"],
@@ -163,6 +164,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
       realtimeTranscriptionProviderIds: ["indexed-transcription-provider"],
       realtimeVoiceProviderIds: ["indexed-voice-provider"],
       commands: ["indexed-demo"],
+      hookNames: ["inbound_claim", "before_dispatch"],
+      hookCount: 2,
       source: fs.realpathSync(fixture.runtimeSource),
       status: "loaded",
     });

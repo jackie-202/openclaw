@@ -1,0 +1,64 @@
+{
+  "findings": [
+    {
+      "claim": "Focused deliberation plugin tests and the relevant core dispatch test must have passing verification evidence.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-006"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The canonical Test Gate status is not run and supplies no evidence; the supplied RED/GREEN artifact covers only extensions/deliberation/src/hooks.test.ts, not extensions/deliberation/src/plugin.test.ts or the relevant core dispatch test.",
+      "rationale": "Goal goal-006 is an explicit test-result goal, and the caller-supplied material contains no canonical or artifact evidence establishing both required test outcomes.",
+      "required": "Canonical caller-owned Test Gate evidence must establish the focused deliberation plugin and relevant core dispatch test outcomes for goal-006.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:status-not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-cove-7908.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "A realistic Discord source-channel claim matching `channel=discord`, `accountId=default`, and `conversationId=1494265174389948538` is accepted and queued."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "The claim result is terminal (`handled: true`) and contains no public response text."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Regression coverage proves normal agent dispatch and send are not invoked after successful enqueue."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "A non-source Discord channel is not claimed."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "Existing fail-closed guard tests remain green."
+    },
+    {
+      "id": "goal-006",
+      "status": "UNMET",
+      "summary": "Focused deliberation plugin tests and the relevant core dispatch test pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-cove-7908-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-cove-7908"
+}

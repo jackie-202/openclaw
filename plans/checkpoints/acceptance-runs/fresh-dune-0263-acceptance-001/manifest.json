@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-03T22:20:57+00:00",
+    "implementingStartedAt": "2026-08-03T21:57:58+00:00",
+    "taskFile": "plans/tasks/2026-08-03_followup-fresh-dune-0263-fix-deliberation-plugin-runtime-entry-registration.md",
+    "taskId": "fresh-dune-0263",
+    "title": "[acceptance-fix] Fix Deliberation plugin runtime entry registration: goal-001: `openclaw plugins list --json` against th"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix Deliberation plugin runtime entry registration: goal-001: `openclaw plugins list --json` against th"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-dune-0263-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-dune-0263",
+  "tddRequired": true
+}

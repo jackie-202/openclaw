@@ -22,6 +22,7 @@ import {
   type PluginDiscoveryResult,
 } from "./discovery.js";
 import { shouldRejectHardlinkedPluginFiles } from "./hardlink-policy.js";
+import type { PluginHookName } from "./hook-types.js";
 import { loadInstalledPluginIndexInstallRecordsSync } from "./installed-plugin-index-record-reader.js";
 import type { PluginManifestCommandAlias } from "./manifest-command-aliases.js";
 import type {
@@ -214,6 +215,7 @@ export type PluginManifestRecord = {
   kind?: PluginKind | PluginKind[];
   channels: string[];
   providers: string[];
+  expectedHooks?: PluginHookName[];
   providerDiscoverySource?: string;
   modelSupport?: PluginManifestModelSupport;
   modelCatalog?: PluginManifestModelCatalog;
@@ -521,6 +523,7 @@ function buildRecord(params: {
     kind: params.manifest.kind,
     channels: params.manifest.channels ?? [],
     providers: params.manifest.providers ?? [],
+    expectedHooks: params.manifest.expectedHooks,
     providerDiscoverySource: providerSourceEntry
       ? resolveManifestPluginSourcePath({
           rootDir: params.candidate.rootDir,

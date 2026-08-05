@@ -1,7 +1,9 @@
+import { createServer } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import { parseDeliberationConfig } from "./config.js";
 import { createBeforeToolCallHandler, createMessageSendingHandler } from "./guards.js";
 import { createBeforeDispatchHandler, createInboundClaimHandler } from "./intake.js";
+import { createKmClient, KmRequestError } from "./km-client.js";
 
 const config = parseDeliberationConfig({
   enabled: true,
@@ -34,6 +36,115 @@ function loggedMessages(logger: ReturnType<typeof createLogger>): string[] {
 }
 
 describe("deliberation hooks", () => {
+  it("persists the live Discord event once through the closed KM wire contract", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-04T12:50:21.838Z"));
+    const allowedHeaders = new Set([
+      "host",
+      "content-length",
+      "connection",
+      "user-agent",
+      "accept-encoding",
+      "sec-fetch-mode",
+      "authorization",
+      "x-deliberation-protocol-version",
+      "accept",
+      "content-type",
+    ]);
+    const records = new Map<string, string>();
+    const occurredAtValues: string[] = [];
+    const server = createServer((request, response) => {
+      let body = "";
+      request.setEncoding("utf8");
+      request.on("data", (chunk) => (body += chunk));
+      request.on("end", () => {
+        const unexpectedHeaders = Object.keys(request.headers).filter(
+          (name) => !allowedHeaders.has(name),
+        );
+        const event = JSON.parse(body) as { providerEventId: string; occurredAt: string };
+        const validRequest =
+          request.method === "POST" &&
+          request.url === "/deliberation/v1/intake" &&
+          request.headers.authorization === "Bearer 0123456789abcdef" &&
+          request.headers["x-deliberation-protocol-version"] === "1" &&
+          request.headers.accept === "application/json" &&
+          request.headers["content-type"] === "application/json" &&
+          unexpectedHeaders.length === 0 &&
+          event.occurredAt === "2026-08-04T12:50:19.483000Z";
+        if (!validRequest) {
+          response.writeHead(400, { "Content-Type": "application/json" });
+          response.end(
+            JSON.stringify({
+              protocolVersion: 1,
+              error: { code: "SCHEMA_INVALID", message: "headers" },
+            }),
+          );
+          return;
+        }
+        occurredAtValues.push(event.occurredAt);
+        const existing = records.get(event.providerEventId);
+        const recordId = existing ?? `record-${records.size + 1}`;
+        records.set(event.providerEventId, recordId);
+        response.writeHead(existing ? 200 : 201, { "Content-Type": "application/json" });
+        response.end(
+          JSON.stringify({
+            protocolVersion: 1,
+            recordId,
+            inboundId: `inbound-${event.providerEventId}`,
+            duplicate: existing !== undefined,
+          }),
+        );
+      });
+    });
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", resolve);
+    });
+
+    try {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        throw new Error("missing listener address");
+      }
+      const listenerConfig = {
+        ...config,
+        km: { ...config.km, endpoint: `http://127.0.0.1:${address.port}` },
+      };
+      const client = createKmClient({
+        config: listenerConfig,
+        openclawConfig: {} as never,
+        env: { KM_TOKEN: "0123456789abcdef" },
+      });
+      const handler = createInboundClaimHandler(listenerConfig, client, createLogger());
+      const event = {
+        channel: "discord",
+        content: "message",
+        isGroup: true,
+        senderId: "sender-1",
+        timestamp: Date.parse("2026-08-04T12:50:19.483Z"),
+      };
+      const context = { ...sourceContext, messageId: "1534181693647355986" };
+
+      await expect(handler(event, context)).resolves.toEqual({ handled: true });
+      await expect(handler(event, context)).resolves.toEqual({ handled: true });
+      expect(records).toEqual(new Map([[context.messageId, "record-1"]]));
+      expect(occurredAtValues).toEqual([
+        "2026-08-04T12:50:19.483000Z",
+        "2026-08-04T12:50:19.483000Z",
+      ]);
+    } finally {
+      vi.useRealTimers();
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        }),
+      );
+    }
+  });
+
   it("excludes processing before KM intake and never claims", async () => {
     const intake = vi.fn();
     const handler = createInboundClaimHandler(config, { intake } as never, createLogger());
@@ -45,40 +156,128 @@ describe("deliberation hooks", () => {
     expect(intake).not.toHaveBeenCalled();
   });
 
-  it("submits exact source intake once and claims it", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-08-01T12:00:01Z"));
-    const intake = vi.fn().mockResolvedValue({
-      recordId: "record-1",
-      inboundId: "inbound-1",
-      duplicate: true,
-    });
-    const handler = createInboundClaimHandler(config, { intake } as never, createLogger());
-    await expect(
-      handler(
-        {
-          channel: "discord",
-          content: "message",
-          isGroup: true,
-          senderId: "sender-1",
-          timestamp: Date.parse("2026-08-01T12:00:00Z"),
-        },
-        { ...sourceContext, messageId: "m1" },
-      ),
-    ).resolves.toEqual({ handled: true });
-    expect(intake).toHaveBeenCalledTimes(1);
-    expect(intake).toHaveBeenCalledWith({
-      provider: "discord",
-      providerEventId: "m1",
-      sourceTarget: "acct:source",
-      senderId: "sender-1",
-      occurredAt: "2026-08-01T12:00:00.000Z",
-      receivedAt: "2026-08-01T12:00:01.000Z",
-      content: "message",
-      eventType: "message",
-    });
-    vi.useRealTimers();
-  });
+  it.each([
+    { accountId: "default", runtimeTarget: "source" },
+    { accountId: "default", runtimeTarget: "channel:source" },
+    { accountId: "work", runtimeTarget: "source" },
+    { accountId: "work", runtimeTarget: "channel:source" },
+  ])(
+    "submits canonical source intake for account $accountId and target $runtimeTarget",
+    async ({ accountId, runtimeTarget }) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-08-01T12:00:01Z"));
+      const routeConfig = parseDeliberationConfig({
+        enabled: true,
+        failClosed: true,
+        sources: [{ channel: "discord", accountId, target: "source" }],
+        processingSource: { channel: "discord", accountId, target: "processing" },
+        km: config.km,
+        restrictedSessionKeys: ["agent:reviewer"],
+      });
+      const intake = vi.fn().mockResolvedValue({
+        recordId: "record-1",
+        inboundId: "inbound-1",
+        duplicate: true,
+      });
+      const handler = createInboundClaimHandler(routeConfig, { intake } as never, createLogger());
+      await expect(
+        handler(
+          {
+            channel: "discord",
+            content: "message",
+            isGroup: true,
+            senderId: "sender-1",
+            timestamp: Date.parse("2026-08-01T12:00:00Z"),
+          },
+          {
+            channelId: "discord",
+            accountId,
+            conversationId: runtimeTarget,
+            messageId: "m1",
+          },
+        ),
+      ).resolves.toEqual({ handled: true });
+      expect(intake).toHaveBeenCalledTimes(1);
+      expect(intake).toHaveBeenCalledWith({
+        provider: "discord",
+        providerEventId: "m1",
+        sourceTarget: "discord:channel:source",
+        senderId: "sender-1",
+        occurredAt: "2026-08-01T12:00:00Z",
+        receivedAt: "2026-08-01T12:00:01Z",
+        content: "message",
+        eventType: "message",
+      });
+      vi.useRealTimers();
+    },
+  );
+
+  it.each([
+    ["exact second", "2026-08-04T07:13:50Z", "2026-08-04T07:13:51Z"],
+    ["non-zero milliseconds", "2026-08-04T07:13:50.120000Z", "2026-08-04T07:13:51.120000Z"],
+  ])(
+    "sends canonical KM timestamps for a live-shaped %s event",
+    async (_, occurredAt, receivedAt) => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date(receivedAt));
+        const bodies: Array<{ occurredAt: string; receivedAt: string }> = [];
+        const fetchImpl = vi.fn(
+          async (_input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+            const body = JSON.parse(String(init?.body)) as {
+              occurredAt: string;
+              receivedAt: string;
+            };
+            bodies.push({ occurredAt: body.occurredAt, receivedAt: body.receivedAt });
+            const canonical = [body.occurredAt, body.receivedAt].every(
+              (value) =>
+                /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{6})?Z$/.test(value) &&
+                !value.endsWith(".000000Z"),
+            );
+            return new Response(
+              JSON.stringify(
+                canonical
+                  ? {
+                      protocolVersion: 1,
+                      recordId: "record-1",
+                      inboundId: "inbound-1",
+                      duplicate: false,
+                    }
+                  : {
+                      protocolVersion: 1,
+                      error: { code: "SCHEMA_INVALID", message: "timestamp" },
+                    },
+              ),
+              { status: canonical ? 201 : 400 },
+            );
+          },
+        );
+        const client = createKmClient({
+          config,
+          openclawConfig: {} as never,
+          fetchImpl,
+          env: { KM_TOKEN: "test-only" },
+        });
+        const handler = createInboundClaimHandler(config, client, createLogger());
+
+        await expect(
+          handler(
+            {
+              channel: "discord",
+              content: "message",
+              isGroup: true,
+              senderId: "sender-1",
+              timestamp: Date.parse(occurredAt),
+            },
+            { ...sourceContext, messageId: "1534097014340456599" },
+          ),
+        ).resolves.toEqual({ handled: true });
+        expect(bodies).toEqual([{ occurredAt, receivedAt }]);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
 
   it("intakes the canonical Discord channel event shape", async () => {
     const intake = vi.fn().mockResolvedValue({
@@ -110,7 +309,7 @@ describe("deliberation hooks", () => {
     expect(intake).toHaveBeenCalledWith(
       expect.objectContaining({
         providerEventId: "m1",
-        sourceTarget: "acct:source",
+        sourceTarget: "discord:channel:source",
         content: "message",
       }),
     );
@@ -236,6 +435,27 @@ describe("deliberation hooks", () => {
       event: { content: "message", messageId: "m1", senderId: "sender-1" },
     },
     {
+      name: "non-Discord route",
+      expectedReason: "unmatched-route",
+      buildConfig: () => config,
+      context: { ...sourceContext, channelId: "slack" },
+      event: { content: "message", messageId: "m1", senderId: "sender-1" },
+    },
+    {
+      name: "missing account",
+      expectedReason: "unmatched-route",
+      buildConfig: () => config,
+      context: { channelId: "discord", conversationId: "channel:source" },
+      event: { content: "message", messageId: "m1", senderId: "sender-1" },
+    },
+    {
+      name: "missing target",
+      expectedReason: "unmatched-route",
+      buildConfig: () => config,
+      context: { channelId: "discord", accountId: "acct" },
+      event: { content: "message", messageId: "m1", senderId: "sender-1" },
+    },
+    {
       name: "missing message id",
       expectedReason: "missing-message-id",
       buildConfig: () => config,
@@ -273,7 +493,9 @@ describe("deliberation hooks", () => {
   );
 
   it("warns about KM failure without leaking message or media values", async () => {
-    const intake = vi.fn().mockRejectedValue(new Error("secret message /private/audio.ogg"));
+    const intake = vi
+      .fn()
+      .mockRejectedValue(new KmRequestError("http", 400, "SCHEMA_INVALID", "secret message"));
     const logger = createLogger();
     const handler = createInboundClaimHandler(config, { intake } as never, logger);
 
@@ -290,7 +512,7 @@ describe("deliberation hooks", () => {
     ).resolves.toEqual({ handled: false });
 
     expect(logger.warn).toHaveBeenCalledWith(
-      "deliberation intake failed: reason=km-request-failed error=Error",
+      "deliberation intake failed: reason=km-request-failed stage=http status=400 code=SCHEMA_INVALID error=Error",
     );
     expect(loggedMessages(logger).join("\n")).not.toMatch(/secret message|private\/audio/);
   });

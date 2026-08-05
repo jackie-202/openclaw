@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The required live Discord Deliberation source-target implementation is absent from the supplied task-scoped changes.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff contains unrelated architecture-review, trajectory-pointer, diagnostic, and backup material, but no change to extensions/deliberation/src/intake.ts or another owning production path that constructs sourceTarget. Checkpoint and proof narratives state that implementation files were preserved, but the implementation content itself is not present in the supplied diff.",
+      "rationale": "Without supplied production implementation showing the live inbound event maps the configured pilot channel to exactly discord:channel:1494265174389948538, semantic review cannot establish that goal-001 was delivered; narrative completion claims are not a substitute for the owning code change.",
+      "required": "Supply the task-scoped owning production diff that constructs sourceTarget as discord:channel:<normalized-channel-id> for the configured Discord pilot-channel inbound path.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied task-scoped diff"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-wave-2949.checkpoint.md:Context for resume"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-wave-2949.red-green-proof.md:GREEN Phase"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Fix live Discord Deliberation intake source-target canonicalization: goal-001: A configured pilot-chann"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-wave-2949-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "calm-wave-2949"
+}

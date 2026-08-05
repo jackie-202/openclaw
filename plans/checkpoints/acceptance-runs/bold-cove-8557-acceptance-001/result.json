@@ -1,0 +1,67 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The caller-required TDD proof lacks a supplied GREEN phase.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired=true, while the supplied TDD proof contains a RED Phase with exit code 1 and no GREEN phase or passing post-fix outcome.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "A RED-only capture cannot establish the required fail-before/pass-after regression cycle, regardless of the checkpoint's prose assertion that GREEN verification completed.",
+      "required": "Provide the immutable caller-owned RED/GREEN proof with the focused regression failing before the implementation and passing after it.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-cove-8557.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/bold-cove-8557-acceptance-001/manifest.json:20"
+        }
+      ]
+    },
+    {
+      "claim": "Verification that the real extension producer reaches and persists once through a real temporary KM listener is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied task contract requires a Discord-shaped event through the real extension producer to persist once and duplicate replay to leave one record, but the supplied artifacts provide no listener response, persisted-record count, or duplicate-replay result.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The checkpoint's completion assertion and the learning's testing guidance do not demonstrate the externally owned listener behavior that defines acceptance of the live intake repair.",
+      "required": "Supply the bounded real-listener verification artifact showing the producer request outcome and one persisted record after replaying the same provider event ID.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-04_fix-openclaw-deliberation-live-intake-request-failure.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "learnings/test-failures/bold-cove-8557-real-listener-proof-uses-fork-producer.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Fix OpenClaw Deliberation live intake request failure"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-cove-8557-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-cove-8557"
+}

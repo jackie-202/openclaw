@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Fix OpenClaw Deliberation live intake request failure: goal-001: Fix OpenClaw Deliberation live intake"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-vale-5327-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bright-vale-5327"
+}

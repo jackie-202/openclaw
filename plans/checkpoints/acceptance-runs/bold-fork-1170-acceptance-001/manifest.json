@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-02T21:11:41+00:00",
+    "implementingStartedAt": "2026-08-02T21:06:21+00:00",
+    "taskFile": "plans/tasks/2026-08-02_followup-bold-fork-1170-acceptance-fix-fix-deliberation-km-compatibility-with-node-f.md",
+    "taskId": "bold-fork-1170",
+    "title": "[acceptance-fix] [acceptance-fix] Fix Deliberation KM compatibility with Node fetch transport headers: goal-001: The cha"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix Deliberation KM compatibility with Node fetch transport headers: goal-001: The cha"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-fork-1170-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-fork-1170",
+  "tddRequired": true
+}

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-02T15:28:20+00:00",
+    "implementingStartedAt": "2026-08-02T15:17:47+00:00",
+    "taskFile": "plans/tasks/2026-08-02_followup-cool-reef-2065-acceptance-fix-fix-live-discord-deliberation-intake-hook-wir.md",
+    "taskId": "cool-reef-2065",
+    "title": "[acceptance-fix] [acceptance-fix] Fix live Discord deliberation intake hook wiring: goal-004: Existing deliberation and "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix live Discord deliberation intake hook wiring: goal-004: Existing deliberation and"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-reef-2065-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-reef-2065",
+  "tddRequired": false
+}

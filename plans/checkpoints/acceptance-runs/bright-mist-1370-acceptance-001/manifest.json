@@ -1,0 +1,37 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-02T14:46:42+00:00",
+    "implementingStartedAt": "2026-08-02T13:53:01+00:00",
+    "taskFile": "plans/tasks/fix-deliberation-live-discord-inbound-hook-wiring.md",
+    "taskId": "bright-mist-1370",
+    "title": "Fix live Discord deliberation intake hook wiring"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A realistic Discord event for channel `1494265174389948538` reaches `createInboundClaimHandler`/KM intake in the integration test."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Successful intake is present in the canonical spool/audit contract and no normal agent response is dispatched."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Listener-unavailable failure is observable in logs and cannot leak into ordinary dispatch."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Existing deliberation and Discord inbound tests remain green."
+    },
+    {
+      "id": "goal-005",
+      "summary": "The final task note identifies the exact live wiring cause and records focused test/typecheck results."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-mist-1370-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-mist-1370",
+  "tddRequired": true
+}

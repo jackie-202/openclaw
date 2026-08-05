@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The required existing Deliberation and Discord inbound tests must have canonical Test Gate evidence that they remain green.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller states that Test Gate was not run and no canonical Test Gate evidence exists. The supplied cool-reef-2065 evidence records a caller-triggered implementation-session test run, not a canonical Test Gate result.",
+      "rationale": "Goal-001 is an explicit test-result goal, and acceptance may assess that outcome only from the caller-supplied canonical Test Gate reference. Local or implementation-session output cannot substitute for the absent canonical gate evidence.",
+      "required": "Supply an inspectable canonical Test Gate result tied to cool-reef-2065 that shows the required Deliberation and Discord inbound test surfaces passing.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "status:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-reef-2065.evidence.md"
+        },
+        {
+          "kind": "file",
+          "reference": "manifest.json:10-20"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix live Discord deliberation intake hook wiring: goal-004: Existing deliberation and"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-reef-2065-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "cool-reef-2065"
+}

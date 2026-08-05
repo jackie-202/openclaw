@@ -1,0 +1,37 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-02T20:30:51+00:00",
+    "implementingStartedAt": "2026-08-02T20:25:05+00:00",
+    "taskFile": "plans/tasks/fix-deliberation-km-node-fetch-header-compatibility.md",
+    "taskId": "swift-peak-4405",
+    "title": "Fix Deliberation KM compatibility with Node fetch transport headers"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "The characterized Node `fetch` transport-header request no longer receives HTTP 400 solely because of standard automatic transport metadata."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Unknown or unauthorized application headers remain rejected by the documented contract."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Authentication, protocol version, media type, SecretRef handling, and fail-closed behavior remain covered and unchanged."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Focused tests and the Deliberation extension typecheck/build gate pass."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Final note identifies the exact compatibility seam changed and provides verification evidence."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-peak-4405-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-peak-4405",
+  "tddRequired": true
+}

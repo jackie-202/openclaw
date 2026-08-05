@@ -1,0 +1,46 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required live Discord Deliberation source-target canonicalization is absent from the supplied task-scoped implementation diff.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied diff contains architecture-review records, trajectory pointers, temporary diagnostics, and backup material, but no hunk for extensions/deliberation/src/intake.ts or another owning production path. The plan and checkpoint state that the preserved implementation emits discord:channel:<normalized-channel-id>, yet that implementation is not present in the reviewable task-scoped diff.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Acceptance cannot establish delivery of goal-001 from narrative or GREEN summaries alone. Without the owning production hunk, the supplied material does not demonstrate that configured pilot-channel inbound events construct sourceTarget as discord:channel:1494265174389948538 rather than the prior account-qualified value.",
+      "required": "Supply the task-scoped owning production diff that constructs sourceTarget as discord:channel:<normalized-channel-id> for the configured Discord pilot-channel inbound path, together with the stated regression surfaces if they are part of the implementation change.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied task-scoped diff"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-03_quick-dune-8234_acceptance-fix-fix-live-discord-deliberation-intake-source.md:Implementation"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-dune-8234.checkpoint.md:Context for resume"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix live Discord Deliberation intake source-target canonicalization: goal-001: A confi"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-dune-8234-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "quick-dune-8234"
+}

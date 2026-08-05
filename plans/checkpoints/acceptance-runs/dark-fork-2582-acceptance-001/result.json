@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Fix Deliberation live intake canonical UTC timestamps: goal-001: A live-shaped event timestamp at an ex"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-fork-2582-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-fork-2582"
+}

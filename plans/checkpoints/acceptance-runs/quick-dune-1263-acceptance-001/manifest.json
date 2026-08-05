@@ -1,0 +1,37 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-03T19:10:36+00:00",
+    "implementingStartedAt": "2026-08-03T18:59:08+00:00",
+    "taskFile": "plans/tasks/2026-08-03_fix-deliberation-discord-intake-source-target-canonicalization.md",
+    "taskId": "quick-dune-1263",
+    "title": "Fix live Discord Deliberation intake source-target canonicalization"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A configured pilot-channel inbound event sends an intake body containing exactly `sourceTarget: discord:channel:1494265174389948538`."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Tests prove the prior `default:1494265174389948538` payload cannot recur."
+    },
+    {
+      "id": "goal-003",
+      "summary": "The real inbound event remains `handled: true` after successful KM intake."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Existing routing, fail-closed suppression, processing-route isolation, auth/SecretRef, and delivery controls remain unchanged."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Focused tests pass; final note includes exact commands/results and whether a gateway rebuild/restart is needed to activate the fix."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-dune-1263-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-dune-1263",
+  "tddRequired": true
+}

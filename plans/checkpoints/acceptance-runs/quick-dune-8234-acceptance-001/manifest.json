@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-03T19:52:22+00:00",
+    "implementingStartedAt": "2026-08-03T19:43:24+00:00",
+    "taskFile": "plans/tasks/2026-08-03_followup-quick-dune-8234-acceptance-fix-fix-live-discord-deliberation-intake-source-t.md",
+    "taskId": "quick-dune-8234",
+    "title": "[acceptance-fix] [acceptance-fix] Fix live Discord Deliberation intake source-target canonicalization: goal-001: A confi"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix live Discord Deliberation intake source-target canonicalization: goal-001: A confi"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-dune-8234-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-dune-8234",
+  "tddRequired": true
+}

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-04T14:16:00+00:00",
+    "implementingStartedAt": "2026-08-04T13:48:57+00:00",
+    "taskFile": "plans/tasks/2026-08-04_followup-bright-vale-5327-fix-openclaw-deliberation-live-intake-request-failure.md",
+    "taskId": "bright-vale-5327",
+    "title": "[acceptance-fix] Fix OpenClaw Deliberation live intake request failure: goal-001: Fix OpenClaw Deliberation live intake "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix OpenClaw Deliberation live intake request failure: goal-001: Fix OpenClaw Deliberation live intake"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-vale-5327-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-vale-5327",
+  "tddRequired": true
+}

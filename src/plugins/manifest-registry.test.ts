@@ -455,6 +455,41 @@ describe("loadPluginManifestRegistry", () => {
     expect(manifestChangeCase.secondName).toBe("After");
   });
 
+  it("preserves expected typed hooks in manifest registry metadata", () => {
+    const rootDir = makeTempDir();
+    writeManifest(rootDir, {
+      id: "expected-hooks",
+      expectedHooks: ["inbound_claim", "before_dispatch"],
+      configSchema: { type: "object" },
+    });
+
+    const registry = loadSingleCandidateRegistry({
+      idHint: "expected-hooks",
+      rootDir,
+      origin: "bundled",
+    });
+
+    expect(registry.plugins[0]?.expectedHooks).toEqual(["inbound_claim", "before_dispatch"]);
+  });
+
+  it.each(["not_a_hook", "deactivate"])("rejects non-canonical expected hook %s", (hookName) => {
+    const rootDir = makeTempDir();
+    writeManifest(rootDir, {
+      id: "invalid-expected-hook",
+      expectedHooks: [hookName],
+      configSchema: { type: "object" },
+    });
+
+    const registry = loadSingleCandidateRegistry({
+      idHint: "invalid-expected-hook",
+      rootDir,
+      origin: "bundled",
+    });
+
+    expect(registry.plugins).toEqual([]);
+    expectRegistryDiagnosticContains(registry, "expectedHooks must contain only canonical");
+  });
+
   it("keeps only the higher-precedence plugin for truly distinct duplicates", () => {
     const dirA = makeTempDir();
     const dirB = makeTempDir();

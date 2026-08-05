@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-02T10:58:33+00:00",
+    "implementingStartedAt": "2026-08-02T10:49:38+00:00",
+    "taskFile": "plans/tasks/2026-08-02_followup-quick-fork-3293-acceptance-fix-fix-deliberation-intake-to-enqueue-silently-g.md",
+    "taskId": "quick-fork-3293",
+    "title": "[acceptance-fix] [acceptance-fix] Fix deliberation intake to enqueue silently: goal-005: Existing fail-closed guard test"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix deliberation intake to enqueue silently: goal-005: Existing fail-closed guard test"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-fork-3293-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-fork-3293",
+  "tddRequired": false
+}

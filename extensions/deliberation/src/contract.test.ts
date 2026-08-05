@@ -22,10 +22,20 @@ describe("accepted Deliberation contracts", () => {
   it("mirrors the exact canonical header, endpoints, and controls", async () => {
     const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
       applicationHeaders: string[];
+      transportHeaders: string[];
       endpoints: Array<{ method: string; path: string }>;
       schemas: { controls: { properties: Record<string, unknown> } };
     };
-    expect(contract.applicationHeaders).toContain("X-Deliberation-Protocol-Version");
+    expect(contract.applicationHeaders).toEqual([
+      "Authorization",
+      "X-Deliberation-Protocol-Version",
+      "Accept",
+      "Content-Type",
+    ]);
+    expect(contract.transportHeaders).toContain("Sec-Fetch-Mode");
+    expect([...contract.applicationHeaders, ...contract.transportHeaders]).not.toContain(
+      "X-Deliberation-Unknown",
+    );
     expect(contract.endpoints.map(({ method, path }) => `${method} ${path}`)).toEqual([
       "GET /deliberation/v1/health",
       "GET /deliberation/v1/ready",

@@ -1,0 +1,96 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The caller-required TDD proof is incomplete because it contains no GREEN implementation proof.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-004"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The artifact labels GREEN as BLOCKED and says the passing commands prove only the unchanged baseline, not acceptance of sec-fetch-mode: cors; its RED is task-supplied live diagnostic evidence rather than the planned focused repository test run before production behavior changed.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "With tddRequired true, a blocked RED-only characterization plus unchanged-baseline checks does not establish the required RED/GREEN cycle for the compatibility behavior.",
+      "required": "Provide a valid focused RED followed by GREEN evidence for the delivered compatibility seam, without exposing credential material.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-peak-4405.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-02_swift-peak-4405_fix-deliberation-km-compatibility-with-node-fetch-transport.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/swift-peak-4405-acceptance-001/manifest.json:36"
+        }
+      ]
+    },
+    {
+      "claim": "The required Node fetch transport-header compatibility behavior was not delivered.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The supplied plan, checkpoint, and RED/GREEN proof all state that no OpenClaw product or contract change was made and that the listener still requires a KM-owned Sec-Fetch-Mode transport allowlist change.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal 001 requires the characterized request to stop receiving HTTP 400, but the supplied evidence explicitly leaves that behavior RED and blocked rather than implemented.",
+      "required": "Deliver the authoritative transport-header contract/listener change and repository synchronization that makes supported Node fetch metadata accepted without weakening the closed application-header boundary.",
+      "sources": [
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-02_swift-peak-4405_fix-deliberation-km-compatibility-with-node-fetch-transport.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-peak-4405.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-peak-4405.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "The characterized Node `fetch` transport-header request no longer receives HTTP 400 solely because of standard automatic transport metadata."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "Unknown or unauthorized application headers remain rejected by the documented contract."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Authentication, protocol version, media type, SecretRef handling, and fail-closed behavior remain covered and unchanged."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "Focused tests and the Deliberation extension typecheck/build gate pass."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "Final note identifies the exact compatibility seam changed and provides verification evidence."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-peak-4405-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "swift-peak-4405"
+}

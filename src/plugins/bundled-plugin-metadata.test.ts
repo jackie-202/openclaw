@@ -36,6 +36,7 @@ const EXPECTED_BUNDLED_STARTUP_PLUGIN_IDS = [
   "bonjour",
   "browser",
   "canvas",
+  "deliberation",
   "device-pair",
   "diagnostics-otel",
   "diagnostics-prometheus",
@@ -225,6 +226,7 @@ function createRepoBundledManifestRegistry(): PluginManifestRegistry {
       kind: manifest.kind,
       channels: manifest.channels ?? [],
       providers: manifest.providers ?? [],
+      expectedHooks: manifest.expectedHooks,
       cliBackends: manifest.cliBackends ?? [],
       syntheticAuthRefs: manifest.syntheticAuthRefs ?? [],
       nonSecretAuthMarkers: manifest.nonSecretAuthMarkers ?? [],
@@ -618,6 +620,21 @@ describe("bundled plugin metadata", () => {
         platform: "linux",
       }),
     ).toContain("bonjour");
+  });
+
+  it("starts Deliberation when explicitly enabled", () => {
+    const manifestRegistry = createRepoBundledManifestRegistry();
+    const index = createInstalledPluginIndexForManifests(manifestRegistry);
+
+    expect(
+      resolveGatewayStartupPluginIdsFromRegistry({
+        config: { plugins: { entries: { deliberation: { enabled: true } } } },
+        env: process.env,
+        index,
+        manifestRegistry,
+        platform: "linux",
+      }),
+    ).toContain("deliberation");
   });
 
   it("prefers built generated paths when present and falls back to source paths", () => {

@@ -6,7 +6,7 @@
   "mediaType": "application/json",
   "closedSchemas": true,
   "applicationHeaders": ["Authorization", "X-Deliberation-Protocol-Version", "Accept", "Content-Type"],
-  "transportHeaders": ["Host", "Content-Length", "Connection", "User-Agent", "Accept-Encoding"],
+  "transportHeaders": ["Host", "Content-Length", "Connection", "User-Agent", "Accept-Encoding", "Sec-Fetch-Mode"],
   "authentication": {
     "comparison": "constant-time",
     "credentialArguments": ["--credential-file", "DELIBERATION_V2_CREDENTIAL_FILE"],

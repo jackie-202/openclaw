@@ -1,3 +1,5 @@
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
 import { resolveConfiguredSecretInputString } from "openclaw/plugin-sdk/secret-input-runtime";
 import { z } from "zod";
@@ -66,6 +68,117 @@ export type KmReconciliationBody = {
 };
 
 export type KmClient = ReturnType<typeof createKmClient>;
+
+export type KmRequestStage =
+  | "credential"
+  | "transport"
+  | "response-json"
+  | "http"
+  | "response-schema";
+
+const KM_ERROR_CODES = [
+  "SCHEMA_INVALID",
+  "AUTH_MISSING",
+  "AUTH_INVALID",
+  "ROUTE_NOT_FOUND",
+  "RECORD_NOT_FOUND",
+  "MEDIA_TYPE_INVALID",
+  "CAS_CONFLICT",
+  "CONTROL_DISABLED",
+  "VERSION_UNSUPPORTED",
+] as const;
+
+type KmErrorCode = (typeof KM_ERROR_CODES)[number] | "UNKNOWN";
+
+export class KmRequestError extends Error {
+  override readonly name = "KmRequestError";
+
+  constructor(
+    readonly stage: KmRequestStage,
+    readonly status?: number,
+    readonly code: KmErrorCode = "UNKNOWN",
+    message = "KM request failed",
+  ) {
+    super(message);
+  }
+}
+
+type KmResponse = { value: unknown; status: number };
+
+function canonicalErrorCode(value: unknown): KmErrorCode {
+  return typeof value === "string" && KM_ERROR_CODES.includes(value as never)
+    ? (value as KmErrorCode)
+    : "UNKNOWN";
+}
+
+function parseResponse<T>(response: KmResponse, parse: (value: unknown) => T): T {
+  try {
+    return parse(response.value);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "KM returned an invalid response";
+    throw new KmRequestError("response-schema", response.status, "UNKNOWN", message);
+  }
+}
+
+function nodeFetch(input: string | URL | Request, init: RequestInit = {}): Promise<Response> {
+  const url = new URL(typeof input === "string" || input instanceof URL ? input : input.url);
+  const request = url.protocol === "http:" ? httpRequest : httpsRequest;
+  const canonicalNames: Record<string, string> = {
+    accept: "Accept",
+    authorization: "Authorization",
+    "content-type": "Content-Type",
+    "x-deliberation-protocol-version": "X-Deliberation-Protocol-Version",
+  };
+  const headers = Object.fromEntries(
+    Array.from(new Headers(init.headers).entries(), ([name, value]) => [
+      canonicalNames[name] ?? name,
+      value,
+    ]),
+  );
+  const body = init.body;
+  if (body !== undefined && body !== null && typeof body !== "string") {
+    return Promise.reject(new Error("KM Node transport requires a string body"));
+  }
+  if (typeof body === "string") {
+    headers["Content-Length"] = String(Buffer.byteLength(body));
+  }
+
+  return new Promise((resolve, reject) => {
+    const outgoing = request(
+      url,
+      {
+        method: init.method,
+        headers,
+        signal: init.signal ?? undefined,
+      },
+      (incoming) => {
+        const chunks: Buffer[] = [];
+        incoming.on("data", (chunk: Buffer) => chunks.push(chunk));
+        incoming.on("error", reject);
+        incoming.on("end", () => {
+          const responseHeaders = new Headers();
+          for (const [name, value] of Object.entries(incoming.headers)) {
+            if (Array.isArray(value)) {
+              for (const item of value) {
+                responseHeaders.append(name, item);
+              }
+            } else if (value !== undefined) {
+              responseHeaders.set(name, value);
+            }
+          }
+          resolve(
+            new Response(Buffer.concat(chunks), {
+              status: incoming.statusCode ?? 500,
+              headers: responseHeaders,
+            }),
+          );
+        });
+      },
+    );
+    outgoing.on("error", reject);
+    outgoing.end(body);
+  });
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -251,15 +364,24 @@ function parseDeliveryAttempt(value: unknown): void {
       throw new Error(`KM returned an invalid ${field}`);
     }
   }
-  if ("candidateRevision" in value) integerAtLeast(value.candidateRevision, "candidateRevision", 0);
-  if ("reviewedTextHash" in value)
+  if ("candidateRevision" in value) {
+    integerAtLeast(value.candidateRevision, "candidateRevision", 0);
+  }
+  if ("reviewedTextHash" in value) {
     boundedString(value.reviewedTextHash, "reviewedTextHash", 64, 64);
+  }
   if ("reservedRecordVersion" in value) {
     integerAtLeast(value.reservedRecordVersion, "reservedRecordVersion", 1);
   }
-  if ("owner" in value) boundedString(value.owner, "owner", 1, 256);
-  if ("leaseExpiresAt" in value) boundedString(value.leaseExpiresAt, "leaseExpiresAt", 20, 64);
-  if ("reservedAt" in value) boundedString(value.reservedAt, "reservedAt", 20, 64);
+  if ("owner" in value) {
+    boundedString(value.owner, "owner", 1, 256);
+  }
+  if ("leaseExpiresAt" in value) {
+    boundedString(value.leaseExpiresAt, "leaseExpiresAt", 20, 64);
+  }
+  if ("reservedAt" in value) {
+    boundedString(value.reservedAt, "reservedAt", 20, 64);
+  }
 }
 
 const nullableString = z.string().nullable();
@@ -403,21 +525,25 @@ export function createKmClient(params: {
   fetchImpl?: typeof fetch;
   env?: NodeJS.ProcessEnv;
 }) {
-  const fetchImpl = params.fetchImpl ?? fetch;
+  // Node fetch injects Accept-Language, which is outside KM's closed transport-header contract.
+  const fetchImpl = params.fetchImpl ?? (nodeFetch as typeof fetch);
   const endpoint = params.config.km.endpoint.replace(/\/$/, "");
 
-  async function request(path: string, init: RequestInit = {}): Promise<unknown> {
-    const credentialResolution = await resolveConfiguredSecretInputString({
-      config: params.openclawConfig,
-      env: params.env ?? process.env,
-      value: params.config.km.credential,
-      path: "plugins.entries.deliberation.config.km.credential",
-    });
+  async function request(path: string, init: RequestInit = {}): Promise<KmResponse> {
+    let credentialResolution;
+    try {
+      credentialResolution = await resolveConfiguredSecretInputString({
+        config: params.openclawConfig,
+        env: params.env ?? process.env,
+        value: params.config.km.credential,
+        path: "plugins.entries.deliberation.config.km.credential",
+      });
+    } catch {
+      throw new KmRequestError("credential");
+    }
     const credential = credentialResolution.value;
     if (!credential) {
-      throw new Error(
-        credentialResolution.unresolvedRefReason ?? "Deliberation KM credential is unavailable",
-      );
+      throw new KmRequestError("credential");
     }
     const timeout = AbortSignal.timeout(params.config.km.requestTimeoutMs);
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
@@ -434,13 +560,13 @@ export function createKmClient(params: {
         },
       });
     } catch {
-      throw new Error("KM request failed");
+      throw new KmRequestError("transport");
     }
     let value: unknown;
     try {
       value = await response.json();
     } catch {
-      throw new Error("KM returned malformed JSON");
+      throw new KmRequestError("response-json", response.status);
     }
     if (!response.ok) {
       if (response.status === 409 && isRecord(value) && value.protocolVersion === 1) {
@@ -449,30 +575,32 @@ export function createKmClient(params: {
           isRecord(error) &&
           (error.code === "CAS_CONFLICT" || error.code === "CONTROL_DISABLED")
         ) {
-          return { conflict: error.code };
+          return { value: { conflict: error.code }, status: response.status };
         }
       }
-      throw new Error(`KM request failed with status ${response.status}`);
+      const error = isRecord(value) && isRecord(value.error) ? value.error : undefined;
+      throw new KmRequestError("http", response.status, canonicalErrorCode(error?.code));
     }
-    return value;
+    return { value, status: response.status };
   }
 
   return {
     async health(signal?: AbortSignal) {
-      const value = await request("/deliberation/v1/health", { signal });
-      if (
-        !isRecord(value) ||
-        !hasExactKeys(value, ["protocolVersion", "status", "controls"]) ||
-        value.status !== "ok"
-      ) {
-        throw new Error("KM returned an invalid health response");
-      }
-      assertProtocolVersion(value);
-      return {
-        protocolVersion: 1 as const,
-        status: "ok" as const,
-        controls: parseControls(value.controls),
-      };
+      return parseResponse(await request("/deliberation/v1/health", { signal }), (value) => {
+        if (
+          !isRecord(value) ||
+          !hasExactKeys(value, ["protocolVersion", "status", "controls"]) ||
+          value.status !== "ok"
+        ) {
+          throw new Error("KM returned an invalid health response");
+        }
+        assertProtocolVersion(value);
+        return {
+          protocolVersion: 1 as const,
+          status: "ok" as const,
+          controls: parseControls(value.controls),
+        };
+      });
     },
     async ready(query: { limit?: number; cursor?: string } = {}, signal?: AbortSignal) {
       if (
@@ -483,44 +611,54 @@ export function createKmClient(params: {
         throw new Error("KM received an invalid ready query");
       }
       const search = new URLSearchParams();
-      if (query.limit !== undefined) search.set("limit", String(query.limit));
-      if (query.cursor !== undefined) search.set("cursor", query.cursor);
-      const suffix = search.size ? `?${search}` : "";
-      const value = await request(`/deliberation/v1/ready${suffix}`, { signal });
-      if (
-        !isRecord(value) ||
-        !hasExactKeys(value, ["protocolVersion", "items", "nextCursor"]) ||
-        !Array.isArray(value.items) ||
-        (value.nextCursor !== null &&
-          (typeof value.nextCursor !== "string" || !isReadyCursor(value.nextCursor)))
-      ) {
-        throw new Error("KM returned an invalid ready response");
+      if (query.limit !== undefined) {
+        search.set("limit", String(query.limit));
       }
-      assertProtocolVersion(value);
-      return { items: value.items.map(parseReadyItem), nextCursor: value.nextCursor };
+      if (query.cursor !== undefined) {
+        search.set("cursor", query.cursor);
+      }
+      const suffix = search.size ? `?${search}` : "";
+      return parseResponse(
+        await request(`/deliberation/v1/ready${suffix}`, { signal }),
+        (value) => {
+          if (
+            !isRecord(value) ||
+            !hasExactKeys(value, ["protocolVersion", "items", "nextCursor"]) ||
+            !Array.isArray(value.items) ||
+            (value.nextCursor !== null &&
+              (typeof value.nextCursor !== "string" || !isReadyCursor(value.nextCursor)))
+          ) {
+            throw new Error("KM returned an invalid ready response");
+          }
+          assertProtocolVersion(value);
+          return { items: value.items.map(parseReadyItem), nextCursor: value.nextCursor };
+        },
+      );
     },
     async intake(event: KmIntakeBody, signal?: AbortSignal) {
-      const value = await request("/deliberation/v1/intake", {
+      const response = await request("/deliberation/v1/intake", {
         method: "POST",
         body: JSON.stringify(event),
         signal,
       });
-      if (
-        !isRecord(value) ||
-        !hasExactKeys(value, ["protocolVersion", "recordId", "inboundId", "duplicate"]) ||
-        typeof value.duplicate !== "boolean"
-      ) {
-        throw new Error("KM returned an invalid intake response");
-      }
-      assertProtocolVersion(value);
-      return {
-        recordId: requiredString(value.recordId, "recordId"),
-        inboundId: requiredString(value.inboundId, "inboundId"),
-        duplicate: value.duplicate,
-      };
+      return parseResponse(response, (value) => {
+        if (
+          !isRecord(value) ||
+          !hasExactKeys(value, ["protocolVersion", "recordId", "inboundId", "duplicate"]) ||
+          typeof value.duplicate !== "boolean"
+        ) {
+          throw new Error("KM returned an invalid intake response");
+        }
+        assertProtocolVersion(value);
+        return {
+          recordId: requiredString(value.recordId, "recordId"),
+          inboundId: requiredString(value.inboundId, "inboundId"),
+          duplicate: value.duplicate,
+        };
+      });
     },
     async reserve(item: KmReadyItem, owner: string, signal?: AbortSignal) {
-      const value = await request("/deliberation/v1/reservations", {
+      const response = await request("/deliberation/v1/reservations", {
         method: "POST",
         body: JSON.stringify({
           recordId: item.recordId,
@@ -531,32 +669,45 @@ export function createKmClient(params: {
         }),
         signal,
       });
-      if (isRecord(value) && value.conflict === "CAS_CONFLICT")
+      const value = response.value;
+      if (isRecord(value) && value.conflict === "CAS_CONFLICT") {
         return { outcome: "conflict" as const };
-      if (isRecord(value) && value.conflict === "CONTROL_DISABLED")
-        return { outcome: "disabled" as const };
-      if (!isRecord(value) || !hasExactKeys(value, ["protocolVersion", "reservation"])) {
-        throw new Error("KM returned an invalid reservation response");
       }
-      assertProtocolVersion(value);
-      return { outcome: "reserved" as const, reservation: parseReservation(value.reservation) };
+      if (isRecord(value) && value.conflict === "CONTROL_DISABLED") {
+        return { outcome: "disabled" as const };
+      }
+      return parseResponse(response, (responseValue) => {
+        if (
+          !isRecord(responseValue) ||
+          !hasExactKeys(responseValue, ["protocolVersion", "reservation"])
+        ) {
+          throw new Error("KM returned an invalid reservation response");
+        }
+        assertProtocolVersion(responseValue);
+        return {
+          outcome: "reserved" as const,
+          reservation: parseReservation(responseValue.reservation),
+        };
+      });
     },
     async complete(completion: KmCompletionBody, signal?: AbortSignal) {
-      return parseRecordResponse(
+      return parseResponse(
         await request("/deliberation/v1/completions", {
           method: "POST",
           body: JSON.stringify(completion),
           signal,
         }),
+        parseRecordResponse,
       );
     },
     async reconcile(reconciliation: KmReconciliationBody, signal?: AbortSignal) {
-      return parseRecordResponse(
+      return parseResponse(
         await request("/deliberation/v1/reconciliations", {
           method: "POST",
           body: JSON.stringify(reconciliation),
           signal,
         }),
+        parseRecordResponse,
       );
     },
   };

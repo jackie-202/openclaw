@@ -1,0 +1,36 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/quick-cove-7908.evidence.md",
+      "provenance": "evidence_repair:quick-cove-7908-acceptance-002-evidence-repair-001",
+      "size": 758
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/quick-cove-7908.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/quick-cove-7908-acceptance-002-evidence-repair-001/repair.json",
+  "commit": "b734b8e3ee4683ffd46f9f291605ba612ac8dc53",
+  "escalationReason": "exact_command_outcome_evidence_unavailable",
+  "finishedAt": "2026-08-02T10:24:19.357829+00:00",
+  "gaps": [],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=quick-cove-7908 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/hooks.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=quick-cove-7908 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/hooks.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "quick-cove-7908-acceptance-002-evidence-repair-001",
+  "sourceRunId": "quick-cove-7908-acceptance-002",
+  "startedAt": "2026-08-02T10:24:14.596272+00:00",
+  "status": "escalated"
+}

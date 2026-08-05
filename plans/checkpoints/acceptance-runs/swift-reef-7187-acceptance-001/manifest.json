@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-02T20:54:54+00:00",
+    "implementingStartedAt": "2026-08-02T20:41:53+00:00",
+    "taskFile": "plans/tasks/2026-08-02_followup-swift-reef-7187-fix-deliberation-km-compatibility-with-node-fetch-transport.md",
+    "taskId": "swift-reef-7187",
+    "title": "[acceptance-fix] Fix Deliberation KM compatibility with Node fetch transport headers: goal-001: The characterized Node `"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix Deliberation KM compatibility with Node fetch transport headers: goal-001: The characterized Node `"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-reef-7187-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-reef-7187",
+  "tddRequired": true
+}

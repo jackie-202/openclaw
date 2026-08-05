@@ -4,7 +4,7 @@ import type {
   PluginLogger,
 } from "openclaw/plugin-sdk/plugin-entry";
 import { routeKey, type DeliberationConfig } from "./config.js";
-import type { KmClient } from "./km-client.js";
+import { KmRequestError, type KmClient } from "./km-client.js";
 import { candidateRoute, matchesSource } from "./route-match.js";
 
 type BeforeDispatchContext = {
@@ -14,6 +14,13 @@ type BeforeDispatchContext = {
 };
 
 const MIME_TYPE_PATTERN = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i;
+
+function canonicalUtcTimestamp(date: Date): string {
+  const timestamp = date.toISOString();
+  return timestamp.endsWith(".000Z")
+    ? timestamp.replace(".000Z", "Z")
+    : timestamp.replace("Z", "000Z");
+}
 
 function metadataStrings(metadata: Record<string, unknown>, field: string): string[] {
   const value = metadata[field];
@@ -84,13 +91,14 @@ export function createInboundClaimHandler(
       return { handled: false };
     }
     try {
-      const receivedAt = new Date().toISOString();
+      const occurredAt = canonicalUtcTimestamp(new Date(event.timestamp ?? Date.now()));
+      const receivedAt = canonicalUtcTimestamp(new Date());
       await client.intake({
         provider: "discord",
         providerEventId: messageId,
-        sourceTarget: `${route.accountId}:${route.target}`,
+        sourceTarget: `discord:channel:${route.target}`,
         senderId,
-        occurredAt: new Date(event.timestamp ?? Date.now()).toISOString(),
+        occurredAt,
         receivedAt,
         content,
         eventType: "message",
@@ -99,7 +107,13 @@ export function createInboundClaimHandler(
     } catch (error) {
       // Intake is fail-closed by the independent before_dispatch hook.
       const errorType = error instanceof Error ? "Error" : "Unknown";
-      logger.warn(`deliberation intake failed: reason=km-request-failed error=${errorType}`);
+      const diagnostic =
+        error instanceof KmRequestError
+          ? ` stage=${error.stage}${error.status === undefined ? "" : ` status=${error.status}`} code=${error.code}`
+          : "";
+      logger.warn(
+        `deliberation intake failed: reason=km-request-failed${diagnostic} error=${errorType}`,
+      );
     }
     return { handled: false };
   };

@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Fix Deliberation plugin runtime entry registration: goal-001: `openclaw plugins list --json` against th"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-dune-0263-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "fresh-dune-0263"
+}
