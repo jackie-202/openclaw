@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import { parseDeliberationConfig } from "./config.js";
-import { createKmClient } from "./km-client.js";
+import { createKmClient, type KmReadyItem, type KmReservation } from "./km-client.js";
 
 const config = parseDeliberationConfig({
   enabled: true,
@@ -24,6 +24,33 @@ function createClient(response: unknown) {
     fetchImpl: vi.fn().mockResolvedValue(new Response(JSON.stringify(response), { status: 200 })),
     env: { KM_TOKEN: "test-only" },
   });
+}
+
+function validReadyItem(): KmReadyItem {
+  return {
+    recordId: "record-1",
+    version: 7,
+    text: "reviewed reply",
+    candidateRevision: 1,
+    updatedAt: "2026-08-01T12:00:00Z",
+    deliveryEnvelope: { sourceTarget: "v1:discord:account-1:channel-1" },
+  };
+}
+
+function validReservation(): KmReservation {
+  return {
+    recordId: "record-1",
+    attemptId: "attempt-1",
+    ordinal: 1,
+    version: 8,
+    owner: "sender-1",
+    leaseToken: "lease-1",
+    leaseExpiresAt: "2026-08-01T12:01:00Z",
+    candidateRevision: 1,
+    reviewedTextHash: "a".repeat(64),
+    deliveryEnvelope: { sourceTarget: "v1:discord:account-1:channel-1" },
+    deliveryEnvelopeDigest: "b".repeat(64),
+  };
 }
 
 describe("KM contract parsing", () => {
@@ -232,7 +259,7 @@ describe("KM contract parsing", () => {
     });
   });
 
-  it("uses only the six canonical endpoint paths", async () => {
+  it("uses only the seven canonical endpoint paths", async () => {
     const fetchImpl = vi.fn(async (input: string | URL | Request) => {
       const path = new URL(String(input)).pathname;
       const body =
@@ -254,17 +281,7 @@ describe("KM contract parsing", () => {
               : path === "/deliberation/v1/reservations"
                 ? {
                     protocolVersion: 1,
-                    reservation: {
-                      recordId: "record-1",
-                      attemptId: "attempt-1",
-                      ordinal: 1,
-                      version: 8,
-                      owner: "sender-1",
-                      leaseToken: "lease-1",
-                      leaseExpiresAt: "2026-08-01T12:01:00Z",
-                      candidateRevision: 1,
-                      reviewedTextHash: "a".repeat(64),
-                    },
+                    reservation: validReservation(),
                   }
                 : {
                     protocolVersion: 1,
@@ -285,13 +302,7 @@ describe("KM contract parsing", () => {
       fetchImpl,
       env: { KM_TOKEN: "test-only" },
     });
-    const item = {
-      recordId: "record-1",
-      version: 7,
-      text: "reviewed reply",
-      candidateRevision: 1,
-      updatedAt: "2026-08-01T12:00:00Z",
-    };
+    const item = validReadyItem();
 
     await client.health();
     await client.ready();
@@ -304,7 +315,15 @@ describe("KM contract parsing", () => {
       receivedAt: "2026-08-01T12:00:01Z",
       content: "hello",
     });
-    await client.reserve(item, "sender-1");
+    const reservation = await client.reserve(item, "sender-1");
+    if (reservation.outcome !== "reserved") {
+      throw new Error("expected successful reservation fixture");
+    }
+    await client.invoke(
+      reservation.reservation,
+      reservation.reservation.deliveryEnvelope.sourceTarget,
+      "provider-1",
+    );
     await client.complete({
       recordId: "record-1",
       attemptId: "attempt-1",
@@ -327,6 +346,7 @@ describe("KM contract parsing", () => {
       "/deliberation/v1/ready",
       "/deliberation/v1/intake",
       "/deliberation/v1/reservations",
+      "/deliberation/v1/invocations",
       "/deliberation/v1/completions",
       "/deliberation/v1/reconciliations",
     ]);
@@ -340,7 +360,7 @@ describe("KM contract parsing", () => {
     await expect(client.ready({ cursor: "not-base64url=" })).rejects.toThrow("invalid ready query");
   });
 
-  it("rejects malformed closed ready, reservation, and record responses", async () => {
+  it("rejects malformed closed ready and record responses", async () => {
     const oversizedCursor = createClient({
       protocolVersion: 1,
       items: [],
@@ -362,33 +382,6 @@ describe("KM contract parsing", () => {
       nextCursor: null,
     });
     await expect(malformedReady.ready()).rejects.toThrow("invalid ready item");
-
-    const malformedReservation = createClient({
-      protocolVersion: 1,
-      reservation: {
-        recordId: "record-1",
-        attemptId: "attempt-1",
-        ordinal: 1,
-        version: 8,
-        owner: "sender-1",
-        leaseToken: "lease-1",
-        leaseExpiresAt: "2026-08-01T12:01:00Z",
-        candidateRevision: 1,
-        reviewedTextHash: "short",
-      },
-    });
-    await expect(
-      malformedReservation.reserve(
-        {
-          recordId: "record-1",
-          version: 7,
-          text: "reply",
-          candidateRevision: 1,
-          updatedAt: "2026-08-01T12:00:00Z",
-        },
-        "sender-1",
-      ),
-    ).rejects.toThrow("invalid reviewedTextHash");
 
     const malformedRecord = createClient({
       protocolVersion: 1,
@@ -479,5 +472,37 @@ describe("KM contract parsing", () => {
         providerMessageId: "message-1",
       }),
     ).rejects.toThrow("invalid candidateRevision");
+  });
+
+  it("rejects a malformed ready delivery envelope at its field boundary", async () => {
+    const client = createClient({
+      protocolVersion: 1,
+      items: [{ ...validReadyItem(), deliveryEnvelope: null }],
+      nextCursor: null,
+    });
+
+    await expect(client.ready()).rejects.toThrow("invalid deliveryEnvelope");
+  });
+
+  it.each([
+    {
+      name: "deliveryEnvelope",
+      reservation: { ...validReservation(), deliveryEnvelope: null },
+      expected: "invalid deliveryEnvelope",
+    },
+    {
+      name: "deliveryEnvelopeDigest",
+      reservation: { ...validReservation(), deliveryEnvelopeDigest: "short" },
+      expected: "invalid deliveryEnvelopeDigest",
+    },
+    {
+      name: "reviewedTextHash",
+      reservation: { ...validReservation(), reviewedTextHash: "short" },
+      expected: "invalid reviewedTextHash",
+    },
+  ])("rejects malformed reservation $name", async ({ reservation, expected }) => {
+    const client = createClient({ protocolVersion: 1, reservation });
+
+    await expect(client.reserve(validReadyItem(), "sender-1")).rejects.toThrow(expected);
   });
 });

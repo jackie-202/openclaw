@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Fix stale Deliberation KM client contract fixtures: goal-001: Fix stale Deliberation KM client contract"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-crag-9165-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-crag-9165"
+}

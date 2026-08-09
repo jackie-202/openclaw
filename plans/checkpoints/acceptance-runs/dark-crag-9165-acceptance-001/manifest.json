@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-09T14:08:48+00:00",
+    "implementingStartedAt": "2026-08-09T13:55:34+00:00",
+    "taskFile": "plans/tasks/2026-08-09_followup-dark-crag-9165-fix-stale-deliberation-km-client-contract-fixtures.md",
+    "taskId": "dark-crag-9165",
+    "title": "[acceptance-fix] Fix stale Deliberation KM client contract fixtures: goal-001: Fix stale Deliberation KM client contract"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix stale Deliberation KM client contract fixtures: goal-001: Fix stale Deliberation KM client contract"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-crag-9165-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-crag-9165",
+  "tddRequired": true
+}

@@ -1,0 +1,39 @@
+{
+  "findings": [
+    {
+      "claim": "The caller-declared mandatory TDD proof does not include a supplied GREEN phase.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof/provenance contains metadata and a RED phase with 2 failing tests, but no GREEN phase command output or result; the checkpoint only states that GREEN evidence exists.",
+      "rationale": "With tddRequired true, an assertion in a checkpoint is not the required RED/GREEN proof itself, and the supplied material does not establish the post-change GREEN half of the cycle.",
+      "required": "Supply the run-scoped TDD proof containing both the captured RED result and the subsequent GREEN result for the focused km-client test command.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-2132.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-2132.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Fix stale Deliberation KM client contract fixtures"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-reef-2132-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "swift-reef-2132"
+}

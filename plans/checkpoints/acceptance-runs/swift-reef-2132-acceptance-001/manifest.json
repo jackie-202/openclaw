@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-09T13:44:24+00:00",
+    "implementingStartedAt": "2026-08-09T13:32:47+00:00",
+    "taskFile": "plans/tasks/2026-08-09_fix-stale-deliberation-km-client-contract-fixtures.md",
+    "taskId": "swift-reef-2132",
+    "title": "Fix stale Deliberation KM client contract fixtures"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Fix stale Deliberation KM client contract fixtures"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-reef-2132-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-reef-2132",
+  "tddRequired": true
+}

@@ -1,0 +1,59 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/swift-reef-2132.evidence.md",
+      "provenance": "evidence_repair:swift-reef-2132-acceptance-001-evidence-repair-001",
+      "size": 1993
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/swift-reef-2132.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/swift-reef-2132-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "e7a0517245be14e94c90b1bc45643bcc070a4a6f",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-09T13:46:32.455786+00:00",
+  "gaps": [
+    "command_lines_truncated",
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "pnpm exec vitest run extensions/deliberation/src/km-client.test.ts",
+      "outcome": "\u276f |extensions| ../../extensions/deliberation/src/km-client.test.ts (13 tests | 2 failed) 35ms"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/recall-knowledge/scripts/search.py\" \"Deliberation KM client closed-schema contract fixture regression focused Vitest delivery envelope digest\" --project-",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/save-learning/add-frontmatter.py\" --title \"Testy parseru s presnymi klici potrebuji kanonicke fixtures\" --category \"test-failures\" --component \"tooling\" ",
+      "outcome": "Baseline confirmed: 11 passed, 2 failed. No implementation files changed."
+    },
+    {
+      "command": "TASK_ID=swift-reef-2132 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm exec vitest run extensions/deliberation/src/km-client.test.ts",
+      "outcome": "\u276f |extensions| ../../extensions/deliberation/src/km-client.test.ts (13 tests | 2 failed) 38ms"
+    },
+    {
+      "command": "TASK_ID=swift-reef-2132 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm exec vitest run extensions/deliberation/src/km-client.test.ts",
+      "outcome": "Test Files  1 passed (1)"
+    },
+    {
+      "command": "pnpm exec vitest run extensions/deliberation/src extensions/deliberation/scripts/intake-producer.test.ts",
+      "outcome": "Test Files  11 passed (11)"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/save-learning/add-frontmatter.py\" --title \"Closed-schema fixtures must reach field boundaries\" --category \"test-failures\" --component \"tooling\" --tags \"d",
+      "outcome": "- Focused suite: **17 passed, 0 failed**, 1 file."
+    }
+  ],
+  "repairRunId": "swift-reef-2132-acceptance-001-evidence-repair-001",
+  "sourceRunId": "swift-reef-2132-acceptance-001",
+  "startedAt": "2026-08-09T13:46:29.101732+00:00",
+  "status": "escalated"
+}
