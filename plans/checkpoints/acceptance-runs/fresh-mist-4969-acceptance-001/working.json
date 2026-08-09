@@ -1,0 +1,47 @@
+{
+  "findings": [
+    {
+      "claim": "Caller-owned passing Test Gate evidence is required for the full Deliberation selection and the maintained focused KM listener/wire/spool selection.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller-supplied Test Gate status is not run and no Test Gate evidence exists. The supplied historical GREEN proves only the four-case cross-repository integration harness, while parent evidence has truncated KM commands and a local Deliberation aggregate of 103/105 rather than a canonical passing matrix.",
+      "rationale": "This follow-up exists specifically to supply canonical verification evidence. Local implementation-agent runs and historical TDD provenance cannot establish the required caller-owned passing results, so goal-001 remains unmet.",
+      "required": "Provide an inspectable caller-owned Test Gate tied to the task lineage that records exact commands, revisions, timestamps, exit codes, and passing counts for both the full Deliberation selection and the maintained focused KM listener/wire/spool selection.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "caller-supplied status: not run; no Test Gate evidence exists"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-mist-4969.evidence.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-reef-5266.evidence.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-3921.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Add isolated Deliberation plugin \u2192 KM listener \u2192 spool integration harness: goal-008:"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-mist-4969-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "fresh-mist-4969"
+}

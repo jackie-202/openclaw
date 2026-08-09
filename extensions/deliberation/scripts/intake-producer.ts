@@ -6,13 +6,30 @@ import { createKmClient, KmRequestError, type KmClient } from "../src/km-client.
 
 const CREDENTIAL_ENV = "OPENCLAW_DELIBERATION_KM_CREDENTIAL";
 
+const configuredRouteSchema = z
+  .object({
+    provider: z.literal("discord"),
+    accountId: z.string().min(1).max(96),
+    channelId: z.string().min(1).max(96),
+  })
+  .strict();
+
 const inputSchema = z
   .object({
     endpoint: z.url(),
+    routes: z
+      .object({
+        sources: z.array(configuredRouteSchema).min(1),
+        processing: configuredRouteSchema,
+      })
+      .strict(),
     event: z
       .object({
+        provider: z.literal("discord"),
+        eventType: z.literal("message"),
+        eventKind: z.literal("user_request"),
         channelId: z.string().min(1).max(256),
-        accountId: z.string().min(1).max(256).default("default"),
+        accountId: z.string().min(1).max(256),
         messageId: z.string().min(1).max(256),
         senderId: z.string().min(1).max(256),
         timestamp: z.iso.datetime({ offset: true }),
@@ -39,15 +56,19 @@ export async function runIntakeProducer(
   if (!parsed.success) {
     throw new Error("invalid producer input");
   }
-  const { endpoint, event } = parsed.data;
+  const { endpoint, routes, event } = parsed.data;
   const config = parseDeliberationConfig({
     enabled: true,
     failClosed: true,
-    sources: [{ channel: "discord", accountId: event.accountId, target: event.channelId }],
+    sources: routes.sources.map((route) => ({
+      channel: route.provider,
+      accountId: route.accountId,
+      target: route.channelId,
+    })),
     processingSource: {
-      channel: "discord",
-      accountId: event.accountId,
-      target: "__deliberation-probe-processing__",
+      channel: routes.processing.provider,
+      accountId: routes.processing.accountId,
+      target: routes.processing.channelId,
     },
     km: {
       endpoint,
@@ -82,14 +103,19 @@ export async function runIntakeProducer(
   });
   const result = await handler(
     {
-      channel: "discord",
+      channel: event.provider,
+      provider: event.provider,
+      eventType: event.eventType,
+      eventKind: event.eventKind,
+      accountId: event.accountId,
+      conversationId: event.channelId,
       content: event.content,
       isGroup: true,
       senderId: event.senderId,
       timestamp: Date.parse(event.timestamp),
     },
     {
-      channelId: "discord",
+      channelId: event.provider,
       accountId: event.accountId,
       conversationId: event.channelId,
       messageId: event.messageId,
@@ -111,8 +137,11 @@ async function main(): Promise<void> {
   for await (const chunk of process.stdin) {
     chunks.push(Buffer.from(chunk));
   }
-  const event = JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
-  const result = await runIntakeProducer({ endpoint, event });
+  const input = JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("invalid producer input");
+  }
+  const result = await runIntakeProducer({ ...input, endpoint });
   process.stdout.write(`${JSON.stringify(result)}\n`);
   if (!result.handled) {
     process.exitCode = 1;

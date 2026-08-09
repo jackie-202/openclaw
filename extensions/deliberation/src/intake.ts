@@ -3,9 +3,9 @@ import type {
   PluginHookInboundClaimEvent,
   PluginLogger,
 } from "openclaw/plugin-sdk/plugin-entry";
-import { routeKey, type DeliberationConfig } from "./config.js";
+import type { DeliberationConfig } from "./config.js";
 import { KmRequestError, type KmClient } from "./km-client.js";
-import { candidateRoute, matchesSource } from "./route-match.js";
+import { admitInboundSource, matchesSource } from "./route-match.js";
 
 type BeforeDispatchContext = {
   channelId?: string;
@@ -60,29 +60,16 @@ export function createInboundClaimHandler(
   client: KmClient,
   logger: PluginLogger,
 ) {
-  const processingRouteKey = routeKey(config.processingSource);
+  // Discord compares authenticated botUserId with author.id before this hook.
+  // No authoritative self fact reaches plugins, so admission must not guess from display metadata.
   return async (event: PluginHookInboundClaimEvent, ctx: PluginHookInboundClaimContext) => {
     if (!config.enabled) {
       logger.debug?.("deliberation intake skipped: reason=disabled");
       return { handled: false };
     }
-    const route = candidateRoute(ctx);
-    if (route && routeKey(route) === processingRouteKey) {
-      logger.debug?.("deliberation intake skipped: reason=processing-route");
-      return { handled: false };
-    }
-    if (!route || !config.sourceKeys.has(routeKey(route))) {
-      logger.debug?.("deliberation intake skipped: reason=unmatched-route");
-      return { handled: false };
-    }
-    const messageId = ctx.messageId ?? event.messageId;
-    const senderId = ctx.senderId ?? event.senderId;
-    if (!messageId) {
-      logger.debug?.("deliberation intake skipped: reason=missing-message-id");
-      return { handled: false };
-    }
-    if (!senderId) {
-      logger.debug?.("deliberation intake skipped: reason=missing-sender-id");
+    const admission = admitInboundSource(config, event, ctx);
+    if (!admission.accepted) {
+      logger.debug?.(`deliberation intake skipped: reason=${admission.reason}`);
       return { handled: false };
     }
     const content = resolveIntakeContent(event);
@@ -95,9 +82,9 @@ export function createInboundClaimHandler(
       const receivedAt = canonicalUtcTimestamp(new Date());
       await client.intake({
         provider: "discord",
-        providerEventId: messageId,
-        sourceTarget: `discord:channel:${route.target}`,
-        senderId,
+        providerEventId: admission.providerEventId,
+        sourceTarget: admission.sourceTarget,
+        senderId: admission.senderId,
         occurredAt,
         receivedAt,
         content,

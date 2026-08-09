@@ -1,4 +1,5 @@
 // Discord tests cover message handler.process plugin behavior.
+import { createServer } from "node:http";
 import nodePath from "node:path";
 import { MessageFlags } from "discord-api-types/v10";
 import { DEFAULT_EMOJIS, DEFAULT_TIMING } from "openclaw/plugin-sdk/channel-feedback";
@@ -572,19 +573,32 @@ describe("processDiscordMessage reply runtime wiring", () => {
 
 async function runDeliberationIntegrationTest() {
   const sourceId = "1494265174389948538";
-  const fetchMock = vi.fn<(input: string | URL | Request, init?: RequestInit) => Promise<Response>>(
-    async () =>
-      new Response(
+  const requests: Array<{ url?: string; body: string }> = [];
+  const server = createServer((request, response) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => (body += chunk));
+    request.on("end", () => {
+      requests.push({ url: request.url, body });
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(
         JSON.stringify({
           protocolVersion: 1,
           recordId: "record-1",
           inboundId: "inbound-1",
           duplicate: false,
         }),
-        { status: 200 },
-      ),
-  );
-  vi.stubGlobal("fetch", fetchMock);
+      );
+    });
+  });
+  await new Promise<void>((resolve) => {
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  server.unref();
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("missing listener address");
+  }
   setBundledPluginsDirOverrideForTest(nodePath.join(process.cwd(), "extensions"));
   replyRuntimeMocks.useActual = true;
   const cfg = {
@@ -605,7 +619,7 @@ async function runDeliberationIntegrationTest() {
               target: "processing",
             },
             km: {
-              endpoint: "https://km.invalid",
+              endpoint: `http://127.0.0.1:${address.port}`,
               credential: "test-credential",
               requestTimeoutMs: 1000,
             },
@@ -673,6 +687,9 @@ async function runDeliberationIntegrationTest() {
   expect(intakeHandler).toHaveBeenCalledWith(
     expect.objectContaining({
       channel: "discord",
+      provider: "discord",
+      eventType: "message",
+      eventKind: "user_request",
       accountId: "default",
       content: "Tak schvalne",
       messageId: "1533451497218506752",
@@ -688,27 +705,30 @@ async function runDeliberationIntegrationTest() {
     }),
   );
   await expect(intakeHandler.mock.results[0]?.value).resolves.toEqual({ handled: true });
-  expect(fetchMock).toHaveBeenCalledTimes(1);
-  const [requestUrl, requestInit] = fetchMock.mock.calls[0] ?? [];
-  expect(requestUrl).toBe("https://km.invalid/deliberation/v1/intake");
-  if (typeof requestInit?.body !== "string") {
-    throw new Error("Deliberation intake request body was not JSON text");
-  }
-  const intakeBody = JSON.parse(requestInit.body) as Record<string, unknown>;
+  expect(requests).toHaveLength(1);
+  expect(requests[0]?.url).toBe("/deliberation/v1/intake");
+  const intakeBody = JSON.parse(requests[0]?.body ?? "") as Record<string, unknown>;
   expect(intakeBody).toMatchObject({
     provider: "discord",
     providerEventId: "1533451497218506752",
-    sourceTarget: `discord:channel:${sourceId}`,
+    sourceTarget: `v1:discord:default:${sourceId}`,
     senderId: "U1",
-    occurredAt: "2026-08-02T12:28:47.088Z",
+    occurredAt: "2026-08-02T12:28:47.088000Z",
     content: "Tak schvalne",
   });
-  expect(intakeBody.sourceTarget).not.toBe(`default:${sourceId}`);
   expect(dispatchInboundMessage).not.toHaveBeenCalled();
   expect(deliverDiscordReply).not.toHaveBeenCalled();
   expect(beforeDispatchHandler).not.toHaveBeenCalled();
 
-  fetchMock.mockRejectedValueOnce(new Error("listener unavailable"));
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
   const failedCtx = await createBaseContext({
     cfg: dispatchConfig,
     runtime,
@@ -731,7 +751,7 @@ async function runDeliberationIntegrationTest() {
   await runProcessDiscordMessage(failedCtx);
 
   expect(intakeHandler).toHaveBeenCalledTimes(2);
-  expect(fetchMock).toHaveBeenCalledTimes(2);
+  expect(requests).toHaveLength(1);
   expect(beforeDispatchHandler).toHaveBeenCalledTimes(1);
   expect(dispatchInboundMessage).not.toHaveBeenCalled();
   expect(deliverDiscordReply).not.toHaveBeenCalled();

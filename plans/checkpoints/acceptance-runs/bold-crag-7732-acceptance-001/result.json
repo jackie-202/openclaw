@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "OpenClaw account-aware Deliberation producer admission"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-crag-7732-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-crag-7732"
+}

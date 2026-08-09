@@ -38,6 +38,7 @@ function makeInboundCtx(overrides: Partial<FinalizedMsgContext> = {}): Finalized
     Surface: "demo-chat",
     OriginatingChannel: "demo-chat",
     OriginatingTo: "demo-chat:chat:456",
+    InboundEventKind: "user_request",
     SessionKey: "session-1",
     AccountId: "acc-1",
     MessageSid: "msg-1",
@@ -126,6 +127,12 @@ describe("message hook mappers", () => {
     expect(canonical.isGroup).toBe(true);
     expect(canonical.groupId).toBe("demo-chat:chat:456");
     expect(canonical.guildId).toBe("guild-1");
+    expect(canonical.inboundEventKind).toBe("user_request");
+    expect(toPluginInboundClaimEvent(canonical)).toMatchObject({
+      provider: "demo-chat",
+      eventType: "message",
+      eventKind: "user_request",
+    });
   });
 
   it("maps inbound reply metadata into canonical and plugin payloads", () => {

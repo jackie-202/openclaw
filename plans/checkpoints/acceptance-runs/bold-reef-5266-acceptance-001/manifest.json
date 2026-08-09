@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-09T10:09:12+00:00",
+    "implementingStartedAt": "2026-08-09T09:58:14+00:00",
+    "taskFile": "plans/tasks/2026-08-09_followup-bold-reef-5266-add-isolated-deliberation-plugin-km-listener-spool-integrati.md",
+    "taskId": "bold-reef-5266",
+    "title": "[acceptance-fix] Add isolated Deliberation plugin \u2192 KM listener \u2192 spool integration harness: goal-008: Existing Delibera"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Add isolated Deliberation plugin \u2192 KM listener \u2192 spool integration harness: goal-008: Existing Delibera"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-reef-5266-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-reef-5266",
+  "tddRequired": false
+}

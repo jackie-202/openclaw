@@ -1,0 +1,46 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "Canonical caller-owned evidence is required that the existing Deliberation TypeScript tests and focused KM listener/wire/spool tests remain green.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller-supplied Test Gate status is not run with no Test Gate evidence. The task evidence explicitly identifies its fresh commands as local implementation-agent runs, and the Deliberation aggregate local command exited 1 with 103 passed and 2 failed.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal 001 is an explicit test-artifact goal whose assessment is restricted to supplied artifacts and the canonical Test Gate reference. Local or historical prose cannot establish the required caller-owned passing result, and the supplied local aggregate result is not green.",
+      "required": "Provide an inspectable caller-owned Test Gate tied to bold-reef-5266 that records exact commands and passing outcomes for both the existing Deliberation TypeScript suite and the focused KM listener/wire/spool suite.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "caller-supplied status: not run; no Test Gate evidence exists"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-reef-5266.evidence.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-reef-5266.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Add isolated Deliberation plugin \u2192 KM listener \u2192 spool integration harness: goal-008: Existing Delibera"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-reef-5266-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-reef-5266"
+}

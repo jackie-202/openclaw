@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-09T10:29:29+00:00",
+    "implementingStartedAt": "2026-08-09T10:22:29+00:00",
+    "taskFile": "plans/tasks/2026-08-09_followup-fresh-mist-4969-acceptance-fix-add-isolated-deliberation-plugin-km-listener.md",
+    "taskId": "fresh-mist-4969",
+    "title": "[acceptance-fix] [acceptance-fix] Add isolated Deliberation plugin \u2192 KM listener \u2192 spool integration harness: goal-008: "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Add isolated Deliberation plugin \u2192 KM listener \u2192 spool integration harness: goal-008:"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-mist-4969-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-mist-4969",
+  "tddRequired": false
+}

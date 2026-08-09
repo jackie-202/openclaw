@@ -126,7 +126,7 @@ observation-only.
 
 **Messages and delivery**
 
-- **`inbound_claim`** - claim an inbound message before agent routing (synthetic replies)
+- **`inbound_claim`** - claim an inbound message before agent routing (synthetic replies). Its event includes the host-authoritative `provider`, the fixed `eventType: "message"`, and `eventKind` (`user_request` or `room_event`) from the finalized inbound context.
 - `message_received` — observe inbound content, sender, thread, and metadata
 - **`message_sending`** — rewrite outbound content or cancel delivery
 - **`reply_payload_sending`** — mutate or cancel normalized reply payloads before delivery

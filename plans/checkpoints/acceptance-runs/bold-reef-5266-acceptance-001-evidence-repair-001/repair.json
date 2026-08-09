@@ -1,0 +1,63 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/bold-reef-5266.evidence.md",
+      "provenance": "evidence_repair:bold-reef-5266-acceptance-001-evidence-repair-001",
+      "size": 2428
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/bold-reef-5266.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/bold-reef-5266-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "28dacc24ebb3e24a455d839dd6ecff0d24ac9294",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-09T10:11:31.405952+00:00",
+  "gaps": [
+    "command_lines_truncated",
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "git -C \"/Users/michal/.openclaw/workspace/km-system\" status -sb && git -C \"/Users/michal/.openclaw/workspace/km-system\" ls-files 'AGENTS.md' 'pyproject.toml' 'pytest.ini' 'tox.ini' 'Makefile' 'scripts",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "git -C \"/Users/michal/.openclaw/workspace/km-system\" show HEAD:AGENTS.md && git -C \"/Users/michal/.openclaw/workspace/km-system\" show HEAD:pytest.ini",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "git -C \"/Users/michal/.openclaw/workspace/km-system\" show HEAD:workspace/km-system/AGENTS.md && git -C \"/Users/michal/.openclaw/workspace/km-system\" show HEAD:workspace/km-system/pytest.ini",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "env PYTHONPATH=/Users/michal/.openclaw/workspace/km-system/scripts:/Users/michal/.openclaw/workspace/km-system/lib /Users/michal/.openclaw/workspace/km-system/.venv/bin/pytest /Users/michal/.openclaw/",
+      "outcome": "90 passed in 5.66s"
+    },
+    {
+      "command": "TASK_ID=cool-vale-3921 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- env OPENCLAW_DELIBERATION_KM_ROOT=/Users/michal/.openclaw/workspace/km-system pnpm test:delib",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=cool-vale-3921 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- env OPENCLAW_DELIBERATION_KM_ROOT=/Users/michal/.openclaw/workspace/km-system pnpm test:delib",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=cool-vale-3921 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- env OPENCLAW_DELIBERATION_KM_ROOT=/Users/michal/.openclaw/workspace/km-system pnpm test:delib",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=cool-vale-3921 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- env OPENCLAW_DELIBERATION_KM_ROOT=/Users/michal/.openclaw/workspace/km-system pnpm test:del",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "bold-reef-5266-acceptance-001-evidence-repair-001",
+  "sourceRunId": "bold-reef-5266-acceptance-001",
+  "startedAt": "2026-08-09T10:11:23.646483+00:00",
+  "status": "escalated"
+}

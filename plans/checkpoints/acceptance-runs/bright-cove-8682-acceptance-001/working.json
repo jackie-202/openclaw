@@ -1,0 +1,60 @@
+{
+  "findings": [
+    {
+      "claim": "The caller-declared mandatory TDD proof must contain a valid RED state before GREEN.",
+      "crossCutting": true,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied proof's RED phase reports that the newly written focused test passed with 27/27 tests and explicitly states that no genuine RED was produced; its GREEN phase reports the same passing result with no intervening production implementation.",
+      "rationale": "With tddRequired set to true, a passing pre-edit probe labeled RED does not demonstrate the required failing-test-before-implementation cycle, so the supplied artifact is not valid RED/GREEN proof even though avoiding a manufactured production regression was appropriate.",
+      "required": "Provide valid caller-accepted TDD provenance containing a genuine RED failure followed by GREEN, or have the caller explicitly change the run's TDD requirement when the behavior was already correct and only regression coverage was added.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-cove-8682.red-green-proof.md:5-13"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-cove-8682.red-green-proof.md:22-28"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/bright-cove-8682-acceptance-001/manifest.json:32"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-09_bright-cove-8682_fix-deliberation-intake-canonical-timestamp-serialization.md:TDD"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "`new Date(\"2026-08-08T16:23:38.816Z\")` serializes to `2026-08-08T16:23:38.816000Z`."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "`new Date(\"2026-08-08T16:23:38.000Z\")` serializes to `2026-08-08T16:23:38Z`."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Existing intake behavior and idempotency remain unchanged."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "Tests prove the old nine-digit output cannot regress."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-cove-8682-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bright-cove-8682"
+}

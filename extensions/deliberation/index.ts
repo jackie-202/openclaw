@@ -1,8 +1,11 @@
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { parseDeliberationConfig } from "./src/config.js";
 import { createBeforeToolCallHandler, createMessageSendingHandler } from "./src/guards.js";
+import { createHistoryReadHandler, HISTORY_READ_METHOD } from "./src/history-read.js";
 import { createBeforeDispatchHandler, createInboundClaimHandler } from "./src/intake.js";
 import { createKmClient } from "./src/km-client.js";
+
+export { createFinalDeliveryAdapter, type FinalDeliveryProvider } from "./src/final-adapter.js";
 
 const FAIL_CLOSED_HOOK_PRIORITY = 1000;
 
@@ -35,6 +38,22 @@ export default definePluginEntry({
         { scope: "operator.read" },
       );
     }
+
+    const readHistory = createHistoryReadHandler({ config, openclawConfig: api.config });
+    api.registerGatewayMethod(
+      HISTORY_READ_METHOD,
+      async ({ params, respond }) => {
+        try {
+          respond(true, await readHistory(params));
+        } catch {
+          respond(false, undefined, {
+            code: "SOURCE_HISTORY_UNAVAILABLE",
+            message: "source history read failed",
+          });
+        }
+      },
+      { scope: "operator.read" },
+    );
 
     api.registerCli(
       async ({ program }) => {

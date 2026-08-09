@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 2,
+  "method": "deliberation.history.read",
+  "requestKeys": ["schemaVersion", "sourceTarget", "after"],
+  "responseKeys": ["schemaVersion", "sourceTarget", "cutoffProviderEventId", "watermarkProviderEventId", "provenance", "messages", "complete"],
+  "messageKeys": ["providerEventId", "senderId", "senderIsBot", "eventType", "occurredAt", "content"],
+  "bounds": {"messages": 50, "bytes": 32768},
+  "semantics": {"cutoff": "exclusive", "watermark": "inclusive", "providerFailureIsClosed": true}
+}

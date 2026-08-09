@@ -58,6 +58,25 @@ export type DiscordComponentMessageSpec = {
   modal?: unknown;
 };
 
+export type DiscordHistoryMessage = {
+  id?: unknown;
+  content?: unknown;
+  timestamp?: unknown;
+  type?: unknown;
+  author?: { id?: unknown; bot?: unknown };
+};
+
+export type DiscordHistoryQuery = {
+  limit: number;
+  before?: string;
+  after?: string;
+};
+
+export type DiscordHistoryReadOpts = {
+  cfg: OpenClawConfig;
+  accountId: string;
+};
+
 /** Built Discord component payload plus registration metadata. */
 export type DiscordComponentBuildResult = {
   components: unknown[];
@@ -165,6 +184,11 @@ type DiscordApiFacadeModule = {
 };
 
 type DiscordRuntimeFacadeModule = {
+  readMessagesDiscord: (
+    channelId: string,
+    query: DiscordHistoryQuery,
+    opts: DiscordHistoryReadOpts,
+  ) => Promise<DiscordHistoryMessage[]>;
   editDiscordComponentMessage: EditDiscordComponentMessage;
   registerBuiltDiscordComponentMessage: RegisterBuiltDiscordComponentMessage;
   autoBindSpawnedDiscordSubagent: (params: {
@@ -307,6 +331,15 @@ export function collectDiscordAuditChannelIds(params: {
   accountId?: string | null;
 }): unknown {
   return loadDiscordRuntimeFacadeModule().collectDiscordAuditChannelIds(params);
+}
+
+/** Read Discord messages through the exact configured account runtime. */
+export async function readMessagesDiscord(
+  channelId: string,
+  query: DiscordHistoryQuery,
+  opts: DiscordHistoryReadOpts,
+): Promise<DiscordHistoryMessage[]> {
+  return await loadDiscordRuntimeFacadeModule().readMessagesDiscord(channelId, query, opts);
 }
 
 /** Edit an already-sent Discord component message. */

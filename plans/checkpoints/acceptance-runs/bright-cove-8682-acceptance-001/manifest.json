@@ -1,0 +1,33 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-09T07:05:55+00:00",
+    "implementingStartedAt": "2026-08-09T06:58:10+00:00",
+    "taskFile": "plans/tasks/2026-08-09_fix-deliberation-intake-canonical-timestamp-serialization.md",
+    "taskId": "bright-cove-8682",
+    "title": "Fix Deliberation intake canonical timestamp serialization"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "`new Date(\"2026-08-08T16:23:38.816Z\")` serializes to `2026-08-08T16:23:38.816000Z`."
+    },
+    {
+      "id": "goal-002",
+      "summary": "`new Date(\"2026-08-08T16:23:38.000Z\")` serializes to `2026-08-08T16:23:38Z`."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Existing intake behavior and idempotency remain unchanged."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Tests prove the old nine-digit output cannot regress."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-cove-8682-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-cove-8682",
+  "tddRequired": true
+}

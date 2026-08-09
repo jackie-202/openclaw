@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Fix Deliberation intake canonical timestamp serialization: [BLOCKING] finding-001 - required_tdd_proof_"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-wave-4942-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "warm-wave-4942"
+}

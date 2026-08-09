@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-06T22:54:13+00:00",
+    "implementingStartedAt": "2026-08-06T22:04:51+00:00",
+    "taskFile": "plans/tasks/2026-08-06_openclaw-account-aware-deliberation-producer-admission.md",
+    "taskId": "bold-crag-7732",
+    "title": "OpenClaw account-aware Deliberation producer admission"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "OpenClaw account-aware Deliberation producer admission"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-crag-7732-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-crag-7732",
+  "tddRequired": true
+}

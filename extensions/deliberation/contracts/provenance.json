@@ -1,13 +1,22 @@
 {
-  "acceptedBy": "swift-reef-7187 KM Node fetch transport compatibility",
-  "acceptedAt": "2026-08-02",
-  "scope": "KM-owned Deliberation v2 wire contract, Node fetch transport compatibility, and fixtures",
+  "acceptedBy": "swift-vale-2322 canonical source identity acceptance",
+  "acceptedAt": "2026-08-06",
+  "acceptedRevision": "401ababdd3",
+  "scope": "KM-owned Deliberation v2 wire contract, source identity grammar, and fixtures",
   "sources": {
     "km-wire-v1.json": "km-system/contracts/deliberation-v2/v1/contract.json",
-    "cutover-controls-v1.json": "km-system/contracts/deliberation-v2/v1/fixtures.json"
+    "cutover-controls-v1.json": "km-system/contracts/deliberation-v2/v1/fixtures.json",
+    "source-identity-v1.json": "km-system/contracts/deliberation-v2/v1/contract.json#/sourceIdentity",
+    "source-identity-fixtures-v1.json": "km-system/contracts/deliberation-v2/v1/fixtures.json#/identityVectors"
+  },
+  "ownerFiles": {
+    "km-system/contracts/deliberation-v2/v1/contract.json": "c5ea7d1514b8834368d90bed51f0f9f99772b0b59ab885a4a67bccb78775cbd5",
+    "km-system/contracts/deliberation-v2/v1/fixtures.json": "afe531da034209a8a329b6af24d40381cc06cc0a93406ca274c99564eb4d5d34"
   },
   "files": {
     "km-wire-v1.json": "731432653ab298c1fbf375fe34e234fe7dc8818df4a1fb4c878e797dc1275e3f",
-    "cutover-controls-v1.json": "1f62540db97714cfe2cca72b25f2e2c7bd50200284557595991f8c357c85b9c1"
+    "cutover-controls-v1.json": "1f62540db97714cfe2cca72b25f2e2c7bd50200284557595991f8c357c85b9c1",
+    "source-identity-v1.json": "252f03184601f2f2fa8752c5df1b4bb7dd4a20b90bd47c932eee09b9c0bc3af6",
+    "source-identity-fixtures-v1.json": "8e4f0373b5d986cb8098fbc7bf3565cfd3f88ef9b83e7189f4bbb53299a427fb"
   }
 }

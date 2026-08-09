@@ -18,6 +18,7 @@ export type KmReadyItem = {
   text: string;
   candidateRevision: number;
   updatedAt: string;
+  deliveryEnvelope: Record<string, unknown> & { sourceTarget: string };
 };
 
 export type KmReservation = {
@@ -30,6 +31,8 @@ export type KmReservation = {
   leaseExpiresAt: string;
   candidateRevision: number;
   reviewedTextHash: string;
+  deliveryEnvelope: Record<string, unknown> & { sourceTarget: string };
+  deliveryEnvelopeDigest: string;
 };
 
 export type KmIntakeBody = {
@@ -250,7 +253,14 @@ function parseControls(value: unknown): KmControls {
 function parseReadyItem(value: unknown): KmReadyItem {
   if (
     !isRecord(value) ||
-    !hasExactKeys(value, ["recordId", "version", "text", "candidateRevision", "updatedAt"]) ||
+    !hasExactKeys(value, [
+      "recordId",
+      "version",
+      "text",
+      "candidateRevision",
+      "updatedAt",
+      "deliveryEnvelope",
+    ]) ||
     !Number.isInteger(value.version) ||
     (value.version as number) < 1 ||
     !Number.isInteger(value.candidateRevision) ||
@@ -264,6 +274,12 @@ function parseReadyItem(value: unknown): KmReadyItem {
     text: boundedString(value.text, "text", 1, 65536),
     candidateRevision: value.candidateRevision as number,
     updatedAt: boundedString(value.updatedAt, "updatedAt", 20, 64),
+    deliveryEnvelope: (() => {
+      if (!isRecord(value.deliveryEnvelope))
+        throw new Error("KM returned an invalid deliveryEnvelope");
+      boundedString(value.deliveryEnvelope.sourceTarget, "deliveryEnvelope.sourceTarget", 1, 512);
+      return value.deliveryEnvelope as Record<string, unknown> & { sourceTarget: string };
+    })(),
   };
 }
 
@@ -278,6 +294,8 @@ function parseReservation(value: unknown): KmReservation {
     "leaseExpiresAt",
     "candidateRevision",
     "reviewedTextHash",
+    "deliveryEnvelope",
+    "deliveryEnvelopeDigest",
   ];
   if (
     !isRecord(value) ||
@@ -301,6 +319,18 @@ function parseReservation(value: unknown): KmReservation {
     leaseExpiresAt: boundedString(value.leaseExpiresAt, "leaseExpiresAt", 20, 64),
     candidateRevision: value.candidateRevision as number,
     reviewedTextHash: boundedString(value.reviewedTextHash, "reviewedTextHash", 64, 64),
+    deliveryEnvelope: (() => {
+      if (!isRecord(value.deliveryEnvelope))
+        throw new Error("KM returned an invalid deliveryEnvelope");
+      boundedString(value.deliveryEnvelope.sourceTarget, "deliveryEnvelope.sourceTarget", 1, 512);
+      return value.deliveryEnvelope as Record<string, unknown> & { sourceTarget: string };
+    })(),
+    deliveryEnvelopeDigest: boundedString(
+      value.deliveryEnvelopeDigest,
+      "deliveryEnvelopeDigest",
+      64,
+      64,
+    ),
   };
 }
 
@@ -322,6 +352,16 @@ function parseDeliveryAttempt(value: unknown): void {
     "reservedAt",
     "completedAt",
     "reconciledAt",
+    "deliveryEnvelope",
+    "deliveryEnvelopeDigest",
+    "reserveIdempotencyKey",
+    "invocationIdempotencyKey",
+    "completionIdempotencyKey",
+    "invokedAt",
+    "attemptedTarget",
+    "providerFailureClass",
+    "providerEvidence",
+    "terminalReason",
   ];
   const nullableProviderStrings = [
     "providerAttemptId",
@@ -341,10 +381,8 @@ function parseDeliveryAttempt(value: unknown): void {
       ...nullableProviderStrings,
       "completedAt",
     ]) ||
-    !["SENT", "NOT_SENT", "DELIVERY_UNKNOWN", null].includes(
-      value.completionOutcome as string | null,
-    ) ||
-    !["SENT", "NOT_SENT", "DELIVERY_UNKNOWN", null].includes(value.outcome as string | null)
+    !["SENT", "FAILED", null].includes(value.completionOutcome as string | null) ||
+    !["SENT", "FAILED", null].includes(value.outcome as string | null)
   ) {
     throw new Error("KM returned an invalid delivery attempt");
   }
@@ -482,7 +520,7 @@ const recordSchema = z
     debounceUntil: z.string().optional(),
     effectiveDebounceSeconds: z.number().int().optional(),
     closedAt: nullableString.optional(),
-    state: z.enum(["READY_TO_SEND", "SENDING", "SENT", "DELIVERY_UNKNOWN"]),
+    state: z.enum(["READY_TO_SEND", "SENDING", "SENT", "FAILED", "DELIVERY_UNKNOWN"]),
     version: z.number().int().min(1),
     duplicateCount: z.number().int().min(0).optional(),
     lease: leaseSchema.optional(),
@@ -689,6 +727,72 @@ export function createKmClient(params: {
           reservation: parseReservation(responseValue.reservation),
         };
       });
+    },
+    async invoke(
+      reservation: KmReservation,
+      attemptedTarget: string,
+      providerAttemptId: string,
+      signal?: AbortSignal,
+    ) {
+      return parseResponse(
+        await request("/deliberation/v1/invocations", {
+          method: "POST",
+          body: JSON.stringify({
+            recordId: reservation.recordId,
+            attemptId: reservation.attemptId,
+            owner: reservation.owner,
+            leaseToken: reservation.leaseToken,
+            deliveryEnvelope: reservation.deliveryEnvelope,
+            deliveryEnvelopeDigest: reservation.deliveryEnvelopeDigest,
+            attemptedTarget,
+            idempotencyKey: `invoke:${reservation.attemptId}`,
+            providerAttemptId,
+          }),
+          signal,
+        }),
+        (value) => value,
+      );
+    },
+    async completeDelivery(
+      params: {
+        reservation: KmReservation;
+        attemptedTarget: string;
+        providerAttemptId: string;
+        outcome: "SENT" | "FAILED";
+        providerReceiptId?: string;
+        providerMessageId?: string;
+        providerFailureClass?: string;
+        providerEvidence?: Record<string, string>;
+      },
+      signal?: AbortSignal,
+    ) {
+      const { reservation } = params;
+      return parseResponse(
+        await request("/deliberation/v1/completions", {
+          method: "POST",
+          body: JSON.stringify({
+            recordId: reservation.recordId,
+            attemptId: reservation.attemptId,
+            owner: reservation.owner,
+            leaseToken: reservation.leaseToken,
+            deliveryEnvelope: reservation.deliveryEnvelope,
+            deliveryEnvelopeDigest: reservation.deliveryEnvelopeDigest,
+            attemptedTarget: params.attemptedTarget,
+            invocationIdempotencyKey: `invoke:${reservation.attemptId}`,
+            outcome: params.outcome,
+            idempotencyKey: `complete:${reservation.attemptId}`,
+            providerAttemptId: params.providerAttemptId,
+            ...(params.providerReceiptId ? { providerReceiptId: params.providerReceiptId } : {}),
+            ...(params.providerMessageId ? { providerMessageId: params.providerMessageId } : {}),
+            ...(params.providerFailureClass
+              ? { providerFailureClass: params.providerFailureClass }
+              : {}),
+            ...(params.providerEvidence ? { providerEvidence: params.providerEvidence } : {}),
+          }),
+          signal,
+        }),
+        parseRecordResponse,
+      );
     },
     async complete(completion: KmCompletionBody, signal?: AbortSignal) {
       return parseResponse(

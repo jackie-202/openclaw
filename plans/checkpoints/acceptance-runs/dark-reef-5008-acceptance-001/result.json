@@ -1,0 +1,54 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required plugin-confined final-source provider adapter was not delivered, and the supplied partial-result evidence does not meet the task's only permitted blocker contract.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff contains no extensions/deliberation/src/final-adapter.ts or final-delivery KM adapter changes. The supplied RED/GREEN proof states that no production code was added because the required KM envelope/invocation acknowledgement and public account-bound one-shot sender are absent. The supplied checkpoint and learning artifacts describe those gates, but no supplied task result provides the required narrow blocker with the smallest proposed core seam.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "The goal requires one checked-in adapter as the sole provider boundary. The task permits a partial result only when plugin-only implementation is impossible and an evidence-backed blocker in the task result specifies the required capability, inspected public APIs, exact impossibility reason, and smallest proposed core seam. The supplied materials establish absent gates but do not supply that complete permitted blocker result.",
+      "required": "Deliver the plugin-confined adapter after both required contracts exist, or provide the task-result blocker required by the task contract, including the smallest proposed generic core seam without changing core.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/final-adapter.ts"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-reef-5008.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-reef-5008.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "learnings/architecture/dark-reef-5008-gate-provider-adapters-on-public-seams.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-06_deliberation-v2-05b-plugin-confined-final-adapter.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Plugin-confined sole Deliberation final provider adapter"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-reef-5008-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-reef-5008"
+}

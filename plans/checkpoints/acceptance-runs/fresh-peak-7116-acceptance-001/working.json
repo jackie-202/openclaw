@@ -1,0 +1,70 @@
+{
+  "findings": [
+    {
+      "claim": "The required plugin-confined final provider adapter was not delivered, and no supplied task-result artifact supplies the task contract's permitted blocker.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff contains no extensions/deliberation/src/final-adapter.ts or final-delivery adapter wiring. The supplied checkpoint and proof describe unavailable KM and SDK contracts, but no supplied task-result artifact records the required capability, inspected APIs, exact impossibility, and smallest core seam as the task result.",
+      "rationale": "goal-001 requires the sole adapter unless plugin-only implementation is impossible and the defined evidence-backed blocker is delivered in the task result. Contract-gate discussion in checkpoint/proof artifacts does not satisfy that task-result deliverable.",
+      "required": "Deliver the plugin-confined adapter after both contracts exist, or add the complete evidence-backed blocker to the task result without changing core.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/final-adapter.ts"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7116.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7116.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/tasks/2026-08-07_followup-fresh-peak-7116-plugin-confined-sole-deliberation-final-provider-adapter.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is invalid because its claimed historical RED is contradicted by the cited historical proof.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "fresh-peak-7116.red-green-proof.md states that dark-reef-5008 ran final-adapter.test.ts and recorded a missing-module failure. The supplied dark-reef-5008.red-green-proof.md instead states that focused regression tests had not been written or run, so it supplies no such RED result.",
+      "rationale": "The manifest declares tddRequired true. The follow-up may reuse genuine historical RED evidence, but the supplied provenance does not establish the claimed RED and cannot support the required RED/GREEN proof.",
+      "required": "Provide credible genuine RED provenance for the required adapter behavior, paired with the task-owned fresh GREEN evidence; do not fabricate a post-implementation RED.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7116.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-reef-5008.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Plugin-confined sole Deliberation final provider adapter: goal-001: Plugin-confined sole Deliberation f"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-peak-7116-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "fresh-peak-7116"
+}

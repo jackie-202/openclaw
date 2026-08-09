@@ -56,6 +56,10 @@ describe("parseDeliberationConfig", () => {
     [{ ...valid, failClosed: false }, "non-fail-closed mode"],
     [{ ...valid, sources: [...valid.sources, ...valid.sources] }, "duplicate routes"],
     [{ ...valid, processingSource: valid.sources[0] }, "processing overlap"],
+    [
+      { ...valid, sources: [{ channel: "discord", accountId: "acct", target: "channel:bad" }] },
+      "malformed source identity component",
+    ],
     [{ ...valid, km: { ...valid.km, endpoint: "http://km.invalid" } }, "non-loopback HTTP KM"],
     [{ ...valid, km: { ...valid.km, credential: "" } }, "empty credential"],
     [{ ...valid, km: { ...valid.km, pollIntervalMs: 1000 } }, "retired polling config"],

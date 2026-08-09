@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "method": "deliberation.history.read",
+  "requestKeys": ["schemaVersion", "sourceTarget", "before", "limit"],
+  "limit": 20,
+  "responseKeys": ["schemaVersion", "sourceTarget", "provenance", "messages"],
+  "messageKeys": ["providerEventId", "senderId", "senderIsBot", "eventType", "occurredAt", "content"],
+  "fixtures": {
+    "counts": [0, 1, 20, 21],
+    "accounts": ["acct-a", "acct-b"],
+    "channels": ["channel-1", "channel-2"],
+    "cutoff": "pending-1",
+    "includesBotAuthor": true,
+    "providerFailureIsClosed": true,
+    "normalizedResponse": {
+      "schemaVersion": 1,
+      "sourceTarget": "v1:discord:default:1494265174389948538",
+      "provenance": {
+        "provider": "discord",
+        "account": "default",
+        "channel": "1494265174389948538"
+      },
+      "messages": [
+        {
+          "providerEventId": "1534181693647355985",
+          "senderId": "history-bot",
+          "senderIsBot": true,
+          "eventType": "message",
+          "occurredAt": "2026-08-04T12:49:00.000Z",
+          "content": "Fork-owned preceding bot reply"
+        }
+      ]
+    }
+  }
+}

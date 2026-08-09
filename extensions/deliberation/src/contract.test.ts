@@ -51,4 +51,24 @@ describe("accepted Deliberation contracts", () => {
       "sender",
     ]);
   });
+
+  it("pins the accepted KM owner files and identity vocabulary", async () => {
+    const provenance = JSON.parse(await readFile(join(contractDir, "provenance.json"), "utf8")) as {
+      ownerFiles: Record<string, string>;
+    };
+    expect(provenance.ownerFiles).toEqual({
+      "km-system/contracts/deliberation-v2/v1/contract.json":
+        "c5ea7d1514b8834368d90bed51f0f9f99772b0b59ab885a4a67bccb78775cbd5",
+      "km-system/contracts/deliberation-v2/v1/fixtures.json":
+        "afe531da034209a8a329b6af24d40381cc06cc0a93406ca274c99564eb4d5d34",
+    });
+    const identity = JSON.parse(
+      await readFile(join(contractDir, "source-identity-v1.json"), "utf8"),
+    ) as { version: string; grammar: string; providerAgreement: string };
+    expect(identity).toMatchObject({
+      version: "v1",
+      grammar: "v1:<provider>:<account>:<channel>",
+      providerAgreement: "intake provider must exactly equal the provider component",
+    });
+  });
 });

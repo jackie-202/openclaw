@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-07T12:49:01+00:00",
+    "implementingStartedAt": "2026-08-07T11:21:22+00:00",
+    "taskFile": "plans/tasks/2026-08-07_followup-swift-peak-6992-acceptance-fix-plugin-confined-sole-deliberation-final-provi.md",
+    "taskId": "swift-peak-6992",
+    "title": "[acceptance-fix] [acceptance-fix] Plugin-confined sole Deliberation final provider adapter: goal-001: Plugin-confined so"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Plugin-confined sole Deliberation final provider adapter: goal-001: Plugin-confined so"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-peak-6992-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-peak-6992",
+  "tddRequired": false
+}

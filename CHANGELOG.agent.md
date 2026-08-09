@@ -1,5 +1,31 @@
 # Agent Changelog
 
+## 2026-08-09
+
+**Deliberation intake canonicalizes timestamp serialization**
+
+**Canonical UTC timestamp serialization for Deliberation intake**
+
+Date values are serialized in canonical UTC form with fractional seconds preserved when present: `2026-08-08T16:23:38.816Z` becomes `2026-08-08T16:23:38.816000Z`, while whole-second input `2026-08-08T16:23:38.000Z` stays compact as `2026-08-08T16:23:38Z`.
+
+## 2026-08-07
+
+**Deliberation final-provider resolution is confined to one plugin adapter**
+
+Deliberation v2 final-provider selection is routed through the plugin-confined adapter, removing alternate final-provider paths.
+
+## 2026-08-06
+
+**Deliberation producer admission is account-aware**
+
+Admission checks now use account context when deciding whether a producer can enter the deliberation flow, instead of treating admission as global.
+
+## 2026-08-04
+
+**Live intake timestamps normalized to canonical UTC Z format**
+
+Live-shaped intake events now emit canonical UTC timestamps at whole-second precision as `...ssZ` for both `occurred` and `received` where applicable. Fractional timestamps continue through the existing non-zero fractional path, so the canonicalization only applies when the source time lands exactly on a second boundary.
+
 ## 2026-08-03
 
 **Deliberation plugin registers its runtime entry in the built checkout**

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-09T07:27:58+00:00",
+    "implementingStartedAt": "2026-08-09T07:17:17+00:00",
+    "taskFile": "plans/tasks/2026-08-09_followup-warm-wave-4942-fix-deliberation-intake-canonical-timestamp-serialization.md",
+    "taskId": "warm-wave-4942",
+    "title": "[acceptance-fix] Fix Deliberation intake canonical timestamp serialization: [BLOCKING] finding-001 - required_tdd_proof_"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix Deliberation intake canonical timestamp serialization: [BLOCKING] finding-001 - required_tdd_proof_"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-wave-4942-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-wave-4942",
+  "tddRequired": true
+}

@@ -4,6 +4,7 @@ import {
   normalizeOptionalString,
 } from "@openclaw/normalization-core/string-coerce";
 import type { FinalizedMsgContext } from "../auto-reply/templating.js";
+import type { InboundEventKind } from "../channels/inbound-event/kind.js";
 import { getChannelPlugin, normalizeChannelId } from "../channels/plugins/index.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
@@ -46,6 +47,7 @@ export type CanonicalInboundMessageHookContext = {
   replyToBody?: string;
   replyToSender?: string;
   provider?: string;
+  inboundEventKind?: InboundEventKind;
   surface?: string;
   threadId?: string | number;
   threadParentId?: string | number;
@@ -151,6 +153,7 @@ export function deriveInboundMessageHookContext(
     replyToBody: ctx.ReplyToBody,
     replyToSender: ctx.ReplyToSender,
     provider: ctx.Provider,
+    inboundEventKind: ctx.InboundEventKind,
     surface: ctx.Surface,
     threadId: ctx.MessageThreadId,
     threadParentId: ctx.ThreadParentId,
@@ -348,6 +351,9 @@ export function toPluginInboundClaimEvent(
     transcript: canonical.transcript,
     timestamp: canonical.timestamp,
     channel: canonical.channelId,
+    provider: canonical.provider,
+    eventType: "message",
+    eventKind: canonical.inboundEventKind,
     accountId: canonical.accountId,
     conversationId: context.conversationId,
     parentConversationId: context.parentConversationId,

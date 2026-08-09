@@ -1,4 +1,5 @@
 // Defines plugin hook message payload and trace context types.
+import type { InboundEventKind } from "../channels/inbound-event/kind.js";
 import type { DiagnosticTraceContext } from "../infra/diagnostic-trace-context.js";
 import type { PluginConversationBinding } from "./conversation-binding.types.js";
 
@@ -69,6 +70,12 @@ export type PluginHookInboundClaimEvent = {
   transcript?: string;
   timestamp?: number;
   channel: string;
+  /** Host-authoritative provider for this inbound event. */
+  provider?: string;
+  /** `inbound_claim` currently represents only canonical message events. */
+  eventType?: "message";
+  /** Host-authoritative classification from `FinalizedMsgContext.InboundEventKind`. */
+  eventKind?: InboundEventKind;
   accountId?: string;
   conversationId?: string;
   parentConversationId?: string;

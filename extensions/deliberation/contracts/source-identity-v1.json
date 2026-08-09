@@ -1,0 +1,21 @@
+{
+  "version": "v1",
+  "grammar": "v1:<provider>:<account>:<channel>",
+  "pattern": "^v1:[a-z][a-z0-9_-]{0,31}:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$",
+  "providerPattern": "^[a-z][a-z0-9_-]{0,31}$",
+  "accountPattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$",
+  "channelPattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$",
+  "providerAgreement": "intake provider must exactly equal the provider component",
+  "domain": "the complete sourceTarget is the record, burst, inbound dedupe, payload, correlation and freshness domain",
+  "syntheticNamespace": {
+    "provider": "synthetic",
+    "account": "diagnostic",
+    "grammar": "v1:synthetic:diagnostic:<id>",
+    "rule": "synthetic identities outside the diagnostic account are invalid"
+  },
+  "historicalCompatibility": {
+    "pattern": "^discord:channel:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$",
+    "rule": "stored historical account-less records remain readable and auditable but are operationally invalid and cannot append, close, claim, refresh, reserve or merge with v1 domains",
+    "validationError": "historical account-less sourceTarget is audit-only"
+  }
+}

@@ -143,6 +143,17 @@ describe("tsdown config", () => {
     );
   });
 
+  it("keeps session archive and outbound delivery lazy imports in the dist graph", () => {
+    const distGraph = requireUnifiedDistGraph();
+
+    expect(entrySources(distGraph)["session-archive.runtime"]).toBe(
+      "src/gateway/session-archive.runtime.ts",
+    );
+    expect(entrySources(distGraph)["channel-outbound-send"]).toBe(
+      "src/cli/send-runtime/channel-outbound-send.ts",
+    );
+  });
+
   it("keeps reply dispatcher lazy runtime behind one root stable dist entry", () => {
     const distGraph = requireUnifiedDistGraph();
 

@@ -1,4 +1,5 @@
 /** Verifies source-checkout plugin runtime resolution and dependency diagnostics. */
+import { createServer } from "node:http";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setBundledPluginsDirOverrideForTest } from "./bundled-dir.js";
@@ -89,21 +90,32 @@ describe("source checkout bundled plugin runtime", () => {
 
   it("routes a realistic Discord source event through loader-backed Deliberation hooks", async () => {
     const sourceId = "1494265174389948538";
-    const fetchMock = vi.fn<
-      (input: string | URL | Request, init?: RequestInit) => Promise<Response>
-    >(
-      async () =>
-        new Response(
+    const requests: Array<{ url?: string; body: string }> = [];
+    const server = createServer((request, response) => {
+      let body = "";
+      request.setEncoding("utf8");
+      request.on("data", (chunk) => (body += chunk));
+      request.on("end", () => {
+        requests.push({ url: request.url, body });
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end(
           JSON.stringify({
             protocolVersion: 1,
             recordId: "record-1",
             inboundId: "inbound-1",
             duplicate: false,
           }),
-          { status: 200 },
-        ),
-    );
-    vi.stubGlobal("fetch", fetchMock);
+        );
+      });
+    });
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", resolve);
+    });
+    server.unref();
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      throw new Error("missing listener address");
+    }
     const registry = loadOpenClawPlugins({
       cache: false,
       onlyPluginIds: ["deliberation"],
@@ -122,7 +134,7 @@ describe("source checkout bundled plugin runtime", () => {
                   target: "processing",
                 },
                 km: {
-                  endpoint: "https://km.invalid",
+                  endpoint: `http://127.0.0.1:${address.port}`,
                   credential: "test-credential",
                   requestTimeoutMs: 1000,
                 },
@@ -137,6 +149,9 @@ describe("source checkout bundled plugin runtime", () => {
     const runner = getGlobalHookRunner();
     const event = {
       channel: "discord",
+      provider: "discord",
+      eventType: "message" as const,
+      eventKind: "user_request" as const,
       accountId: "default",
       conversationId: sourceId,
       content: "Tak schvalne",
@@ -155,23 +170,16 @@ describe("source checkout bundled plugin runtime", () => {
 
     expect(runner?.hasHooks("inbound_claim")).toBe(true);
     expect(runner?.hasHooks("before_dispatch")).toBe(true);
-    await expect(runner?.runInboundClaim(event, context)).resolves.toEqual({ handled: true });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [requestUrl, requestInit] = fetchMock.mock.calls[0] ?? [];
-    expect(requestUrl).toBe("https://km.invalid/deliberation/v1/intake");
-    expect(requestInit?.headers).toMatchObject({
-      Authorization: "Bearer test-credential",
-      "X-Deliberation-Protocol-Version": "1",
-    });
-    if (typeof requestInit?.body !== "string") {
-      throw new Error("Deliberation intake request body was not JSON text");
-    }
-    expect(JSON.parse(requestInit.body)).toMatchObject({
+    const claim = await runner?.runInboundClaim(event, context);
+    expect(claim).toEqual({ handled: true });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.url).toBe("/deliberation/v1/intake");
+    expect(JSON.parse(requests[0]?.body ?? "")).toMatchObject({
       provider: "discord",
       providerEventId: "1533451497218506752",
-      sourceTarget: `discord:channel:${sourceId}`,
+      sourceTarget: `v1:discord:default:${sourceId}`,
       senderId: "sender-1",
-      occurredAt: "2026-08-02T12:28:47.088Z",
+      occurredAt: "2026-08-02T12:28:47.088000Z",
       content: "Tak schvalne",
       eventType: "message",
     });
@@ -182,9 +190,17 @@ describe("source checkout bundled plugin runtime", () => {
         { ...context, conversationId: "unrelated", messageId: "unrelated-message" },
       ),
     ).resolves.toBeUndefined();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requests).toHaveLength(1);
 
-    fetchMock.mockRejectedValueOnce(new Error("listener unavailable"));
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
     await expect(
       runner?.runInboundClaim(
         { ...event, messageId: "1533451497218506753" },

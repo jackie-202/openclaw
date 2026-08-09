@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => {
     editDiscordComponentMessage: vi.fn(async () => ({ id: "message" })),
     listThreadBindingsBySessionKey: vi.fn(() => []),
     registerBuiltDiscordComponentMessage: vi.fn(),
+    readMessagesDiscord: vi.fn(async () => [{ id: "message-1" }]),
     unbindThreadBindingsBySessionKey: vi.fn(() => []),
   };
 
@@ -107,6 +108,7 @@ describe("discord plugin-sdk facade", () => {
       "normalizeDiscordMessagingTarget",
       "normalizeDiscordOutboundTarget",
       "projectCredentialSnapshotFields",
+      "readMessagesDiscord",
       "editDiscordComponentMessage",
       "registerBuiltDiscordComponentMessage",
       "resolveConfiguredFromCredentialStatuses",
@@ -174,5 +176,22 @@ describe("discord plugin-sdk facade", () => {
     expect(binding.cfg).toBe(mocks.runtimeConfig);
     expect(binding.targetKind).toBe("subagent");
     expect(binding.targetSessionKey).toBe("child");
+  });
+
+  it("forwards exact-account Discord history reads through the lazy runtime facade", async () => {
+    const { readMessagesDiscord } = await import("./discord.js");
+
+    await expect(
+      readMessagesDiscord(
+        "channel-1",
+        { limit: 20, before: "pending-1" },
+        { cfg: mocks.runtimeConfig, accountId: "acct-b" },
+      ),
+    ).resolves.toEqual([{ id: "message-1" }]);
+    expect(mocks.runtimeModule.readMessagesDiscord).toHaveBeenCalledWith(
+      "channel-1",
+      { limit: 20, before: "pending-1" },
+      { cfg: mocks.runtimeConfig, accountId: "acct-b" },
+    );
   });
 });

@@ -1,0 +1,52 @@
+{
+  "positive": [
+    {
+      "name": "discord.producer.default",
+      "provider": "discord",
+      "account": "default",
+      "channel": "1494265174389948538",
+      "sourceTarget": "v1:discord:default:1494265174389948538"
+    },
+    {
+      "name": "discord.account-a.shared-channel",
+      "provider": "discord",
+      "account": "account-a",
+      "channel": "shared-channel",
+      "sourceTarget": "v1:discord:account-a:shared-channel"
+    },
+    {
+      "name": "discord.account-b.shared-channel",
+      "provider": "discord",
+      "account": "account-b",
+      "channel": "shared-channel",
+      "sourceTarget": "v1:discord:account-b:shared-channel"
+    },
+    {
+      "name": "discord.account-a.second-channel",
+      "provider": "discord",
+      "account": "account-a",
+      "channel": "second-channel",
+      "sourceTarget": "v1:discord:account-a:second-channel"
+    },
+    {
+      "name": "synthetic.diagnostic",
+      "provider": "synthetic",
+      "account": "diagnostic",
+      "channel": "fixture-001",
+      "sourceTarget": "v1:synthetic:diagnostic:fixture-001"
+    }
+  ],
+  "negative": [
+    { "name": "version.unknown", "sourceTarget": "v2:discord:account-a:shared-channel" },
+    { "name": "provider.uppercase", "sourceTarget": "v1:Discord:account-a:shared-channel" },
+    { "name": "account.missing", "sourceTarget": "v1:discord::shared-channel" },
+    { "name": "channel.missing", "sourceTarget": "v1:discord:account-a:" },
+    { "name": "delimiter.extra", "sourceTarget": "v1:discord:account-a:shared:channel" },
+    { "name": "whitespace", "sourceTarget": "v1:discord:account-a:shared channel" },
+    {
+      "name": "synthetic.non-diagnostic",
+      "sourceTarget": "v1:synthetic:account-a:shared-channel"
+    },
+    { "name": "historical.audit-only", "sourceTarget": "discord:channel:shared-channel" }
+  ]
+}

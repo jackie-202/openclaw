@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-07T11:01:44+00:00",
+    "implementingStartedAt": "2026-08-07T10:53:49+00:00",
+    "taskFile": "plans/tasks/2026-08-07_followup-fresh-peak-7116-plugin-confined-sole-deliberation-final-provider-adapter.md",
+    "taskId": "fresh-peak-7116",
+    "title": "[acceptance-fix] Plugin-confined sole Deliberation final provider adapter: goal-001: Plugin-confined sole Deliberation f"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Plugin-confined sole Deliberation final provider adapter: goal-001: Plugin-confined sole Deliberation f"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-peak-7116-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-peak-7116",
+  "tddRequired": true
+}

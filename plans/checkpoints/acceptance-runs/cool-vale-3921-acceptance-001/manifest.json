@@ -1,0 +1,49 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-09T09:44:52+00:00",
+    "implementingStartedAt": "2026-08-09T09:07:15+00:00",
+    "taskFile": "plans/tasks/2026-08-09_add-isolated-deliberation-plugin-km-listener-spool-integrati.md",
+    "taskId": "cool-vale-3921",
+    "title": "Add isolated Deliberation plugin \u2192 KM listener \u2192 spool integration harness"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "One command starts no full Gateway and contacts no Discord/provider."
+    },
+    {
+      "id": "goal-002",
+      "summary": "The real TypeScript intake serializer/client talks to the real Python HTTP listener and writes the real spool implementation."
+    },
+    {
+      "id": "goal-003",
+      "summary": "The concrete `.252Z` case succeeds and persists `.252000Z` canonically."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Duplicate submission remains one record."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Malformed input fails without spool mutation."
+    },
+    {
+      "id": "goal-006",
+      "summary": "A production-path attempt is rejected before SQLite open; production spool remains byte/mtime unchanged."
+    },
+    {
+      "id": "goal-007",
+      "summary": "Listener process and temporary files are cleaned after pass and fail paths."
+    },
+    {
+      "id": "goal-008",
+      "summary": "Existing Deliberation TypeScript tests and focused KM listener/wire/spool tests remain green."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-vale-3921-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-vale-3921",
+  "tddRequired": true
+}

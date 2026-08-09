@@ -1,0 +1,77 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "Canonical evidence is required that the existing Deliberation TypeScript tests and focused KM listener/wire/spool tests remain green.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-008"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller states that Test Gate was not run and that no canonical Test Gate evidence exists; the supplied checkpoint contains only agent-authored verification prose.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal 008 is an explicit test-artifact goal, and the caller limits its assessment to supplied artifacts plus the canonical Test Gate reference. Without canonical Test Gate evidence, the required unchanged-suite validation is unproven.",
+      "required": "Provide canonical Test Gate evidence for the existing Deliberation TypeScript tests and focused KM listener/wire/spool tests.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "caller-supplied status: not run; no Test Gate evidence exists"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-3921.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "One command starts no full Gateway and contacts no Discord/provider."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "The real TypeScript intake serializer/client talks to the real Python HTTP listener and writes the real spool implementation."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "The concrete `.252Z` case succeeds and persists `.252000Z` canonically."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "Duplicate submission remains one record."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "Malformed input fails without spool mutation."
+    },
+    {
+      "id": "goal-006",
+      "status": "MET",
+      "summary": "A production-path attempt is rejected before SQLite open; production spool remains byte/mtime unchanged."
+    },
+    {
+      "id": "goal-007",
+      "status": "MET",
+      "summary": "Listener process and temporary files are cleaned after pass and fail paths."
+    },
+    {
+      "id": "goal-008",
+      "status": "UNMET",
+      "summary": "Existing Deliberation TypeScript tests and focused KM listener/wire/spool tests remain green."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-vale-3921-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-vale-3921"
+}

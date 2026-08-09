@@ -2,17 +2,29 @@ import { createServer } from "node:http";
 import { describe, expect, it } from "vitest";
 import { runIntakeProducer } from "./intake-producer.js";
 
+const routes = {
+  sources: [{ provider: "discord", accountId: "default", channelId: "1494265174389948538" }],
+  processing: { provider: "discord", accountId: "default", channelId: "processing" },
+} as const;
+
+const eventIdentity = {
+  provider: "discord",
+  eventType: "message",
+  eventKind: "user_request",
+  accountId: "default",
+} as const;
+
 describe("deliberation intake producer", () => {
   it("validates input and reports duplicate replay without exposing content or credentials", async () => {
-    const seen = new Set<string>();
+    const seen = new Map<string, string>();
     const server = createServer((request, response) => {
       let body = "";
       request.setEncoding("utf8");
       request.on("data", (chunk) => (body += chunk));
       request.on("end", () => {
-        const event = JSON.parse(body) as { providerEventId: string };
+        const event = JSON.parse(body) as { providerEventId: string; sourceTarget: string };
         const duplicate = seen.has(event.providerEventId);
-        seen.add(event.providerEventId);
+        seen.set(event.providerEventId, event.sourceTarget);
         response.writeHead(duplicate ? 200 : 201, { "Content-Type": "application/json" });
         response.end(
           JSON.stringify({
@@ -35,7 +47,9 @@ describe("deliberation intake producer", () => {
       }
       const input = {
         endpoint: `http://127.0.0.1:${address.port}`,
+        routes,
         event: {
+          ...eventIdentity,
           channelId: "1494265174389948538",
           messageId: "1534181693647355986",
           senderId: "sender-1",
@@ -59,24 +73,26 @@ describe("deliberation intake producer", () => {
         duplicate: true,
       });
       expect(JSON.stringify([first, second])).not.toMatch(/private message|0123456789abcdef/);
-      expect(seen).toEqual(new Set([input.event.messageId]));
+      expect(seen).toEqual(
+        new Map([[input.event.messageId, "v1:discord:default:1494265174389948538"]]),
+      );
     } finally {
-      await new Promise<void>((resolve, reject) =>
+      await new Promise<void>((resolve, reject) => {
         server.close((error) => {
           if (error) {
             reject(error);
           } else {
             resolve();
           }
-        }),
-      );
+        });
+      });
     }
   });
 
   it("rejects malformed producer input before making a request", async () => {
     await expect(
       runIntakeProducer(
-        { endpoint: "https://km.invalid", event: {} },
+        { endpoint: "https://km.invalid", routes, event: {} },
         {
           OPENCLAW_DELIBERATION_KM_CREDENTIAL: "0123456789abcdef",
         },
@@ -106,7 +122,12 @@ describe("deliberation intake producer", () => {
       const result = await runIntakeProducer(
         {
           endpoint: `http://127.0.0.1:${address.port}`,
+          routes: {
+            sources: [{ provider: "discord", accountId: "default", channelId: "source" }],
+            processing: routes.processing,
+          },
           event: {
+            ...eventIdentity,
             channelId: "source",
             messageId: "message-1",
             senderId: "sender-1",
@@ -126,15 +147,40 @@ describe("deliberation intake producer", () => {
         /private message|private listener|0123456789abcdef/,
       );
     } finally {
-      await new Promise<void>((resolve, reject) =>
+      await new Promise<void>((resolve, reject) => {
         server.close((error) => {
           if (error) {
             reject(error);
           } else {
             resolve();
           }
-        }),
-      );
+        });
+      });
     }
+  });
+
+  it.each([
+    ["processing", { ...eventIdentity, channelId: "processing" }],
+    ["wrong account", { ...eventIdentity, accountId: "other", channelId: "source" }],
+  ])("makes zero KM requests for a %s route", async (_name, identity) => {
+    const result = await runIntakeProducer(
+      {
+        endpoint: "https://km.invalid",
+        routes: {
+          sources: [{ provider: "discord", accountId: "default", channelId: "source" }],
+          processing: routes.processing,
+        },
+        event: {
+          ...identity,
+          messageId: "message-1",
+          senderId: "sender-1",
+          timestamp: "2026-08-04T12:50:19.483Z",
+          content: "private message",
+        },
+      },
+      { OPENCLAW_DELIBERATION_KM_CREDENTIAL: "0123456789abcdef" },
+    );
+
+    expect(result).toEqual({ handled: false, providerEventId: "message-1" });
   });
 });

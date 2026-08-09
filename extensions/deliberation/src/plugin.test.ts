@@ -28,13 +28,13 @@ describe("deliberation plugin boundary", () => {
       }),
     );
 
-    expect(on.mock.calls.map(([name]) => name)).toEqual([
+    expect(on.mock.calls.map((call) => call[0])).toEqual([
       "inbound_claim",
       "before_dispatch",
       "before_tool_call",
       "message_sending",
     ]);
-    expect(on.mock.calls.map(([, , options]) => options)).toEqual([
+    expect(on.mock.calls.map((call) => call[2])).toEqual([
       { priority: 1000 },
       { priority: 1000 },
       { priority: 1000 },
@@ -44,6 +44,12 @@ describe("deliberation plugin boundary", () => {
     expect(registerGatewayMethod.mock.calls.map(([name]) => name)).toEqual([
       "deliberation.status",
       "deliberation.health",
+      "deliberation.history.read",
+    ]);
+    expect(registerGatewayMethod.mock.calls.map((call) => call[2])).toEqual([
+      { scope: "operator.read" },
+      { scope: "operator.read" },
+      { scope: "operator.read" },
     ]);
   });
 });

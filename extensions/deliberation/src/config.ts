@@ -1,5 +1,6 @@
 import { buildSecretInputSchema, type SecretInput } from "openclaw/plugin-sdk/secret-input";
 import { z } from "zod";
+import { encodeSourceIdentity } from "./source-identity.js";
 
 const routeSchema = z
   .object({
@@ -7,7 +8,16 @@ const routeSchema = z
     accountId: z.string().trim().min(1),
     target: z.string().trim().min(1),
   })
-  .strict();
+  .strict()
+  .refine(
+    (route) =>
+      encodeSourceIdentity({
+        provider: route.channel,
+        account: route.accountId,
+        channel: route.target,
+      }) !== undefined,
+    "Deliberation route must use canonical source identity components",
+  );
 
 const secretInputSchema = buildSecretInputSchema().refine(
   (value) => typeof value !== "string" || value.trim().length > 0,

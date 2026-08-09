@@ -1,0 +1,27 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/bright-cove-8682.evidence.md",
+      "provenance": "evidence_repair:bright-cove-8682-acceptance-001-evidence-repair-001",
+      "size": 337
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/bright-cove-8682.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/bright-cove-8682-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "28dacc24ebb3e24a455d839dd6ecff0d24ac9294",
+  "escalationReason": "exact_command_outcome_evidence_unavailable",
+  "finishedAt": "2026-08-09T07:08:06.543443+00:00",
+  "gaps": [],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [],
+  "repairRunId": "bright-cove-8682-acceptance-001-evidence-repair-001",
+  "sourceRunId": "bright-cove-8682-acceptance-001",
+  "startedAt": "2026-08-09T07:08:02.924648+00:00",
+  "status": "escalated"
+}
