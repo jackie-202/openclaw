@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-14T14:45:50+00:00",
+    "implementingStartedAt": "2026-08-14T14:36:38+00:00",
+    "taskFile": "plans/tasks/2026-08-14_followup-warm-reef-5185-acceptance-fix-deliberation-delivery-target-cross-repository.md",
+    "taskId": "warm-reef-5185",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation delivery target: cross-repository integration coverage: goal-001: Deliber"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation delivery target: cross-repository integration coverage: goal-001: Deliber"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-reef-5185-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-reef-5185",
+  "tddRequired": false
+}

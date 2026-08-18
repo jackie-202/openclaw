@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T14:48:22+00:00",
+    "implementingStartedAt": "2026-08-17T14:42:49+00:00",
+    "taskFile": "plans/tasks/2026-08-17_followup-fresh-wave-6142-acceptance-fix-converge-deliberation-contract-provenance-and.md",
+    "taskId": "fresh-wave-6142",
+    "title": "[acceptance-fix] [acceptance-fix] Converge Deliberation contract provenance and rollout readiness: goal-002: The manifes"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Converge Deliberation contract provenance and rollout readiness: goal-002: The manifes"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-wave-6142-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-wave-6142",
+  "tddRequired": false
+}

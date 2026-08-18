@@ -1,9 +1,24 @@
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
+import { isDeepStrictEqual } from "node:util";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
 import { resolveConfiguredSecretInputString } from "openclaw/plugin-sdk/secret-input-runtime";
 import { z } from "zod";
 import type { DeliberationConfig } from "./config.js";
+import type { KmDeliveryTarget } from "./delivery-target.js";
+import { parseSourceIdentity } from "./source-identity.js";
+
+type KmDeliveryEnvelope = Record<string, unknown> & {
+  sourceTarget: string;
+  deliveryTarget: KmWireDeliveryTarget;
+};
+
+export type KmWireDeliveryTarget = {
+  provider: string;
+  account: string;
+  channel: string;
+  threadId?: string;
+};
 
 export type KmControls = {
   "source-intake": boolean;
@@ -18,7 +33,8 @@ export type KmReadyItem = {
   text: string;
   candidateRevision: number;
   updatedAt: string;
-  deliveryEnvelope: Record<string, unknown> & { sourceTarget: string };
+  deliveryEnvelope: KmDeliveryEnvelope;
+  effectiveDeliveryTarget: KmWireDeliveryTarget;
 };
 
 export type KmReservation = {
@@ -31,43 +47,21 @@ export type KmReservation = {
   leaseExpiresAt: string;
   candidateRevision: number;
   reviewedTextHash: string;
-  deliveryEnvelope: Record<string, unknown> & { sourceTarget: string };
+  deliveryEnvelope: KmDeliveryEnvelope;
   deliveryEnvelopeDigest: string;
+  reserveIdempotencyKey: string;
 };
 
 export type KmIntakeBody = {
   provider: string;
   providerEventId: string;
   sourceTarget: string;
+  sourceThreadId: string;
   senderId: string;
   occurredAt: string;
   receivedAt: string;
   content: string;
   eventType?: "message" | "edit" | "delete";
-  debounceSeconds?: number;
-};
-
-export type KmCompletionBody = {
-  recordId: string;
-  attemptId: string;
-  owner: string;
-  leaseToken: string;
-  outcome: "SENT" | "NOT_SENT" | "DELIVERY_UNKNOWN";
-  idempotencyKey: string;
-  providerAttemptId: string;
-  providerReceiptId?: string;
-  providerMessageId?: string;
-  proofReference?: string;
-};
-
-export type KmReconciliationBody = {
-  recordId: string;
-  attemptId: string;
-  outcome: "SENT" | "NOT_SENT";
-  idempotencyKey: string;
-  proofReference: string;
-  providerReceiptId?: string;
-  providerMessageId?: string;
 };
 
 export type KmClient = ReturnType<typeof createKmClient>;
@@ -206,6 +200,36 @@ function requiredString(value: unknown, field: string): string {
   return value;
 }
 
+const DESTINATION_COMPONENT_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$/;
+
+export function parseWireDeliveryTarget(value: unknown, field: string): KmWireDeliveryTarget {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["provider", "account", "channel", "threadId"]) ||
+    !hasRequiredKeys(value, ["provider", "account", "channel"]) ||
+    typeof value.provider !== "string" ||
+    !DESTINATION_COMPONENT_PATTERN.test(value.provider) ||
+    typeof value.account !== "string" ||
+    !DESTINATION_COMPONENT_PATTERN.test(value.account) ||
+    typeof value.channel !== "string" ||
+    !DESTINATION_COMPONENT_PATTERN.test(value.channel) ||
+    (value.threadId !== undefined &&
+      (typeof value.threadId !== "string" || !DESTINATION_COMPONENT_PATTERN.test(value.threadId)))
+  ) {
+    throw new Error(`KM returned an invalid ${field}`);
+  }
+  return value as KmWireDeliveryTarget;
+}
+
+function configuredTargetToWire(target: KmDeliveryTarget): KmWireDeliveryTarget {
+  return {
+    provider: target.provider,
+    account: target.accountId,
+    channel: target.channelId,
+    ...(target.threadId === undefined ? {} : { threadId: target.threadId }),
+  };
+}
+
 function boundedString(value: unknown, field: string, min: number, max: number): string {
   const result = requiredString(value, field);
   if (result.length < min || result.length > max) {
@@ -268,22 +292,62 @@ function parseReadyItem(value: unknown): KmReadyItem {
   ) {
     throw new Error("KM returned an invalid ready item");
   }
+  const recordId = boundedString(value.recordId, "recordId", 1, 256);
+  const deliveryEnvelope = parseDeliveryEnvelope(value.deliveryEnvelope);
+  if (
+    deliveryEnvelope.recordId !== recordId ||
+    deliveryEnvelope.candidateRevision !== value.candidateRevision
+  ) {
+    throw new Error("KM returned a ready envelope for a different record");
+  }
   return {
-    recordId: boundedString(value.recordId, "recordId", 1, 256),
+    recordId,
     version: value.version as number,
     text: boundedString(value.text, "text", 1, 65536),
     candidateRevision: value.candidateRevision as number,
     updatedAt: boundedString(value.updatedAt, "updatedAt", 20, 64),
-    deliveryEnvelope: (() => {
-      if (!isRecord(value.deliveryEnvelope))
-        throw new Error("KM returned an invalid deliveryEnvelope");
-      boundedString(value.deliveryEnvelope.sourceTarget, "deliveryEnvelope.sourceTarget", 1, 512);
-      return value.deliveryEnvelope as Record<string, unknown> & { sourceTarget: string };
-    })(),
+    deliveryEnvelope,
+    effectiveDeliveryTarget: deliveryEnvelope.deliveryTarget,
   };
 }
 
-function parseReservation(value: unknown): KmReservation {
+function parseDeliveryEnvelope(value: unknown): KmDeliveryEnvelope {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "schemaVersion",
+      "sourceTarget",
+      "deliveryTarget",
+      "recordId",
+      "inboundId",
+      "draftAttempt",
+      "draftCorrelationId",
+      "reviewAttempt",
+      "reviewCorrelationId",
+      "candidateRevision",
+      "reviewedTextHash",
+    ]) ||
+    value.schemaVersion !== 1
+  ) {
+    throw new Error("KM returned an invalid deliveryEnvelope");
+  }
+  const sourceTarget = boundedString(value.sourceTarget, "deliveryEnvelope.sourceTarget", 8, 229);
+  if (!parseSourceIdentity(sourceTarget)) {
+    throw new Error("KM returned an invalid deliveryEnvelope.sourceTarget");
+  }
+  parseWireDeliveryTarget(value.deliveryTarget, "deliveryEnvelope.deliveryTarget");
+  boundedString(value.recordId, "deliveryEnvelope.recordId", 1, 256);
+  boundedString(value.inboundId, "deliveryEnvelope.inboundId", 1, 256);
+  integerAtLeast(value.draftAttempt, "deliveryEnvelope.draftAttempt", 1);
+  boundedString(value.draftCorrelationId, "deliveryEnvelope.draftCorrelationId", 1, 256);
+  integerAtLeast(value.reviewAttempt, "deliveryEnvelope.reviewAttempt", 1);
+  boundedString(value.reviewCorrelationId, "deliveryEnvelope.reviewCorrelationId", 1, 256);
+  integerAtLeast(value.candidateRevision, "deliveryEnvelope.candidateRevision", 0);
+  boundedString(value.reviewedTextHash, "deliveryEnvelope.reviewedTextHash", 64, 64);
+  return value as KmDeliveryEnvelope;
+}
+
+function parseReservation(value: unknown): Omit<KmReservation, "reserveIdempotencyKey"> {
   const keys = [
     "recordId",
     "attemptId",
@@ -309,8 +373,18 @@ function parseReservation(value: unknown): KmReservation {
   ) {
     throw new Error("KM returned an invalid reservation");
   }
+  const recordId = boundedString(value.recordId, "recordId", 1, 256);
+  const reviewedTextHash = boundedString(value.reviewedTextHash, "reviewedTextHash", 64, 64);
+  const deliveryEnvelope = parseDeliveryEnvelope(value.deliveryEnvelope);
+  if (
+    deliveryEnvelope.recordId !== recordId ||
+    deliveryEnvelope.candidateRevision !== value.candidateRevision ||
+    deliveryEnvelope.reviewedTextHash !== reviewedTextHash
+  ) {
+    throw new Error("KM returned a reservation envelope for a different record");
+  }
   return {
-    recordId: boundedString(value.recordId, "recordId", 1, 256),
+    recordId,
     attemptId: boundedString(value.attemptId, "attemptId", 1, 256),
     ordinal: value.ordinal as number,
     version: value.version as number,
@@ -318,13 +392,8 @@ function parseReservation(value: unknown): KmReservation {
     leaseToken: boundedString(value.leaseToken, "leaseToken", 1, 256),
     leaseExpiresAt: boundedString(value.leaseExpiresAt, "leaseExpiresAt", 20, 64),
     candidateRevision: value.candidateRevision as number,
-    reviewedTextHash: boundedString(value.reviewedTextHash, "reviewedTextHash", 64, 64),
-    deliveryEnvelope: (() => {
-      if (!isRecord(value.deliveryEnvelope))
-        throw new Error("KM returned an invalid deliveryEnvelope");
-      boundedString(value.deliveryEnvelope.sourceTarget, "deliveryEnvelope.sourceTarget", 1, 512);
-      return value.deliveryEnvelope as Record<string, unknown> & { sourceTarget: string };
-    })(),
+    reviewedTextHash,
+    deliveryEnvelope,
     deliveryEnvelopeDigest: boundedString(
       value.deliveryEnvelopeDigest,
       "deliveryEnvelopeDigest",
@@ -334,7 +403,7 @@ function parseReservation(value: unknown): KmReservation {
   };
 }
 
-function parseDeliveryAttempt(value: unknown): void {
+function parseDeliveryAttempt(value: unknown, expectedRecordId: string): void {
   const keys = [
     "ordinal",
     "attemptId",
@@ -380,9 +449,16 @@ function parseDeliveryAttempt(value: unknown): void {
       "outcome",
       ...nullableProviderStrings,
       "completedAt",
+      "deliveryEnvelope",
+      "deliveryEnvelopeDigest",
+      "reserveIdempotencyKey",
     ]) ||
-    !["SENT", "FAILED", null].includes(value.completionOutcome as string | null) ||
-    !["SENT", "FAILED", null].includes(value.outcome as string | null)
+    !["SENT", "FAILED", "RESERVATION_ABANDONED", "NOT_SENT", "DELIVERY_UNKNOWN", null].includes(
+      value.completionOutcome as string | null,
+    ) ||
+    !["SENT", "FAILED", "RESERVATION_ABANDONED", "NOT_SENT", "DELIVERY_UNKNOWN", null].includes(
+      value.outcome as string | null,
+    )
   ) {
     throw new Error("KM returned an invalid delivery attempt");
   }
@@ -400,6 +476,114 @@ function parseDeliveryAttempt(value: unknown): void {
       (typeof value[field] !== "string" || value[field].length > 64)
     ) {
       throw new Error(`KM returned an invalid ${field}`);
+    }
+  }
+  const envelope =
+    value.deliveryEnvelope === null ? undefined : parseDeliveryEnvelope(value.deliveryEnvelope);
+  if (envelope && envelope.recordId !== expectedRecordId) {
+    throw new Error("KM returned a delivery attempt envelope for a different record");
+  }
+  if (value.deliveryEnvelopeDigest !== null) {
+    boundedString(value.deliveryEnvelopeDigest, "deliveryEnvelopeDigest", 64, 64);
+  }
+  boundedString(value.reserveIdempotencyKey, "reserveIdempotencyKey", 1, 256);
+  const outcome = value.outcome as
+    | "SENT"
+    | "FAILED"
+    | "RESERVATION_ABANDONED"
+    | "NOT_SENT"
+    | "DELIVERY_UNKNOWN"
+    | null;
+  const retainedOutcome =
+    outcome === "RESERVATION_ABANDONED" || outcome === "NOT_SENT" || outcome === "DELIVERY_UNKNOWN";
+  if (
+    !retainedOutcome &&
+    !hasRequiredKeys(value, [
+      "candidateRevision",
+      "reviewedTextHash",
+      "reservedRecordVersion",
+      "owner",
+      "leaseExpiresAt",
+      "reservedAt",
+    ])
+  ) {
+    throw new Error("KM returned an incomplete live delivery attempt");
+  }
+  if (
+    "providerFailureClass" in value &&
+    !["permission", "rejection", "rate_limit", "transport", "timeout", null].includes(
+      value.providerFailureClass as string | null,
+    )
+  ) {
+    throw new Error("KM returned an invalid providerFailureClass");
+  }
+  if (
+    "providerEvidence" in value &&
+    value.providerEvidence !== null &&
+    !providerEvidenceSchema.safeParse(value.providerEvidence).success
+  ) {
+    throw new Error("KM returned invalid provider evidence");
+  }
+  if (
+    "terminalReason" in value &&
+    ![
+      "delivery_sent",
+      "delivery_failed",
+      "delivery_outcome_unknown",
+      "reservation_abandoned",
+      null,
+    ].includes(value.terminalReason as string | null)
+  ) {
+    throw new Error("KM returned an invalid terminalReason");
+  }
+  if (value.completionOutcome !== outcome) {
+    throw new Error("KM returned inconsistent delivery outcomes");
+  }
+  if (outcome === null && (!envelope || value.deliveryEnvelopeDigest === null)) {
+    throw new Error("KM returned an active delivery attempt without durable envelope evidence");
+  }
+  if (outcome === null) {
+    if (value.invokedAt !== null && value.invokedAt !== undefined) {
+      boundedString(value.invokedAt, "invokedAt", 20, 64);
+      boundedString(value.invocationIdempotencyKey, "invocationIdempotencyKey", 1, 256);
+      boundedString(value.providerAttemptId, "providerAttemptId", 1, 256);
+      if (!isDeepStrictEqual(value.attemptedTarget, envelope?.deliveryTarget)) {
+        throw new Error("KM returned an active delivery attempt with mismatched target evidence");
+      }
+    } else if (
+      [value.attemptedTarget, value.invocationIdempotencyKey, value.providerAttemptId].some(
+        (item) => item !== null && item !== undefined,
+      )
+    ) {
+      throw new Error("KM returned an incomplete active invocation marker");
+    }
+  }
+  if (outcome === "SENT" || outcome === "FAILED") {
+    if (!envelope || value.deliveryEnvelopeDigest === null || value.completedAt === null) {
+      throw new Error("KM returned terminal delivery without durable envelope evidence");
+    }
+    const attemptedTarget = parseWireDeliveryTarget(value.attemptedTarget, "attemptedTarget");
+    if (!isDeepStrictEqual(attemptedTarget, envelope.deliveryTarget)) {
+      throw new Error("KM returned terminal delivery with mismatched target evidence");
+    }
+    boundedString(value.invocationIdempotencyKey, "invocationIdempotencyKey", 1, 256);
+    boundedString(value.completionIdempotencyKey, "completionIdempotencyKey", 1, 256);
+    boundedString(value.invokedAt, "invokedAt", 20, 64);
+    boundedString(value.providerAttemptId, "providerAttemptId", 1, 256);
+    const expectedTerminalReason = outcome === "SENT" ? "delivery_sent" : "delivery_failed";
+    if (value.terminalReason !== expectedTerminalReason) {
+      throw new Error("KM returned a terminal reason that contradicts the delivery outcome");
+    }
+    if (outcome === "SENT") {
+      boundedString(value.providerReceiptId, "providerReceiptId", 1, 256);
+      boundedString(value.providerMessageId, "providerMessageId", 1, 256);
+    } else if (
+      !["permission", "rejection", "rate_limit", "transport", "timeout"].includes(
+        value.providerFailureClass as string,
+      ) ||
+      !providerEvidenceSchema.safeParse(value.providerEvidence).success
+    ) {
+      throw new Error("KM returned terminal failure without provider evidence");
     }
   }
   if ("candidateRevision" in value) {
@@ -420,9 +604,131 @@ function parseDeliveryAttempt(value: unknown): void {
   if ("reservedAt" in value) {
     boundedString(value.reservedAt, "reservedAt", 20, 64);
   }
+  if (
+    envelope &&
+    (("candidateRevision" in value && value.candidateRevision !== envelope.candidateRevision) ||
+      ("reviewedTextHash" in value && value.reviewedTextHash !== envelope.reviewedTextHash))
+  ) {
+    throw new Error("KM returned delivery attempt evidence for a different reviewed candidate");
+  }
 }
 
 const nullableString = z.string().nullable();
+const providerEvidenceSchema = z
+  .object({
+    code: z.string().optional(),
+    status: z.number().int().optional(),
+    retryAfterSeconds: z.number().int().optional(),
+    detail: z.string().optional(),
+  })
+  .strict();
+const listenerModuleSchema = z.union([
+  z.object({ status: z.literal("ok"), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).strict(),
+  z.object({ status: z.literal("unavailable"), sha256: z.null() }).strict(),
+]);
+const healthMetadataSchema = z
+  .object({
+    listener: z
+      .object({
+        protocolVersion: z.literal(1),
+        startedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/),
+        sourceIdentity: z
+          .object({
+            status: z.enum(["ok", "unavailable"]),
+            modules: z
+              .object({
+                "lib/deliberation_source_identity.py": listenerModuleSchema,
+                "lib/deliberation_wire.py": listenerModuleSchema,
+                "lib/deliberation_spool_contracts.py": listenerModuleSchema,
+              })
+              .strict(),
+          })
+          .strict(),
+      })
+      .strict(),
+    runner: z
+      .object({
+        owner: z.literal("deliberation-v2-cron"),
+        buildId: z.literal("deliberation-v2-runtime-v1"),
+        installation: z
+          .object({
+            status: z.enum(["ok", "missing", "drift", "duplicate", "unknown"]),
+            candidateCount: z.number().int().min(0).max(100),
+            liveId: z.string().max(128).optional(),
+            drift: z.array(z.string().max(64)).max(16).optional(),
+            code: z.string().max(64).optional(),
+          })
+          .strict(),
+      })
+      .strict(),
+    runtime: z
+      .object({
+        queueCounts: z
+          .object({
+            dueClosure: z.number().int().min(0),
+            readyDraft: z.number().int().min(0),
+            processingPending: z.number().int().min(0),
+            reviewReady: z.number().int().min(0),
+            retry: z.number().int().min(0),
+            readyToSend: z.number().int().min(0),
+            deliveryInFlight: z.number().int().min(0),
+          })
+          .strict(),
+        oldestReadyAgeSeconds: z.number().int().min(0).nullable(),
+        activeSlot: z
+          .object({
+            recordId: z.string().max(128),
+            correlationId: z.string().max(128),
+            phase: z.string().max(32),
+            acknowledgedAt: nullableString,
+            resultDeadline: nullableString,
+            ageSeconds: z.number().int().min(0),
+            deadlineInSeconds: z.number().int().nullable(),
+          })
+          .strict()
+          .nullable(),
+        timeoutCount: z.number().int().min(0),
+        lateResultCount: z.number().int().min(0),
+        lastPass: z
+          .object({
+            schemaVersion: z.literal(1),
+            startedAt: z.string(),
+            completedAt: z.string(),
+            durationMs: z.number().int().min(0).max(90_000),
+            owner: z.string().max(128),
+            buildId: z.string().max(64),
+            phases: z
+              .object({
+                reconciled: z.number().int().min(0),
+                closed: z.number().int().min(0),
+                selected: z.number().int().min(0).max(1),
+              })
+              .strict(),
+            transition: z
+              .object({
+                recordId: z.string().max(128),
+                state: z.string().max(64),
+                code: z.string().max(64),
+              })
+              .strict()
+              .nullable(),
+            hasMore: z.boolean(),
+            stopReason: z.enum([
+              "idle",
+              "completed",
+              "processing_pending",
+              "reconciliation_budget",
+              "closure_budget",
+              "selection_budget",
+              "monotonic_guard",
+            ]),
+          })
+          .strict()
+          .nullable(),
+      })
+      .strict(),
+  })
+  .strict();
 const messageSchema = z
   .object({
     inboundId: z.string(),
@@ -446,7 +752,11 @@ const draftingSchema = z
     payloadPath: z.string().optional(),
     resultPath: z.string().optional(),
     outcome: nullableString.optional(),
-    diagnostic: z.object({}).strict().nullable().optional(),
+    diagnostic: z
+      .object({ code: z.string().min(1).max(64), message: z.string().min(1).max(512) })
+      .strict()
+      .nullable()
+      .optional(),
     blocked: z.boolean().optional(),
     result: z
       .object({ decision: z.string().optional(), draft: z.string().optional() })
@@ -514,6 +824,7 @@ const recordSchema = z
     recordId: z.string().min(1).max(256),
     inboundId: z.string().optional(),
     sourceTarget: z.string().optional(),
+    sourceThreadId: z.string().min(1).max(96).optional(),
     messages: z.array(messageSchema).optional(),
     openedAt: z.string().optional(),
     updatedAt: z.string().optional(),
@@ -531,7 +842,7 @@ const recordSchema = z
     rewriteCount: z.number().int().min(0).optional(),
     retryStage: nullableString.optional(),
     retryDeadline: nullableString.optional(),
-    terminalReason: nullableString.optional(),
+    terminalReason: z.string().max(512).nullable().optional(),
     history: z.array(historyEntrySchema).optional(),
     valid: z.boolean().optional(),
     validationError: z.string().max(512).optional(),
@@ -553,7 +864,8 @@ function parseRecordResponse(value: unknown): Record<string, unknown> {
   ) {
     throw new Error("KM returned an invalid record response");
   }
-  record.delivery.attempts.forEach(parseDeliveryAttempt);
+  const recordId = boundedString(record.recordId, "recordId", 1, 256);
+  record.delivery.attempts.forEach((attempt) => parseDeliveryAttempt(attempt, recordId));
   return record;
 }
 
@@ -566,6 +878,9 @@ export function createKmClient(params: {
   // Node fetch injects Accept-Language, which is outside KM's closed transport-header contract.
   const fetchImpl = params.fetchImpl ?? (nodeFetch as typeof fetch);
   const endpoint = params.config.km.endpoint.replace(/\/$/, "");
+  const configuredDeliveryTarget = params.config.deliveryTarget
+    ? configuredTargetToWire(params.config.deliveryTarget)
+    : undefined;
 
   async function request(path: string, init: RequestInit = {}): Promise<KmResponse> {
     let credentialResolution;
@@ -627,16 +942,34 @@ export function createKmClient(params: {
       return parseResponse(await request("/deliberation/v1/health", { signal }), (value) => {
         if (
           !isRecord(value) ||
-          !hasExactKeys(value, ["protocolVersion", "status", "controls"]) ||
-          value.status !== "ok"
+          !hasExactKeys(value, [
+            "protocolVersion",
+            "status",
+            "listener",
+            "controls",
+            "runner",
+            "runtime",
+          ]) ||
+          (value.status !== "ok" && value.status !== "degraded") ||
+          !isRecord(value.listener) ||
+          !isRecord(value.runner) ||
+          !isRecord(value.runtime) ||
+          !healthMetadataSchema.safeParse({
+            listener: value.listener,
+            runner: value.runner,
+            runtime: value.runtime,
+          }).success
         ) {
           throw new Error("KM returned an invalid health response");
         }
         assertProtocolVersion(value);
         return {
           protocolVersion: 1 as const,
-          status: "ok" as const,
+          status: value.status,
           controls: parseControls(value.controls),
+          listener: value.listener,
+          runner: value.runner,
+          runtime: value.runtime,
         };
       });
     },
@@ -669,11 +1002,26 @@ export function createKmClient(params: {
             throw new Error("KM returned an invalid ready response");
           }
           assertProtocolVersion(value);
-          return { items: value.items.map(parseReadyItem), nextCursor: value.nextCursor };
+          return {
+            items: value.items.map((readyItem) => {
+              const item = parseReadyItem(readyItem);
+              return {
+                ...item,
+                effectiveDeliveryTarget: configuredDeliveryTarget ?? item.effectiveDeliveryTarget,
+              };
+            }),
+            nextCursor: value.nextCursor,
+          };
         },
       );
     },
     async intake(event: KmIntakeBody, signal?: AbortSignal) {
+      if ("deliveryTarget" in event) {
+        throw new Error("KM intake deliveryTarget is operator-controlled");
+      }
+      if ("debounceSeconds" in event) {
+        throw new Error("KM intake does not accept debounceSeconds overrides");
+      }
       const response = await request("/deliberation/v1/intake", {
         method: "POST",
         body: JSON.stringify(event),
@@ -696,13 +1044,15 @@ export function createKmClient(params: {
       });
     },
     async reserve(item: KmReadyItem, owner: string, signal?: AbortSignal) {
+      const reserveIdempotencyKey = `reserve:${item.recordId}:${item.version}`;
       const response = await request("/deliberation/v1/reservations", {
         method: "POST",
         body: JSON.stringify({
           recordId: item.recordId,
           expectedVersion: item.version,
           owner,
-          idempotencyKey: `reserve:${item.recordId}:${item.version}`,
+          idempotencyKey: reserveIdempotencyKey,
+          ...(configuredDeliveryTarget ? { deliveryTarget: configuredDeliveryTarget } : {}),
           leaseSeconds: 60,
         }),
         signal,
@@ -722,15 +1072,29 @@ export function createKmClient(params: {
           throw new Error("KM returned an invalid reservation response");
         }
         assertProtocolVersion(responseValue);
+        const reservation = parseReservation(responseValue.reservation);
+        const { deliveryTarget: readyTarget, ...readyProvenance } = item.deliveryEnvelope;
+        const { deliveryTarget: reservedTarget, ...reservedProvenance } =
+          reservation.deliveryEnvelope;
+        const expectedTarget = configuredDeliveryTarget ?? readyTarget;
+        if (
+          reservation.recordId !== item.recordId ||
+          reservation.owner !== owner ||
+          reservation.version !== item.version + 1 ||
+          !isDeepStrictEqual(reservedProvenance, readyProvenance) ||
+          !isDeepStrictEqual(reservedTarget, expectedTarget)
+        ) {
+          throw new Error("KM returned a reservation that differs from the request");
+        }
         return {
           outcome: "reserved" as const,
-          reservation: parseReservation(responseValue.reservation),
+          reservation: { ...reservation, reserveIdempotencyKey },
         };
       });
     },
     async invoke(
       reservation: KmReservation,
-      attemptedTarget: string,
+      attemptedTarget: KmWireDeliveryTarget,
       providerAttemptId: string,
       signal?: AbortSignal,
     ) {
@@ -750,24 +1114,68 @@ export function createKmClient(params: {
           }),
           signal,
         }),
-        (value) => value,
+        (value) => {
+          if (
+            !isRecord(value) ||
+            !hasExactKeys(value, ["protocolVersion", "invocation"]) ||
+            !isRecord(value.invocation) ||
+            !hasExactKeys(value.invocation, [
+              "recordId",
+              "attemptId",
+              "deliveryEnvelope",
+              "attemptedTarget",
+              "invocationIdempotencyKey",
+              "providerAttemptId",
+              "invokedAt",
+            ])
+          ) {
+            throw new Error("KM returned an invalid invocation response");
+          }
+          assertProtocolVersion(value);
+          const invocation = value.invocation;
+          const envelope = parseDeliveryEnvelope(invocation.deliveryEnvelope);
+          const invocationTarget = parseWireDeliveryTarget(
+            invocation.attemptedTarget,
+            "attemptedTarget",
+          );
+          const invocationKey = boundedString(
+            invocation.invocationIdempotencyKey,
+            "invocationIdempotencyKey",
+            1,
+            256,
+          );
+          if (
+            boundedString(invocation.recordId, "recordId", 1, 256) !== reservation.recordId ||
+            boundedString(invocation.attemptId, "attemptId", 1, 256) !== reservation.attemptId ||
+            !isDeepStrictEqual(invocationTarget, attemptedTarget) ||
+            !isDeepStrictEqual(invocationTarget, envelope.deliveryTarget) ||
+            !isDeepStrictEqual(envelope, reservation.deliveryEnvelope) ||
+            invocationKey !== `invoke:${reservation.attemptId}` ||
+            boundedString(invocation.providerAttemptId, "providerAttemptId", 1, 256) !==
+              providerAttemptId
+          ) {
+            throw new Error("KM returned mismatched invocation evidence");
+          }
+          boundedString(invocation.invokedAt, "invokedAt", 20, 64);
+          return invocation;
+        },
       );
     },
     async completeDelivery(
-      params: {
+      delivery: {
         reservation: KmReservation;
-        attemptedTarget: string;
+        attemptedTarget: KmWireDeliveryTarget;
         providerAttemptId: string;
         outcome: "SENT" | "FAILED";
         providerReceiptId?: string;
         providerMessageId?: string;
         providerFailureClass?: string;
-        providerEvidence?: Record<string, string>;
+        providerEvidence?: Record<string, string | number>;
       },
       signal?: AbortSignal,
     ) {
-      const { reservation } = params;
-      return parseResponse(
+      const { reservation } = delivery;
+      const record = parseResponse(
         await request("/deliberation/v1/completions", {
           method: "POST",
           body: JSON.stringify({
@@ -777,42 +1185,64 @@ export function createKmClient(params: {
             leaseToken: reservation.leaseToken,
             deliveryEnvelope: reservation.deliveryEnvelope,
             deliveryEnvelopeDigest: reservation.deliveryEnvelopeDigest,
-            attemptedTarget: params.attemptedTarget,
+            attemptedTarget: delivery.attemptedTarget,
             invocationIdempotencyKey: `invoke:${reservation.attemptId}`,
-            outcome: params.outcome,
+            outcome: delivery.outcome,
             idempotencyKey: `complete:${reservation.attemptId}`,
-            providerAttemptId: params.providerAttemptId,
-            ...(params.providerReceiptId ? { providerReceiptId: params.providerReceiptId } : {}),
-            ...(params.providerMessageId ? { providerMessageId: params.providerMessageId } : {}),
-            ...(params.providerFailureClass
-              ? { providerFailureClass: params.providerFailureClass }
+            providerAttemptId: delivery.providerAttemptId,
+            ...(delivery.providerReceiptId
+              ? { providerReceiptId: delivery.providerReceiptId }
               : {}),
-            ...(params.providerEvidence ? { providerEvidence: params.providerEvidence } : {}),
+            ...(delivery.providerMessageId
+              ? { providerMessageId: delivery.providerMessageId }
+              : {}),
+            ...(delivery.providerFailureClass
+              ? { providerFailureClass: delivery.providerFailureClass }
+              : {}),
+            ...(delivery.providerEvidence ? { providerEvidence: delivery.providerEvidence } : {}),
           }),
           signal,
         }),
         parseRecordResponse,
       );
-    },
-    async complete(completion: KmCompletionBody, signal?: AbortSignal) {
-      return parseResponse(
-        await request("/deliberation/v1/completions", {
-          method: "POST",
-          body: JSON.stringify(completion),
-          signal,
-        }),
-        parseRecordResponse,
-      );
-    },
-    async reconcile(reconciliation: KmReconciliationBody, signal?: AbortSignal) {
-      return parseResponse(
-        await request("/deliberation/v1/reconciliations", {
-          method: "POST",
-          body: JSON.stringify(reconciliation),
-          signal,
-        }),
-        parseRecordResponse,
-      );
+      const attempts = (record.delivery as { attempts: Array<Record<string, unknown>> }).attempts;
+      const attempt = attempts.find((item) => item.attemptId === reservation.attemptId);
+      const expectedCompletionKey = `complete:${reservation.attemptId}`;
+      if (
+        record.recordId !== reservation.recordId ||
+        record.state !== delivery.outcome ||
+        !attempt ||
+        attempt.outcome !== delivery.outcome ||
+        attempt.completionOutcome !== delivery.outcome ||
+        !isDeepStrictEqual(attempt.deliveryEnvelope, reservation.deliveryEnvelope) ||
+        attempt.deliveryEnvelopeDigest !== reservation.deliveryEnvelopeDigest ||
+        !isDeepStrictEqual(attempt.attemptedTarget, delivery.attemptedTarget) ||
+        attempt.providerAttemptId !== delivery.providerAttemptId ||
+        attempt.owner !== reservation.owner ||
+        attempt.leaseExpiresAt !== reservation.leaseExpiresAt ||
+        attempt.candidateRevision !== reservation.candidateRevision ||
+        attempt.reviewedTextHash !== reservation.reviewedTextHash ||
+        attempt.reserveIdempotencyKey !== reservation.reserveIdempotencyKey ||
+        attempt.invocationIdempotencyKey !== `invoke:${reservation.attemptId}` ||
+        attempt.completionIdempotencyKey !== expectedCompletionKey
+      ) {
+        throw new Error("KM returned mismatched completion evidence");
+      }
+      if (
+        delivery.outcome === "SENT" &&
+        (attempt.providerReceiptId !== delivery.providerReceiptId ||
+          attempt.providerMessageId !== delivery.providerMessageId)
+      ) {
+        throw new Error("KM returned mismatched provider receipt evidence");
+      }
+      if (
+        delivery.outcome === "FAILED" &&
+        (attempt.providerFailureClass !== delivery.providerFailureClass ||
+          !isDeepStrictEqual(attempt.providerEvidence, delivery.providerEvidence))
+      ) {
+        throw new Error("KM returned mismatched provider failure evidence");
+      }
+      return record;
     },
   };
 }

@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-18T08:27:25+00:00",
+    "implementingStartedAt": "2026-08-18T07:53:16+00:00",
+    "taskFile": "plans/tasks/2026-08-17_reconcile-openclaw-with-provider-neutral-deliberation-owner-contract.md",
+    "taskId": "cool-vale-1698",
+    "title": "Reconcile OpenClaw with provider-neutral Deliberation owner contract"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Generic OpenClaw wire matches the provider-neutral KM owner semantics."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Concrete provider rules remain in OpenClaw-owned overlays/adapters."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Canonical cross-repository verifier passes 7/7."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Focused Deliberation contract, overlay, adapter, drafting-continuation, and delivery-fence tests pass."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Provenance contains the exact current owner revision and hashes only after semantic verification."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Final note records exact commands/results and states the remaining rollout: host deploy verifier \u2192 full gateway restart \u2192 live smoke."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-vale-1698-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-vale-1698",
+  "tddRequired": true
+}

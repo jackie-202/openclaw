@@ -1,0 +1,46 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required Slack-origin to canonical Discord-destination delivery implementation is absent from the supplied review diff.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff shows changelog, documentation, glossary, SDK documentation, and KM contract-fixture changes, but it does not include the Deliberation final adapter, KM client, plugin runtime, configuration, or focused behavioral test implementation that would establish destination-selected Discord account/channel/thread dispatch and exactly one send. The completion checkpoint and RED/GREEN stdout assert success but do not substitute for reviewable implementation material.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Without the required production changes in the supplied review material, Acceptance cannot establish that a Slack-origin ready item is routed from its canonical structured destination to the exact Discord account, channel, and thread exactly once.",
+      "required": "Supply the task-scoped production and focused test changes implementing structured destination lifecycle fencing and one exact Discord send for a Slack-origin ready item.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "task-scoped diff: extensions/deliberation production implementation absent"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-16_wild-cove-2698_acceptance-fix-deliberation-slack-to-discord-pilot-delivery.md:Implementation"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-cove-2698.checkpoint.md:Context for resume"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation Slack-to-Discord pilot delivery: goal-001: A Slack-origin ready item with"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "wild-cove-2698-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "wild-cove-2698"
+}

@@ -1,0 +1,93 @@
+{
+  "findings": [
+    {
+      "claim": "The production plugin lifecycle wiring required to consume READY_TO_SEND is not delivered in the supplied task-scoped implementation material.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff changes Deliberation documentation and a contract fixture, but supplies no change to extensions/deliberation/index.ts or extensions/deliberation/src/final-adapter.ts that registers and owns the bounded final-delivery service.",
+      "rationale": "The goal requires a live plugin-owned runtime trigger with one registered service, non-overlap, and cleanup; tests and documentation cannot substitute for the absent production wiring in the reviewed material.",
+      "required": "Supply the production runtime changes that instantiate the existing final adapter through the Discord outbound boundary and register exactly one bounded lifecycle-owned service with stop/reload cleanup.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/index.ts"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/final-adapter.ts"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-13_swift-fork-0553_wire-the-existing-deliberation-final-sender-into-the-live.md"
+        }
+      ]
+    },
+    {
+      "claim": "The explicitly required final task evidence is absent from the supplied artifacts.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The TDD proof records only the focused two-file test command, while the checkpoint summarizes broader verification without recording the required exact commands/results or a final evidence section identifying extensions/deliberation/index.ts as the production sender owner.",
+      "rationale": "Acceptance criterion 7 explicitly requires final task evidence naming the production runtime entrypoint and recording verification commands and results; the supplied checkpoint summary is not that evidence.",
+      "required": "Provide final task evidence that identifies the production sender owner and records the exact focused tests, extension typecheck, smallest build gate, and their results.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-fork-0553.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-fork-0553.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-13_wire-the-existing-deliberation-final-sender-into-the-live-pl.md"
+        }
+      ]
+    },
+    {
+      "claim": "The plan-required task-specific learning has not been saved.",
+      "crossCutting": false,
+      "findingType": "required_learning_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The supplied checkpoint leaves Step 8, Save implementation learnings, unchecked and states that the mandatory save-learning step remains.",
+      "rationale": "The caller-supplied implementation plan makes save-learning the final mandatory action, and the supplied provenance explicitly shows it incomplete.",
+      "required": "Save the task-specific lifecycle/provider-boundary learning with credible provenance as required by the plan.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-fork-0553.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-13_swift-fork-0553_wire-the-existing-deliberation-final-sender-into-the-live.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Wire the existing Deliberation final sender into the live plugin runtime"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-fork-0553-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "swift-fork-0553"
+}

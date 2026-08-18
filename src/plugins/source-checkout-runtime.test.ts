@@ -45,7 +45,7 @@ describe("source checkout bundled plugin runtime", () => {
     expect(tokenjuice?.rootDir).toContain(expectedRoot);
   });
 
-  it("loads Deliberation with exactly four hooks", () => {
+  it("loads Deliberation with exactly four hooks and one final-delivery service", () => {
     const registry = loadOpenClawPlugins({
       cache: false,
       onlyPluginIds: ["deliberation"],
@@ -83,9 +83,11 @@ describe("source checkout bundled plugin runtime", () => {
         .filter((hook) => hook.pluginId === "deliberation")
         .map((hook) => hook.hookName),
     ).toEqual(["inbound_claim", "before_dispatch", "before_tool_call", "message_sending"]);
-    expect(registry.services.filter((service) => service.pluginId === "deliberation")).toHaveLength(
-      0,
-    );
+    expect(
+      registry.services
+        .filter((service) => service.pluginId === "deliberation")
+        .map((service) => service.service.id),
+    ).toEqual(["deliberation-final-delivery"]);
   });
 
   it("routes a realistic Discord source event through loader-backed Deliberation hooks", async () => {

@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Wire the existing Deliberation final sender into the live plugin runtime: goal-001: Wire the existing D"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-dune-6096-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-dune-6096"
+}

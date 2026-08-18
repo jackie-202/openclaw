@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Reconcile OpenClaw with provider-neutral Deliberation owner contract: goal-005: Provenance contains the"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-vale-9292-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "warm-vale-9292"
+}

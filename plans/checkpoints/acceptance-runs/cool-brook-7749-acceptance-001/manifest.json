@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T10:19:55+00:00",
+    "implementingStartedAt": "2026-08-17T10:14:18+00:00",
+    "taskFile": "plans/tasks/2026-08-17_followup-cool-brook-7749-acceptance-fix-pin-deliberation-draft-continuations-to-the-c.md",
+    "taskId": "cool-brook-7749",
+    "title": "[acceptance-fix] [acceptance-fix] Pin Deliberation draft continuations to the current attempt payload: goal-001: Pin Del"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Pin Deliberation draft continuations to the current attempt payload: goal-001: Pin Del"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-brook-7749-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-brook-7749",
+  "tddRequired": false
+}

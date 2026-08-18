@@ -1,0 +1,16 @@
+{
+  "run_id": "2026-08-13T080000Z-openclaw-fork",
+  "time": "2026-08-13T08:18:00Z",
+  "project": "openclaw-fork",
+  "question": "Do iOS signing configuration and release metadata have competing authorities?",
+  "verified_evidence": [
+    "projects.yaml enables openclaw-fork with safe relative outputDir .architecture-reviews.",
+    "The last 30 ledger entries contain no failed or timeout run with a continuable checkpoint; openclaw-fork was last reviewed 2026-08-03.",
+    "apps/ios/project.yml assigns apps/ios/Signing.xcconfig to five target groups and apps/ios/Config/Signing.xcconfig to two target groups.",
+    "The two tracked signing files disagree on signing mode (Manual vs Automatic), team-variable model, provisioning defaults, and available bundle/profile keys while both advertise shared/default signing ownership.",
+    "Release metadata has a root authority and generated sync/check tooling: scripts/sync-plugin-versions.ts reads package.json.version, and release-preflight checks plugin, schema, channel metadata, docs and SDK artifacts. Platform version files remain separate intentional consumers checked by dedicated commands; no concrete harmful divergence was observed."
+  ],
+  "current_conclusion": "Verified finding: iOS signing defaults are split across two independently mutable config authorities selected per target. Release version multiplicity was rejected as a finding because explicit generators/checkers establish ownership and no drift was demonstrated.",
+  "next_trace": "If resumed, inspect git provenance around e60c5105607 and project target requirements to design a single base signing config plus narrowly named release-only override, proving watch/share entitlements do not require the current authority split.",
+  "continuable": false
+}

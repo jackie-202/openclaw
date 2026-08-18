@@ -1,0 +1,39 @@
+{
+  "findings": [
+    {
+      "claim": "Repository-local KM validator acceptance of the provenance manifest is not established.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied canonical Test Gate artifact records exit code 1 because the KM root lacked scripts/deliberation-v2-listener.py; requireKmRoot() stopped before provenance owner-file hash checks or integration assertions. The Test Gate status is not run.",
+      "rationale": "The evaluated goal requires the manifest to be accepted by the repository-local validator. A blocked prerequisite and absence of provenance failures do not demonstrate validator acceptance.",
+      "required": "Supply a canonical successful KM integration validator/Test Gate artifact from an approved KM checkout, including the command result and summary proving the manifest passed provenance validation.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-wave-6142.test-gate.md:11-25"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-17_fresh-wave-6142_acceptance-fix-converge-deliberation-contract-provenance.md:25-28"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Converge Deliberation contract provenance and rollout readiness: goal-002: The manifes"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-wave-6142-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "fresh-wave-6142"
+}

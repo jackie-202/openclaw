@@ -1,0 +1,51 @@
+{
+  "findings": [
+    {
+      "claim": "The required historical pre-implementation RED evidence for the default-route cross-repository scenario was not supplied.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The quick-crag-3748 evidence lists only intake-producer RED/GREEN commands and reports command_lines_truncated; its proof covers producer serialization. The swift-reef-8917 integration RED already has 'defaults final delivery to source A' passing and fails only the override route. The warm-reef-5185 checkpoint explicitly records historical_default_route_red_unavailable and no warm-reef RED/GREEN proof was supplied.",
+      "rationale": "The canonical acceptance-fix goal requires credible historical pre-implementation failure evidence for the default-route integration scenario linked to GREEN evidence. The supplied artifacts cannot establish that provenance, and a later run or reconstructed RED would not satisfy the requirement.",
+      "required": "Supply a qualifying archived pre-implementation default-route integration RED with exact command, timestamp, exit status, failing assertion, and provenance, linked to corresponding GREEN evidence; otherwise the goal remains unmet.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-crag-3748.evidence.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-crag-3748.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-8917.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-reef-5185.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-14_followup-warm-reef-5185-acceptance-fix-deliberation-delivery-target-cross-repository.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation delivery target: cross-repository integration coverage: goal-001: Deliber"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-reef-5185-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-reef-5185"
+}

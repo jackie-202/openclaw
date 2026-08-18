@@ -1,0 +1,41 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Semantic comparison is recorded separately from byte/hash comparison."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "`provenance.json` contains the current exact owner revision and current exact owner file hashes."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "`pnpm test:deliberation:km-integration` passes all seven tests against the explicitly approved KM root."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "Focused contract/provenance tests pass."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "No real external provider or transport is called."
+    },
+    {
+      "id": "goal-006",
+      "status": "MET",
+      "summary": "Final note explicitly says the remaining rollout sequence is: host deploy verifier \u2192 full gateway restart \u2192 live smoke."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-crag-7527-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-crag-7527"
+}

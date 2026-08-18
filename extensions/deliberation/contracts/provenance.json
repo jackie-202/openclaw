@@ -1,21 +1,24 @@
 {
-  "acceptedBy": "swift-vale-2322 canonical source identity acceptance",
-  "acceptedAt": "2026-08-06",
-  "acceptedRevision": "401ababdd3",
-  "scope": "KM-owned Deliberation v2 wire contract, source identity grammar, and fixtures",
+  "acceptedBy": "cool-vale-1698 provider-neutral owner reconciliation",
+  "acceptedAt": "2026-08-18",
+  "acceptedRevision": "872436aad992826b5d501597e265e8c2b94e6f78",
+  "evidence": "semantic deep comparison with the immutable KM owner files and passing canonical seven-test cross-repository verification",
+  "scope": "KM-owned Deliberation v2 semantic mirror plus a separate OpenClaw provider-adapter overlay",
   "sources": {
-    "km-wire-v1.json": "km-system/contracts/deliberation-v2/v1/contract.json",
-    "cutover-controls-v1.json": "km-system/contracts/deliberation-v2/v1/fixtures.json",
+    "km-wire-v1.json": "proposal-20260814-203937-cbe1dc stable owner-contract handoff",
+    "cutover-controls-v1.json": "proposal-20260814-203937-cbe1dc stable owner-fixture handoff",
+    "openclaw-overlay-v1.json": "OpenClaw delivery-target adapter constraints",
     "source-identity-v1.json": "km-system/contracts/deliberation-v2/v1/contract.json#/sourceIdentity",
     "source-identity-fixtures-v1.json": "km-system/contracts/deliberation-v2/v1/fixtures.json#/identityVectors"
   },
   "ownerFiles": {
-    "km-system/contracts/deliberation-v2/v1/contract.json": "c5ea7d1514b8834368d90bed51f0f9f99772b0b59ab885a4a67bccb78775cbd5",
-    "km-system/contracts/deliberation-v2/v1/fixtures.json": "afe531da034209a8a329b6af24d40381cc06cc0a93406ca274c99564eb4d5d34"
+    "km-system/contracts/deliberation-v2/v1/contract.json": "d3c0771d5c1d63fecc18cb93e381136fa8af3054c96cbcdebb95b7785a46dc5f",
+    "km-system/contracts/deliberation-v2/v1/fixtures.json": "a399132355c792e3861a3e8e2d8e2542e0ccb517231e817acf8afe3c54cca4b7"
   },
   "files": {
-    "km-wire-v1.json": "731432653ab298c1fbf375fe34e234fe7dc8818df4a1fb4c878e797dc1275e3f",
-    "cutover-controls-v1.json": "1f62540db97714cfe2cca72b25f2e2c7bd50200284557595991f8c357c85b9c1",
+    "km-wire-v1.json": "dd1a15fb6a17a4ebd71535b52680562b7ca397d6c7c3c42319f96a2f2e2dfd0b",
+    "cutover-controls-v1.json": "6ba0a60a2a287254e2f6154129bced7e81688333a5bb5924e30d222932db079b",
+    "openclaw-overlay-v1.json": "458f148e8d58d7e0b61aa114a960bc3cadc1d250e25f029079e2f5fc214e9eac",
     "source-identity-v1.json": "252f03184601f2f2fa8752c5df1b4bb7dd4a20b90bd47c932eee09b9c0bc3af6",
     "source-identity-fixtures-v1.json": "8e4f0373b5d986cb8098fbc7bf3565cfd3f88ef9b83e7189f4bbb53299a427fb"
   }

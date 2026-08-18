@@ -24,6 +24,14 @@ async function loadFixtures(): Promise<IdentityFixtures> {
 }
 
 describe("Deliberation source identity", () => {
+  it("keeps Slack provenance channel-scoped without a thread component", () => {
+    const identity = { provider: "slack", account: "workspace-a", channel: "C123" };
+
+    expect(encodeSourceIdentity(identity)).toBe("v1:slack:workspace-a:C123");
+    expect(parseSourceIdentity("v1:slack:workspace-a:C123")).toEqual(identity);
+    expect(parseSourceIdentity("v1:slack:workspace-a:C123:1723640000.000100")).toBeUndefined();
+  });
+
   it("round-trips every accepted KM-owned fixture byte-for-byte", async () => {
     const fixtures = await loadFixtures();
     for (const fixture of fixtures.positive) {

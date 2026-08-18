@@ -1,0 +1,62 @@
+{
+  "findings": [
+    {
+      "claim": "The required cross-repository final-delivery coverage does not complete the override route and its dependent provenance, durable-fencing, and fake-provider assertions end to end.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied completion checkpoint states that only the default real-listener route passes and that full cross-repository verification is blocked because the isolated KM listener rejects deliveryTarget with HTTP 400 SCHEMA_INVALID.",
+      "rationale": "The task requires both default and override routing through the real isolated listener/spool; rejection of the configured target before that flow completes leaves a required behavior absent regardless of Test Gate execution.",
+      "required": "Provide a contract-compatible isolated KM listener/spool path where the override route reaches ready, reservation, invocation, fake-provider delivery, completion, provenance checks, and mismatch fencing as specified.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-14_deliberation-delivery-target-cross-repo-integration.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-crag-3748.checkpoint.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof does not demonstrate the planned cross-repository routing behavior.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied RED/GREEN artifact runs only extensions/deliberation/scripts/intake-producer.test.ts; its RED is an invalid producer input and its GREEN proves optional target serialization, while the plan requires the first RED/GREEN cycle in km-listener.cross-repo.ts for default reviewed delivery through the real listener, KM client, and final adapter.",
+      "rationale": "A RED/GREEN cycle for producer schema forwarding is not proof that the task's cross-repository integration behavior was test-driven, and the supplied artifact contains no RED/GREEN evidence for that required default-route integration cycle.",
+      "required": "Supply genuine RED and GREEN evidence for the cross-repository default-route scenario, using the planned integration harness and showing failure before implementation and success after implementation.",
+      "sources": [
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-14_quick-crag-3748_deliberation-delivery-target-cross-repository-integration.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-crag-3748.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Deliberation delivery target: cross-repository integration coverage"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-crag-3748-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-crag-3748"
+}

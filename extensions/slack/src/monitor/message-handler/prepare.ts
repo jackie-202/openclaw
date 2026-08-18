@@ -1255,12 +1255,13 @@ export async function prepareSlackMessage(params: {
     directThreadRoutedToDmSession && !threadHistoryBody ? threadStarterBody : threadHistoryBody;
   const effectiveMessageThreadId =
     assistantThreadContext?.threadTs ?? threadContext.messageThreadId;
+  const providerEventId = message.ts ?? message.event_ts;
 
   const ctxPayload = buildChannelInboundEventContext({
     channel: "slack",
     accountId: route.accountId,
-    messageId: message.ts,
-    timestamp: resolveSlackTimestampMs(message.ts),
+    messageId: providerEventId,
+    timestamp: resolveSlackTimestampMs(providerEventId),
     from: slackFrom,
     sender: {
       id: senderId,
@@ -1357,8 +1358,8 @@ export async function prepareSlackMessage(params: {
       entry: {
         sender: senderName,
         body: rawBody,
-        timestamp: resolveSlackTimestampMs(message.ts),
-        messageId: message.ts,
+        timestamp: resolveSlackTimestampMs(providerEventId),
+        messageId: providerEventId,
       },
     });
   }

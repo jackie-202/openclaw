@@ -1,0 +1,47 @@
+{
+  "findings": [
+    {
+      "claim": "The supplied task material includes reviewable deterministic E2E implementation proving Slack root and reply inputs reach only the explicit Discord target with identity separation and one provider call.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The caller-supplied task-scoped diff does not include extensions/deliberation/src/orchestration.test.ts or another concrete test implementation exposing the required root/reply assertions. Checkpoints and RED/GREEN artifacts state that the file exists and tests pass, but prose and stdout do not provide the omitted implementation semantics for review.",
+      "rationale": "Goal-001 requires deterministic repository-local coverage of root/reply identity separation, exact Discord-only routing, one Discord call, and zero Slack calls. Those semantics cannot be accepted from claims or execution summaries when the concrete implementation is absent from the supplied diff.",
+      "required": "Supply the complete task-scoped orchestration test implementation exercising Slack root and reply inputs through the public Deliberation seams and asserting child/root identity separation, the exact Discord destination, one Discord call, and zero Slack calls.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "task-scoped diff"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-mist-3698.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-mist-3698.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-17_cool-mist-3698_acceptance-fix-deliberation-cross-provider-e2e-and-slack.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation cross-provider E2E and Slack pilot readiness: goal-001: Deterministic E2E"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-mist-3698-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "cool-mist-3698"
+}

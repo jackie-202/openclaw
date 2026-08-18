@@ -1,0 +1,104 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The canonical sole-send behavior required by the task was not delivered to the active runtime.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped changes add activation assertions but no production behavior change, and the final note states the record remains READY_TO_SEND because rollout was not performed.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "The goal is to fix READY_TO_SEND records not reaching delivery; proving that source and emitted artifacts already contain a service does not restore the service in the running Gateway or move the named record through the canonical sender.",
+      "required": "Complete the authorized canonical rollout or the smallest proven production fix, then establish that an eligible READY_TO_SEND record is claimed and delivered exactly once by the Deliberation sole sender.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.final-note.md:Root-Cause"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.final-note.md:Rollout-And-Live-Evidence"
+        },
+        {
+          "kind": "file",
+          "reference": "scripts/test-built-plugin-singleton.mjs"
+        }
+      ]
+    },
+    {
+      "claim": "Explicitly required rollout and live exactly-once delivery evidence is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The final note explicitly reports no canonical deploy verifier result, no Gateway restart/live smoke, no SENT state, no delivery_attempts row, no Discord provider message ID, and no Discord reply.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The task acceptance requires the named eligible record to reach SENT through the canonical sole sender with exactly one reservation and one provider result; the supplied artifacts state that none of this evidence was obtained.",
+      "required": "After authorized canonical rollout, provide read-only evidence that record 786951effe8b9f7eb035954671b80daafca7e6355dff846d53232761dacc24c7 is SENT with exactly one delivery attempt, one provider message ID, and one Discord reply.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.final-note.md:Rollout-And-Live-Evidence"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-18_fix-deliberation-ready-to-send-records-not-reaching-sole-sen.md:Verification"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-18_fix-deliberation-ready-to-send-records-not-reaching-sole-sen.md:Acceptance"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is invalid for the target behavior.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The RED phase failed because the new test asserted that Deliberation registered zero services while the runtime already registered one; GREEN merely changed that expectation to the existing one-service behavior, with no corresponding production behavior change.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "This RED/GREEN sequence characterizes already-present activation by first asserting the opposite of the requirement. It does not demonstrate a failing test for the actual missing READY_TO_SEND transition or activation condition before implementing a behavior change, as required by the task.",
+      "required": "Provide valid test-first RED/GREEN provenance for the actual missing transition or activation condition: RED must fail because required sole-send behavior is absent, and GREEN must pass after the corresponding production change.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.red-green-proof.md:RED-Phase"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.red-green-proof.md:GREEN-Phase"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-18_fix-deliberation-ready-to-send-records-not-reaching-sole-sen.md:Requirements-4"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Fix Deliberation READY_TO_SEND records not reaching sole-send delivery"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "wild-vale-0017-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "wild-vale-0017"
+}

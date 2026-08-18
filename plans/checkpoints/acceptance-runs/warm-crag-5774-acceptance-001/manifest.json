@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T10:03:14+00:00",
+    "implementingStartedAt": "2026-08-17T09:57:40+00:00",
+    "taskFile": "plans/tasks/2026-08-17_followup-warm-crag-5774-pin-deliberation-draft-continuations-to-the-current-attempt.md",
+    "taskId": "warm-crag-5774",
+    "title": "[acceptance-fix] Pin Deliberation draft continuations to the current attempt payload: goal-001: Pin Deliberation draft c"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Pin Deliberation draft continuations to the current attempt payload: goal-001: Pin Deliberation draft c"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-crag-5774-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-crag-5774",
+  "tddRequired": false
+}

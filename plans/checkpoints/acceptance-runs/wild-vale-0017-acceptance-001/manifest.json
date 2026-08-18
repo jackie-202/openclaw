@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-18T19:30:34+00:00",
+    "implementingStartedAt": "2026-08-18T19:12:33+00:00",
+    "taskFile": "plans/tasks/2026-08-18_fix-deliberation-ready-to-send-records-not-reaching-sole-sen.md",
+    "taskId": "wild-vale-0017",
+    "title": "Fix Deliberation READY_TO_SEND records not reaching sole-send delivery"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Fix Deliberation READY_TO_SEND records not reaching sole-send delivery"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "wild-vale-0017-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "wild-vale-0017",
+  "tddRequired": true
+}

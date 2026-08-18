@@ -1,0 +1,93 @@
+{
+  "findings": [
+    {
+      "claim": "The required sole-send delivery behavior is not active in the serving Gateway.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The checkpoint reports the active Gateway still has readyToSend: 1 and cannot be validated or restarted without the host owner\u2019s canonical deploy verifier and authorization; the prior final note likewise records that rollout was not performed and the named record was not reserved.",
+      "rationale": "The goal is to move READY_TO_SEND work through the canonical sender. Isolated source behavior does not activate the already-running Gateway service or deliver the pending record.",
+      "required": "Obtain the authorized canonical rollout, deploy and restart the serving Gateway, then allow the sole sender to claim and deliver the eligible record.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-brook-9472.checkpoint.md:Context for resume"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.final-note.md:Rollout And Live Evidence"
+        }
+      ]
+    },
+    {
+      "claim": "Required live exactly-once delivery evidence is absent.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied final note states that no SENT state, delivery-attempt row, Discord provider message ID, or Discord reply is claimed. The follow-up checkpoint confirms rollout and live verification are unfinished.",
+      "rationale": "The task requires resolving the pending delivery, and the plan defines the necessary read-only proof as SENT with one attempt, one provider message ID, and one Discord reply after restart. The isolated fake-provider GREEN cannot establish those live facts.",
+      "required": "After authorized rollout and restart, provide read-only evidence for the named record showing SENT, exactly one delivery attempt, one provider message ID, and one Discord reply.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.final-note.md:Rollout And Live Evidence"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-brook-9472.checkpoint.md:Steps"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-18_warm-brook-9472_fix-deliberation-ready-to-send-records-not-reaching-sole.md:Implementation"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof does not contain a valid behavior-linked RED/GREEN cycle for the target behavior.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The follow-up proof explicitly says no new source-level RED is valid and identifies the future authorized restart as the corresponding GREEN. Its supplied GREEN is an isolated fake-provider test, while the parent proof\u2019s RED asserts zero registered services even though one was already registered and is explicitly rejected by the follow-up proof as invalid for this behavior.",
+      "rationale": "With tddRequired true, the supplied provenance neither reuses a genuine RED for the missing READY_TO_SEND delivery transition nor pairs a valid pre-change failure with the implementation or operational repair that resolves the goal.",
+      "required": "Provide credible behavior-linked RED/GREEN provenance for the missing delivery behavior, or an accepted caller-authorized TDD proof that validly covers the operational repair without fabricating a RED.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-brook-9472.red-green-proof.md:RED Phase"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.red-green-proof.md:RED Phase"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-18_warm-brook-9472_fix-deliberation-ready-to-send-records-not-reaching-sole.md:TDD"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Fix Deliberation READY_TO_SEND records not reaching sole-send delivery: goal-001: Fix Deliberation READ"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-brook-9472-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-brook-9472"
+}

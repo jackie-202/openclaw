@@ -1,23 +1,37 @@
 import { buildSecretInputSchema, type SecretInput } from "openclaw/plugin-sdk/secret-input";
 import { z } from "zod";
+import { kmDeliveryTargetSchema } from "./delivery-target.js";
 import { encodeSourceIdentity } from "./source-identity.js";
 
-const routeSchema = z
+const supportedSourceProviderSchema = z.enum(["discord", "slack"]);
+
+function isCanonicalRoute(route: { channel: string; accountId: string; target: string }) {
+  return (
+    encodeSourceIdentity({
+      provider: route.channel,
+      account: route.accountId,
+      channel: route.target,
+    }) !== undefined
+  );
+}
+
+const sourceRouteSchema = z
+  .object({
+    channel: supportedSourceProviderSchema,
+    accountId: z.string().trim().min(1),
+    target: z.string().trim().min(1),
+  })
+  .strict()
+  .refine(isCanonicalRoute, "Deliberation route must use canonical source identity components");
+
+const discordRouteSchema = z
   .object({
     channel: z.literal("discord"),
     accountId: z.string().trim().min(1),
     target: z.string().trim().min(1),
   })
   .strict()
-  .refine(
-    (route) =>
-      encodeSourceIdentity({
-        provider: route.channel,
-        account: route.accountId,
-        channel: route.target,
-      }) !== undefined,
-    "Deliberation route must use canonical source identity components",
-  );
+  .refine(isCanonicalRoute, "Deliberation route must use canonical source identity components");
 
 const secretInputSchema = buildSecretInputSchema().refine(
   (value) => typeof value !== "string" || value.trim().length > 0,
@@ -28,8 +42,9 @@ const configSchema = z
   .object({
     enabled: z.boolean(),
     failClosed: z.literal(true),
-    sources: z.array(routeSchema).min(1),
-    processingSource: routeSchema,
+    sources: z.array(sourceRouteSchema).min(1),
+    processingSource: discordRouteSchema,
+    deliveryTarget: kmDeliveryTargetSchema.optional(),
     km: z
       .object({
         endpoint: z
@@ -62,7 +77,8 @@ const configSchema = z
   })
   .strict();
 
-export type DeliberationRoute = z.infer<typeof routeSchema>;
+export type DeliberationRoute = z.infer<typeof sourceRouteSchema>;
+export type DeliberationDiscordRoute = z.infer<typeof discordRouteSchema>;
 export type DeliberationConfig = Omit<z.infer<typeof configSchema>, "km"> & {
   km: Omit<z.infer<typeof configSchema>["km"], "credential"> & { credential: SecretInput };
   sourceKeys: ReadonlySet<string>;

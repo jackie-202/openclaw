@@ -5,13 +5,35 @@
   "initializationCommand": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts:lib .venv/bin/python3 scripts/deliberation-v2.py health",
   "mediaType": "application/json",
   "closedSchemas": true,
+  "burstPolicy": {"fixedSeconds": 60, "deadline": "latest accepted receivedAt plus 60 seconds", "freshOrder": ["readyAt", "recordId"], "closedAt": "scheduler observation only"},
   "applicationHeaders": ["Authorization", "X-Deliberation-Protocol-Version", "Accept", "Content-Type"],
-  "transportHeaders": ["Host", "Content-Length", "Connection", "User-Agent", "Accept-Encoding", "Sec-Fetch-Mode"],
+  "transportHeaders": ["Host", "Content-Length", "Connection", "User-Agent", "Accept-Encoding", "Accept-Language", "Sec-Fetch-Mode"],
   "authentication": {
     "comparison": "constant-time",
     "credentialArguments": ["--credential-file", "DELIBERATION_V2_CREDENTIAL_FILE"],
     "credentialFile": "regular file, no symlink, mode 0600 or stricter, one UTF-8 line, 16..256 bytes",
     "diagnostics": "credential value and path are never returned or logged"
+  },
+  "sourceIdentity": {
+    "version": "v1",
+    "grammar": "v1:<provider>:<account>:<channel>",
+    "pattern": "^v1:[a-z][a-z0-9_-]{0,31}:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$",
+    "providerPattern": "^[a-z][a-z0-9_-]{0,31}$",
+    "accountPattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$",
+    "channelPattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$",
+    "providerAgreement": "intake provider must exactly equal the provider component",
+    "domain": "the complete sourceTarget is the record, burst, inbound dedupe, payload, correlation and freshness domain",
+    "syntheticNamespace": {
+      "provider": "synthetic",
+      "account": "diagnostic",
+      "grammar": "v1:synthetic:diagnostic:<id>",
+      "rule": "synthetic identities outside the diagnostic account are invalid"
+    },
+    "historicalCompatibility": {
+      "pattern": "^discord:channel:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$",
+      "rule": "stored historical account-less records remain readable and auditable but are operationally invalid and cannot append, close, claim, refresh, reserve or merge with v1 domains",
+      "validationError": "historical account-less sourceTarget is audit-only"
+    }
   },
   "listener": {
     "hosts": ["127.0.0.1", "::1"],
@@ -57,17 +79,47 @@
     "intakeBody": {
       "type": "object",
       "properties": {
-        "provider": {"type": "string", "minLength": 1, "maxLength": 256},
+        "provider": {"type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[a-z][a-z0-9_-]{0,31}$"},
         "providerEventId": {"type": "string", "minLength": 1, "maxLength": 256},
-        "sourceTarget": {"type": "string", "minLength": 1, "maxLength": 256},
+        "sourceTarget": {"type": "string", "minLength": 8, "maxLength": 229, "pattern": "^v1:[a-z][a-z0-9_-]{0,31}:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"},
+        "sourceThreadId": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"},
         "senderId": {"type": "string", "minLength": 1, "maxLength": 256},
         "occurredAt": {"type": "string", "minLength": 20, "maxLength": 64},
         "receivedAt": {"type": "string", "minLength": 20, "maxLength": 64},
         "content": {"type": "string", "minLength": 1, "maxLength": 65536},
-        "eventType": {"type": "string", "enum": ["message", "edit", "delete"]},
-        "debounceSeconds": {"type": "integer", "minimum": 0, "maximum": 86400}
+        "eventType": {"type": "string", "enum": ["message", "edit", "delete"]}
       },
-      "required": ["provider", "providerEventId", "sourceTarget", "senderId", "occurredAt", "receivedAt", "content"],
+      "required": ["provider", "providerEventId", "sourceTarget", "sourceThreadId", "senderId", "occurredAt", "receivedAt", "content"],
+      "additionalProperties": false
+    },
+    "deliveryTarget": {
+      "type": "object",
+      "properties": {
+        "provider": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"},
+        "account": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"},
+        "channel": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"},
+        "threadId": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"}
+      },
+      "required": ["provider", "account", "channel"],
+      "additionalProperties": false
+    },
+    "nullableDeliveryTarget": {"oneOf": [{"$ref": "#/schemas/deliveryTarget"}, {"type": "null"}]},
+    "deliveryEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {"type": "integer", "const": 1},
+        "sourceTarget": {"type": "string", "minLength": 8, "maxLength": 229, "pattern": "^v1:[a-z][a-z0-9_-]{0,31}:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}:[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"},
+        "deliveryTarget": {"$ref": "#/schemas/deliveryTarget"},
+        "recordId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "inboundId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "draftAttempt": {"type": "integer", "minimum": 1},
+        "draftCorrelationId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "reviewAttempt": {"type": "integer", "minimum": 1},
+        "reviewCorrelationId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "candidateRevision": {"type": "integer", "minimum": 0},
+        "reviewedTextHash": {"type": "string", "minLength": 64, "maxLength": 64}
+      },
+      "required": ["schemaVersion", "sourceTarget", "deliveryTarget", "recordId", "inboundId", "draftAttempt", "draftCorrelationId", "reviewAttempt", "reviewCorrelationId", "candidateRevision", "reviewedTextHash"],
       "additionalProperties": false
     },
     "reservationBody": {
@@ -77,6 +129,7 @@
         "expectedVersion": {"type": "integer", "minimum": 1},
         "owner": {"type": "string", "minLength": 1, "maxLength": 256},
         "idempotencyKey": {"type": "string", "minLength": 1, "maxLength": 256},
+        "deliveryTarget": {"$ref": "#/schemas/deliveryTarget"},
         "leaseSeconds": {"type": "integer", "minimum": 1, "maximum": 900}
       },
       "required": ["recordId", "expectedVersion", "owner", "idempotencyKey"],
@@ -89,35 +142,41 @@
         "attemptId": {"type": "string", "minLength": 1, "maxLength": 256},
         "owner": {"type": "string", "minLength": 1, "maxLength": 256},
         "leaseToken": {"type": "string", "minLength": 1, "maxLength": 256},
-        "outcome": {"type": "string", "enum": ["SENT", "NOT_SENT", "DELIVERY_UNKNOWN"]},
+        "deliveryEnvelope": {"$ref": "#/schemas/deliveryEnvelope"},
+        "deliveryEnvelopeDigest": {"type": "string", "minLength": 64, "maxLength": 64},
+        "attemptedTarget": {"$ref": "#/schemas/deliveryTarget"},
+        "invocationIdempotencyKey": {"type": "string", "minLength": 1, "maxLength": 256},
+        "outcome": {"type": "string", "enum": ["SENT", "FAILED"]},
         "idempotencyKey": {"type": "string", "minLength": 1, "maxLength": 256},
         "providerAttemptId": {"type": "string", "minLength": 1, "maxLength": 256},
         "providerReceiptId": {"type": "string", "minLength": 1, "maxLength": 256},
         "providerMessageId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "providerFailureClass": {"type": "string", "enum": ["permission", "rejection", "rate_limit", "transport", "timeout"]},
+        "providerEvidence": {"type": "object", "properties": {"code": {"type": "string", "maxLength": 256}, "status": {"type": "integer"}, "retryAfterSeconds": {"type": "integer", "minimum": 0}, "detail": {"type": "string", "maxLength": 2048}}, "additionalProperties": false},
         "proofReference": {"type": "string", "minLength": 1, "maxLength": 256}
       },
-      "required": ["recordId", "attemptId", "owner", "leaseToken", "outcome", "idempotencyKey", "providerAttemptId"],
+      "required": ["recordId", "attemptId", "owner", "leaseToken", "deliveryEnvelope", "deliveryEnvelopeDigest", "attemptedTarget", "invocationIdempotencyKey", "outcome", "idempotencyKey", "providerAttemptId"],
       "additionalProperties": false,
       "allOf": [
-        {"if": {"properties": {"outcome": {"const": "SENT"}}}, "then": {"required": ["providerReceiptId", "providerMessageId"]}}
+        {"if": {"properties": {"outcome": {"const": "SENT"}}}, "then": {"required": ["providerReceiptId", "providerMessageId"]}},
+        {"if": {"properties": {"outcome": {"const": "FAILED"}}}, "then": {"required": ["providerFailureClass", "providerEvidence"]}}
       ]
     },
-    "reconciliationBody": {
+    "invocationBody": {
       "type": "object",
       "properties": {
         "recordId": {"type": "string", "minLength": 1, "maxLength": 256},
         "attemptId": {"type": "string", "minLength": 1, "maxLength": 256},
-        "outcome": {"type": "string", "enum": ["SENT", "NOT_SENT"]},
+        "owner": {"type": "string", "minLength": 1, "maxLength": 256},
+        "leaseToken": {"type": "string", "minLength": 1, "maxLength": 256},
+        "deliveryEnvelope": {"$ref": "#/schemas/deliveryEnvelope"},
+        "deliveryEnvelopeDigest": {"type": "string", "minLength": 64, "maxLength": 64},
+        "attemptedTarget": {"$ref": "#/schemas/deliveryTarget"},
         "idempotencyKey": {"type": "string", "minLength": 1, "maxLength": 256},
-        "proofReference": {"type": "string", "minLength": 1, "maxLength": 256},
-        "providerReceiptId": {"type": "string", "minLength": 1, "maxLength": 256},
-        "providerMessageId": {"type": "string", "minLength": 1, "maxLength": 256}
+        "providerAttemptId": {"type": "string", "minLength": 1, "maxLength": 256}
       },
-      "required": ["recordId", "attemptId", "outcome", "idempotencyKey", "proofReference"],
-      "additionalProperties": false,
-      "allOf": [
-        {"if": {"properties": {"outcome": {"const": "SENT"}}}, "then": {"required": ["providerReceiptId", "providerMessageId"]}}
-      ]
+      "required": ["recordId", "attemptId", "owner", "leaseToken", "deliveryEnvelope", "deliveryEnvelopeDigest", "attemptedTarget", "idempotencyKey", "providerAttemptId"],
+      "additionalProperties": false
     },
     "controls": {
       "type": "object",
@@ -138,8 +197,9 @@
         "text": {"type": "string", "minLength": 1, "maxLength": 65536},
         "candidateRevision": {"type": "integer", "minimum": 0},
         "updatedAt": {"type": "string", "minLength": 20, "maxLength": 64}
+        ,"deliveryEnvelope": {"$ref": "#/schemas/deliveryEnvelope"}
       },
-      "required": ["recordId", "version", "text", "candidateRevision", "updatedAt"],
+      "required": ["recordId", "version", "text", "candidateRevision", "updatedAt", "deliveryEnvelope"],
       "additionalProperties": false
     },
     "reservation": {
@@ -153,9 +213,11 @@
         "leaseToken": {"type": "string", "minLength": 1, "maxLength": 256},
         "leaseExpiresAt": {"type": "string", "minLength": 20, "maxLength": 64},
         "candidateRevision": {"type": "integer", "minimum": 0},
-        "reviewedTextHash": {"type": "string", "minLength": 64, "maxLength": 64}
+        "reviewedTextHash": {"type": "string", "minLength": 64, "maxLength": 64},
+        "deliveryEnvelope": {"$ref": "#/schemas/deliveryEnvelope"},
+        "deliveryEnvelopeDigest": {"type": "string", "minLength": 64, "maxLength": 64}
       },
-      "required": ["recordId", "attemptId", "ordinal", "version", "owner", "leaseToken", "leaseExpiresAt", "candidateRevision", "reviewedTextHash"],
+      "required": ["recordId", "attemptId", "ordinal", "version", "owner", "leaseToken", "leaseExpiresAt", "candidateRevision", "reviewedTextHash", "deliveryEnvelope", "deliveryEnvelopeDigest"],
       "additionalProperties": false
     },
     "deliveryAttempt": {
@@ -168,17 +230,27 @@
         "reservedRecordVersion": {"type": "integer", "minimum": 1},
         "owner": {"type": "string", "minLength": 1, "maxLength": 256},
         "leaseExpiresAt": {"type": "string", "minLength": 20, "maxLength": 64},
-        "completionOutcome": {"type": ["string", "null"], "enum": ["SENT", "NOT_SENT", "DELIVERY_UNKNOWN", null]},
-        "outcome": {"type": ["string", "null"], "enum": ["SENT", "NOT_SENT", "DELIVERY_UNKNOWN", null]},
+        "completionOutcome": {"type": ["string", "null"], "enum": ["SENT", "FAILED", "RESERVATION_ABANDONED", "NOT_SENT", "DELIVERY_UNKNOWN", null]},
+        "outcome": {"type": ["string", "null"], "enum": ["SENT", "FAILED", "RESERVATION_ABANDONED", "NOT_SENT", "DELIVERY_UNKNOWN", null]},
         "providerAttemptId": {"type": ["string", "null"], "maxLength": 256},
         "providerReceiptId": {"type": ["string", "null"], "maxLength": 256},
         "providerMessageId": {"type": ["string", "null"], "maxLength": 256},
         "proofReference": {"type": ["string", "null"], "maxLength": 256},
         "reservedAt": {"type": "string", "minLength": 20, "maxLength": 64},
         "completedAt": {"type": ["string", "null"], "maxLength": 64},
-        "reconciledAt": {"type": ["string", "null"], "maxLength": 64}
+        "reconciledAt": {"type": ["string", "null"], "maxLength": 64},
+        "deliveryEnvelope": {"type": ["object", "null"], "properties": {"schemaVersion": {"type": "integer"}, "sourceTarget": {"type": "string"}, "deliveryTarget": {"$ref": "#/schemas/deliveryTarget"}, "recordId": {"type": "string"}, "inboundId": {"type": "string"}, "draftAttempt": {"type": "integer"}, "draftCorrelationId": {"type": "string"}, "reviewAttempt": {"type": "integer"}, "reviewCorrelationId": {"type": "string"}, "candidateRevision": {"type": "integer"}, "reviewedTextHash": {"type": "string"}}, "required": ["schemaVersion", "sourceTarget", "deliveryTarget", "recordId", "inboundId", "draftAttempt", "draftCorrelationId", "reviewAttempt", "reviewCorrelationId", "candidateRevision", "reviewedTextHash"], "additionalProperties": false},
+        "deliveryEnvelopeDigest": {"type": ["string", "null"], "maxLength": 64},
+        "reserveIdempotencyKey": {"type": "string", "maxLength": 256},
+        "invocationIdempotencyKey": {"type": ["string", "null"], "maxLength": 256},
+        "completionIdempotencyKey": {"type": ["string", "null"], "maxLength": 256},
+        "invokedAt": {"type": ["string", "null"], "maxLength": 64},
+        "attemptedTarget": {"$ref": "#/schemas/nullableDeliveryTarget"},
+        "providerFailureClass": {"type": ["string", "null"], "enum": ["permission", "rejection", "rate_limit", "transport", "timeout", null]},
+        "providerEvidence": {"type": ["object", "null"], "properties": {"code": {"type": "string"}, "status": {"type": "integer"}, "retryAfterSeconds": {"type": "integer"}, "detail": {"type": "string"}}, "additionalProperties": false},
+        "terminalReason": {"type": ["string", "null"], "enum": ["delivery_sent", "delivery_failed", "delivery_outcome_unknown", "reservation_abandoned", null]}
       },
-      "required": ["ordinal", "attemptId", "completionOutcome", "outcome", "providerAttemptId", "providerReceiptId", "providerMessageId", "proofReference", "completedAt"],
+      "required": ["ordinal", "attemptId", "completionOutcome", "outcome", "providerAttemptId", "providerReceiptId", "providerMessageId", "proofReference", "completedAt", "deliveryEnvelope", "deliveryEnvelopeDigest", "reserveIdempotencyKey"],
       "additionalProperties": false
     },
     "record": {
@@ -188,24 +260,29 @@
         "recordId": {"type": "string", "minLength": 1, "maxLength": 256},
         "inboundId": {"type": "string", "minLength": 1, "maxLength": 256},
         "sourceTarget": {"type": "string", "minLength": 1, "maxLength": 256},
+        "sourceThreadId": {"type": "string", "minLength": 1, "maxLength": 96},
         "messages": {"type": "array", "items": {"type": "object", "properties": {"inboundId": {"type": "string"}, "provider": {"type": "string"}, "providerEventId": {"type": "string"}, "senderId": {"type": "string"}, "eventType": {"type": "string"}, "occurredAt": {"type": "string"}, "receivedAt": {"type": "string"}, "content": {"type": "string"}}, "required": ["inboundId", "provider", "providerEventId", "senderId", "eventType", "occurredAt", "receivedAt", "content"], "additionalProperties": false}},
         "openedAt": {"type": "string"},
         "updatedAt": {"type": "string"},
         "debounceUntil": {"type": "string"},
         "effectiveDebounceSeconds": {"type": "integer"},
+        "readyAt": {"type": ["string", "null"]},
         "closedAt": {"type": ["string", "null"]},
-        "state": {"type": "string", "enum": ["READY_TO_SEND", "SENDING", "SENT", "DELIVERY_UNKNOWN"]},
+        "state": {"type": "string", "enum": ["READY_TO_SEND", "SENDING", "SENT", "FAILED", "DELIVERY_UNKNOWN"]},
         "version": {"type": "integer", "minimum": 1},
         "duplicateCount": {"type": "integer", "minimum": 0},
         "lease": {"type": ["object", "null"], "properties": {"owner": {"type": "string"}, "token": {"type": "string"}, "expiresAt": {"type": "string"}}, "required": ["owner", "token", "expiresAt"], "additionalProperties": false},
-        "drafting": {"type": ["object", "null"], "properties": {"attempt": {"type": "integer"}, "correlationId": {"type": "string"}, "payloadPath": {"type": "string"}, "resultPath": {"type": "string"}, "outcome": {"type": ["string", "null"]}, "diagnostic": {"type": ["object", "null"], "properties": {}, "additionalProperties": false}, "blocked": {"type": "boolean"}, "result": {"type": ["object", "null"], "properties": {"decision": {"type": "string"}, "draft": {"type": "string"}}, "additionalProperties": false}, "purpose": {"type": "string"}, "candidateRevision": {"type": "integer"}, "technicalAttempt": {"type": "integer"}}, "additionalProperties": false},
-        "review": {"type": ["object", "null"], "properties": {"candidateRevision": {"type": "integer"}, "rewriteCount": {"type": "integer"}, "attempts": {"type": "array", "items": {"type": "object", "properties": {"attempt": {"type": "integer"}, "technicalAttempt": {"type": "integer"}, "candidateRevision": {"type": "integer"}, "correlationId": {"type": "string"}, "startedAt": {"type": "string"}, "completedAt": {"type": ["string", "null"]}, "sessionId": {"type": ["string", "null"]}, "provider": {"type": ["string", "null"]}, "model": {"type": ["string", "null"]}, "freshnessCount": {"type": "integer"}, "freshnessHash": {"type": ["string", "null"]}, "freshnessCutoff": {"type": ["string", "null"]}, "freshnessComplete": {"type": "boolean"}, "verdict": {"type": ["string", "null"]}, "reason": {"type": ["string", "null"]}, "outcome": {"type": ["string", "null"]}}, "additionalProperties": false}}}, "additionalProperties": false},
+        "drafting": {"type": ["object", "null"], "properties": {"attempt": {"type": "integer"}, "correlationId": {"type": "string"}, "payloadPath": {"type": "string"}, "resultPath": {"type": "string"}, "outcome": {"type": ["string", "null"]}, "diagnostic": {"type": ["object", "null"], "properties": {"code": {"type": "string", "minLength": 1, "maxLength": 64}, "message": {"type": "string", "minLength": 1, "maxLength": 512}}, "required": ["code", "message"], "additionalProperties": false}, "blocked": {"type": "boolean"}, "result": {"type": ["object", "null"], "properties": {"decision": {"type": "string"}, "draft": {"type": "string"}}, "additionalProperties": false}, "purpose": {"type": "string"}, "candidateRevision": {"type": "integer"}, "technicalAttempt": {"type": "integer"}}, "additionalProperties": false},
+        "processing": {"type": ["object", "null"], "properties": {"phase": {"type": "string"}, "attempt": {"type": "integer"}, "purpose": {"type": "string"}, "candidateRevision": {"type": "integer"}, "correlationId": {"type": "string"}, "processingSessionKey": {"type": ["string", "null"]}, "dispatchStartedAt": {"type": ["string", "null"]}, "acknowledgedAt": {"type": ["string", "null"]}, "resultDeadline": {"type": ["string", "null"]}, "expiredAt": {"type": ["string", "null"]}, "releasedAt": {"type": ["string", "null"]}, "releaseReason": {"type": ["string", "null"], "enum": ["result_finalized", "source_history_unavailable", "transport_rejected", "processing_session_timeout", "malformed_draft_result", "draft_result_correlation_conflict", null]}, "lateResult": {"type": ["object", "null"], "properties": {"event": {"type": "string", "const": "LATE_RESULT_AFTER_EXPIRY"}, "classification": {"type": "string", "enum": ["valid", "malformed", "correlation_conflict"]}, "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "auditedAt": {"type": "string"}}, "required": ["event", "classification", "digest", "auditedAt"], "additionalProperties": false}}, "additionalProperties": false},
+        "processingSessionKey": {"type": ["string", "null"]},
+        "sourceContext": {"type": ["object", "null"], "properties": {"schemaVersion": {"type": "integer"}, "sourceTarget": {"type": "string"}, "provenance": {"type": "object", "properties": {"provider": {"type": "string"}, "account": {"type": "string"}, "channel": {"type": "string"}}, "additionalProperties": false}, "cutoffProviderEventId": {"type": "string"}, "capturedAt": {"type": "string"}, "snapshotHash": {"type": "string"}, "messages": {"type": "array", "items": {"type": "object", "properties": {}, "additionalProperties": false}}}, "additionalProperties": false},
+        "review": {"type": ["object", "null"], "properties": {"candidateRevision": {"type": "integer"}, "rewriteCount": {"type": "integer"}, "attempts": {"type": "array", "items": {"type": "object", "properties": {"attempt": {"type": "integer"}, "technicalAttempt": {"type": "integer"}, "candidateRevision": {"type": "integer", "minimum": 0}, "correlationId": {"type": "string"}, "startedAt": {"type": "string"}, "completedAt": {"type": ["string", "null"]}, "sessionId": {"type": ["string", "null"]}, "provider": {"type": ["string", "null"]}, "model": {"type": ["string", "null"]}, "freshnessCount": {"type": "integer"}, "freshnessHash": {"type": ["string", "null"]}, "freshnessCutoff": {"type": ["string", "null"]}, "freshnessComplete": {"type": "boolean"}, "freshnessArtifactPath": {"type": ["string", "null"]}, "freshnessArtifactDigest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}, "reviewContractVersion": {"type": ["integer", "null"], "enum": [1, null]}, "reviewInputVersion": {"type": ["integer", "null"], "enum": [1, null]}, "qualityRubricVersion": {"type": ["integer", "null"], "enum": [1, null]}, "canonicalInputDigest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}, "candidateDigest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}, "verdict": {"type": ["string", "null"]}, "reason": {"type": ["string", "null"]}, "outcome": {"type": ["string", "null"]}}, "additionalProperties": false}}, "freshnessArtifacts": {"type": "array", "items": {"type": "object", "properties": {"schemaVersion": {"const": 1}, "candidateRevision": {"type": "integer"}, "sourceTarget": {"type": "string"}, "provenance": {"type": "object", "properties": {"provider": {"const": "discord"}, "account": {"type": "string"}, "channel": {"type": "string"}}, "additionalProperties": false}, "exclusiveCutoffProviderEventId": {"type": "string"}, "inclusiveWatermarkProviderEventId": {"type": "string"}, "capturedAt": {"type": "string"}, "messageCount": {"type": "integer"}, "complete": {"type": "boolean"}, "path": {"type": "string"}, "digest": {"type": "string"}}, "additionalProperties": false}}}, "additionalProperties": false},
         "delivery": {"type": "object", "properties": {"attempts": {"type": "array", "items": {"$ref": "#/schemas/deliveryAttempt"}}}, "required": ["attempts"], "additionalProperties": false},
         "candidateRevision": {"type": "integer", "minimum": 0},
         "rewriteCount": {"type": "integer", "minimum": 0},
         "retryStage": {"type": ["string", "null"]},
         "retryDeadline": {"type": ["string", "null"]},
-        "terminalReason": {"type": ["string", "null"]},
+        "terminalReason": {"type": ["string", "null"], "maxLength": 512},
         "history": {"type": "array", "items": {"type": "object", "properties": {"sequence": {"type": "integer"}, "event": {"type": "string"}, "fromState": {"type": ["string", "null"]}, "toState": {"type": ["string", "null"]}, "version": {"type": "integer"}, "occurredAt": {"type": "string"}, "details": {"type": ["object", "null"], "properties": {"attemptId": {"type": "string"}, "ordinal": {"type": "integer"}, "owner": {"type": "string"}, "outcome": {"type": "string"}, "proofReference": {"type": "string"}}, "additionalProperties": false}}, "required": ["sequence", "event", "fromState", "toState", "version", "occurredAt", "details"], "additionalProperties": false}},
         "valid": {"type": "boolean"},
         "validationError": {"type": "string", "maxLength": 512}
@@ -213,10 +290,20 @@
       "required": ["recordId", "state", "version", "delivery"],
       "additionalProperties": false
     },
-    "healthResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "status": {"type": "string", "const": "ok"}, "controls": {"$ref": "#/schemas/controls"}}, "required": ["protocolVersion", "status", "controls"], "additionalProperties": false},
+    "passTransition": {"type": ["object", "null"], "properties": {"recordId": {"type": "string", "maxLength": 128}, "state": {"type": "string", "maxLength": 64}, "code": {"type": "string", "maxLength": 64}}, "required": ["recordId", "state", "code"], "additionalProperties": false},
+    "passSummary": {"type": ["object", "null"], "properties": {"schemaVersion": {"type": "integer", "const": 1}, "startedAt": {"type": "string"}, "completedAt": {"type": "string"}, "durationMs": {"type": "integer", "minimum": 0, "maximum": 90000}, "owner": {"type": "string", "maxLength": 128}, "buildId": {"type": "string", "maxLength": 64}, "phases": {"type": "object", "properties": {"reconciled": {"type": "integer", "minimum": 0}, "closed": {"type": "integer", "minimum": 0}, "selected": {"type": "integer", "minimum": 0, "maximum": 1}}, "required": ["reconciled", "closed", "selected"], "additionalProperties": false}, "transition": {"$ref": "#/schemas/passTransition"}, "hasMore": {"type": "boolean"}, "stopReason": {"type": "string", "enum": ["idle", "completed", "processing_pending", "reconciliation_budget", "closure_budget", "selection_budget", "monotonic_guard"]}}, "required": ["schemaVersion", "startedAt", "completedAt", "durationMs", "owner", "buildId", "phases", "transition", "hasMore", "stopReason"], "additionalProperties": false},
+    "listenerModuleIdentity": {"oneOf": [{"type": "object", "properties": {"status": {"type": "string", "const": "ok"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}, "required": ["status", "sha256"], "additionalProperties": false}, {"type": "object", "properties": {"status": {"type": "string", "const": "unavailable"}, "sha256": {"type": "null"}}, "required": ["status", "sha256"], "additionalProperties": false}]},
+    "listenerModules": {"type": "object", "properties": {"lib/deliberation_source_identity.py": {"$ref": "#/schemas/listenerModuleIdentity"}, "lib/deliberation_wire.py": {"$ref": "#/schemas/listenerModuleIdentity"}, "lib/deliberation_spool_contracts.py": {"$ref": "#/schemas/listenerModuleIdentity"}}, "required": ["lib/deliberation_source_identity.py", "lib/deliberation_wire.py", "lib/deliberation_spool_contracts.py"], "additionalProperties": false},
+    "listenerSourceIdentity": {"type": "object", "properties": {"status": {"type": "string", "enum": ["ok", "unavailable"]}, "modules": {"$ref": "#/schemas/listenerModules"}}, "required": ["status", "modules"], "additionalProperties": false},
+    "listenerIdentity": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "startedAt": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"}, "sourceIdentity": {"$ref": "#/schemas/listenerSourceIdentity"}}, "required": ["protocolVersion", "startedAt", "sourceIdentity"], "additionalProperties": false},
+    "runnerInstallation": {"type": "object", "properties": {"status": {"type": "string", "enum": ["ok", "missing", "drift", "duplicate", "unknown"]}, "candidateCount": {"type": "integer", "minimum": 0, "maximum": 100}, "liveId": {"type": "string", "maxLength": 128}, "drift": {"type": "array", "maxItems": 16, "items": {"type": "string", "maxLength": 64}}, "code": {"type": "string", "maxLength": 64}}, "required": ["status", "candidateCount"], "additionalProperties": false},
+    "operationalStatus": {"type": "object", "properties": {"queueCounts": {"type": "object", "properties": {"dueClosure": {"type": "integer", "minimum": 0}, "readyDraft": {"type": "integer", "minimum": 0}, "processingPending": {"type": "integer", "minimum": 0}, "reviewReady": {"type": "integer", "minimum": 0}, "retry": {"type": "integer", "minimum": 0}, "readyToSend": {"type": "integer", "minimum": 0}, "deliveryInFlight": {"type": "integer", "minimum": 0}}, "required": ["dueClosure", "readyDraft", "processingPending", "reviewReady", "retry", "readyToSend", "deliveryInFlight"], "additionalProperties": false}, "oldestReadyAgeSeconds": {"type": ["integer", "null"], "minimum": 0}, "activeSlot": {"type": ["object", "null"], "properties": {"recordId": {"type": "string", "maxLength": 128}, "correlationId": {"type": "string", "maxLength": 128}, "phase": {"type": "string", "maxLength": 32}, "acknowledgedAt": {"type": ["string", "null"]}, "resultDeadline": {"type": ["string", "null"]}, "ageSeconds": {"type": "integer", "minimum": 0}, "deadlineInSeconds": {"type": ["integer", "null"]}}, "required": ["recordId", "correlationId", "phase", "acknowledgedAt", "resultDeadline", "ageSeconds", "deadlineInSeconds"], "additionalProperties": false}, "timeoutCount": {"type": "integer", "minimum": 0}, "lateResultCount": {"type": "integer", "minimum": 0}, "lastPass": {"$ref": "#/schemas/passSummary"}}, "required": ["queueCounts", "oldestReadyAgeSeconds", "activeSlot", "timeoutCount", "lateResultCount", "lastPass"], "additionalProperties": false},
+    "healthResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "status": {"type": "string", "enum": ["ok", "degraded"]}, "listener": {"$ref": "#/schemas/listenerIdentity"}, "controls": {"$ref": "#/schemas/controls"}, "runner": {"type": "object", "properties": {"owner": {"type": "string", "const": "deliberation-v2-cron"}, "buildId": {"type": "string", "const": "deliberation-v2-runtime-v1"}, "installation": {"$ref": "#/schemas/runnerInstallation"}}, "required": ["owner", "buildId", "installation"], "additionalProperties": false}, "runtime": {"$ref": "#/schemas/operationalStatus"}}, "required": ["protocolVersion", "status", "listener", "controls", "runner", "runtime"], "additionalProperties": false},
     "intakeResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "recordId": {"type": "string"}, "inboundId": {"type": "string"}, "duplicate": {"type": "boolean"}}, "required": ["protocolVersion", "recordId", "inboundId", "duplicate"], "additionalProperties": false},
     "readyResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "items": {"type": "array", "items": {"$ref": "#/schemas/readyItem"}}, "nextCursor": {"type": ["string", "null"], "maxLength": 512}}, "required": ["protocolVersion", "items", "nextCursor"], "additionalProperties": false},
     "reservationResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "reservation": {"$ref": "#/schemas/reservation"}}, "required": ["protocolVersion", "reservation"], "additionalProperties": false},
+    "invocation": {"type": "object", "properties": {"recordId": {"type": "string"}, "attemptId": {"type": "string"}, "deliveryEnvelope": {"$ref": "#/schemas/deliveryEnvelope"}, "attemptedTarget": {"$ref": "#/schemas/deliveryTarget"}, "invocationIdempotencyKey": {"type": "string"}, "providerAttemptId": {"type": "string"}, "invokedAt": {"type": "string"}}, "required": ["recordId", "attemptId", "deliveryEnvelope", "attemptedTarget", "invocationIdempotencyKey", "providerAttemptId", "invokedAt"], "additionalProperties": false},
+    "invocationResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "invocation": {"$ref": "#/schemas/invocation"}}, "required": ["protocolVersion", "invocation"], "additionalProperties": false},
     "recordResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "record": {"$ref": "#/schemas/record"}}, "required": ["protocolVersion", "record"], "additionalProperties": false},
     "errorResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "error": {"type": "object", "properties": {"code": {"type": "string", "enum": ["SCHEMA_INVALID", "AUTH_MISSING", "AUTH_INVALID", "ROUTE_NOT_FOUND", "RECORD_NOT_FOUND", "MEDIA_TYPE_INVALID", "CAS_CONFLICT", "CONTROL_DISABLED", "VERSION_UNSUPPORTED"]}, "message": {"type": "string", "minLength": 1, "maxLength": 256}}, "required": ["code", "message"], "additionalProperties": false}}, "required": ["protocolVersion", "error"], "additionalProperties": false}
   },
@@ -226,15 +313,16 @@
     {"method": "GET", "path": "/deliberation/v1/ready", "request": {"headers": {"$ref": "#/schemas/getHeaders"}, "query": {"$ref": "#/schemas/readyQuery"}, "body": {"$ref": "#/schemas/noBody"}}, "responses": {"200": {"$ref": "#/schemas/readyResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
     {"method": "POST", "path": "/deliberation/v1/intake", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/intakeBody"}}, "responses": {"200": {"$ref": "#/schemas/intakeResponse"}, "201": {"$ref": "#/schemas/intakeResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
     {"method": "POST", "path": "/deliberation/v1/reservations", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/reservationBody"}}, "responses": {"201": {"$ref": "#/schemas/reservationResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "404": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
-    {"method": "POST", "path": "/deliberation/v1/completions", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/completionBody"}}, "responses": {"200": {"$ref": "#/schemas/recordResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "404": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
-    {"method": "POST", "path": "/deliberation/v1/reconciliations", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/reconciliationBody"}}, "responses": {"200": {"$ref": "#/schemas/recordResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "404": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}}
+    {"method": "POST", "path": "/deliberation/v1/invocations", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/invocationBody"}}, "responses": {"200": {"$ref": "#/schemas/invocationResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "404": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}},
+    {"method": "POST", "path": "/deliberation/v1/completions", "request": {"headers": {"$ref": "#/schemas/postHeaders"}, "query": {"$ref": "#/schemas/emptyQuery"}, "body": {"$ref": "#/schemas/completionBody"}}, "responses": {"200": {"$ref": "#/schemas/recordResponse"}, "400": {"$ref": "#/schemas/errorResponse"}, "401": {"$ref": "#/schemas/errorResponse"}, "404": {"$ref": "#/schemas/errorResponse"}, "406": {"$ref": "#/schemas/errorResponse"}, "409": {"$ref": "#/schemas/errorResponse"}, "415": {"$ref": "#/schemas/errorResponse"}, "426": {"$ref": "#/schemas/errorResponse"}}}
   ],
   "readyPagination": {"order": ["updatedAt", "recordId"], "limit": {"minimum": 1, "maximum": 100, "default": 100}, "cursor": "unpadded base64url JSON array [updatedAt,recordId]", "cursorSemantics": "exclusive keyset cursor over aggregate-valid READY_TO_SEND records"},
-  "reservation": {"cas": ["recordId", "expectedVersion", "state=READY_TO_SEND"], "leaseSeconds": {"minimum": 1, "maximum": 900, "default": 60}, "identity": "fresh opaque attemptId per successful reservation", "idempotency": "recordId plus idempotencyKey; expectedVersion, owner, and leaseSeconds must exactly match; mismatch is 409"},
-  "completion": {"fence": ["recordId", "attemptId", "owner", "leaseToken", "unexpired lease"], "outcomes": ["SENT", "NOT_SENT", "DELIVERY_UNKNOWN"], "SENT": "requires providerAttemptId, providerReceiptId, providerMessageId", "NOT_SENT": "requires providerAttemptId; closes the attempt and returns READY_TO_SEND", "DELIVERY_UNKNOWN": "requires providerAttemptId; closes in non-retriable DELIVERY_UNKNOWN"},
-  "reconciliation": {"from": "DELIVERY_UNKNOWN", "outcomes": ["SENT", "NOT_SENT"], "proofReferenceRequired": true, "SENT": "also requires providerReceiptId and providerMessageId", "NOT_SENT": "returns READY_TO_SEND; the next reservation creates a different attemptId"},
-  "transitions": ["READY_TO_SEND -> SENDING", "SENDING -> SENT", "SENDING -> READY_TO_SEND (NOT_SENT)", "SENDING -> DELIVERY_UNKNOWN", "DELIVERY_UNKNOWN -> SENT (reconciled SENT)", "DELIVERY_UNKNOWN -> READY_TO_SEND (reconciled NOT_SENT)"],
+  "reservation": {"cas": ["recordId", "expectedVersion", "state=READY_TO_SEND"], "leaseSeconds": {"minimum": 1, "maximum": 900, "default": 60}, "deliveryTarget": "optional exact {provider,account,channel,threadId?} target; omission derives a threaded destination from source identity plus required sourceThreadId; explicit destination thread identity remains optional and distinct from sourceThreadId; provider policy belongs to transport adapters", "identity": "fresh opaque attemptId per successful reservation", "idempotency": "recordId plus idempotencyKey; expectedVersion, owner, leaseSeconds, and any explicit deliveryTarget must match durable evidence; mismatch is 409"},
+  "invocation": {"fence": ["exact reservation", "deliveryEnvelope", "attemptedTarget=deliveryTarget", "unexpired lease"], "durability": "marker, time, target, providerAttemptId, and idempotency evidence persist before provider invocation"},
+  "completion": {"fence": ["exact reserved envelope", "attempted target", "invocation identity", "provider attempt identity", "unexpired lease"], "outcomes": ["SENT", "FAILED"], "SENT": "requires durable accepted receipt and provider message IDs", "FAILED": "requires one definitive provider failure class and bounded evidence; terminal reason delivery_failed"},
+  "recovery": {"owner": "existing reconciliation-first runtime pass", "neverInvoked": "RESERVATION_ABANDONED audit and READY_TO_SEND under a fresh reservation only", "invokedWithoutReceipt": "FAILED with terminal reason delivery_outcome_unknown; never reservable"},
+  "transitions": ["READY_TO_SEND -> SENDING", "SENDING -> SENT", "SENDING -> FAILED (delivery_failed)", "expired never-invoked SENDING -> READY_TO_SEND (reservation_abandoned)", "expired invoked SENDING -> FAILED (delivery_outcome_unknown)"],
   "errors": {"400": ["SCHEMA_INVALID"], "401": ["AUTH_MISSING", "AUTH_INVALID"], "404": ["ROUTE_NOT_FOUND", "RECORD_NOT_FOUND"], "406": ["MEDIA_TYPE_INVALID"], "409": ["CAS_CONFLICT", "CONTROL_DISABLED"], "415": ["MEDIA_TYPE_INVALID"], "426": ["VERSION_UNSUPPORTED"]},
-  "controls": {"defaults": {"source-intake": false, "claims": true, "review": true, "sender": false}, "commands": ["health", "synthetic-intake", "list-ready", "reserve", "complete", "reconcile", "control source-intake|claims|review|sender enable|disable|status", "inflight", "quarantine", "unquarantine"]},
+  "controls": {"defaults": {"source-intake": false, "claims": true, "review": true, "sender": false}, "commands": ["health", "synthetic-intake", "list-ready", "reserve", "invoke", "complete", "control source-intake|claims|review|sender enable|disable|status", "inflight", "quarantine", "unquarantine"]},
   "listenerCommand": "scripts/deliberation-v2-listener.py --host 127.0.0.1 --port 8765 --credential-file FILE"
 }

@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Deliberation plugin: optional final delivery target override: goal-001: Deliberation plugin: optional f"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-crag-8936-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "calm-crag-8936"
+}

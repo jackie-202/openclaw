@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-14T12:42:10+00:00",
+    "implementingStartedAt": "2026-08-14T12:15:00+00:00",
+    "taskFile": "plans/tasks/2026-08-14_deliberation-delivery-target-cross-repo-integration.md",
+    "taskId": "quick-crag-3748",
+    "title": "Deliberation delivery target: cross-repository integration coverage"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation delivery target: cross-repository integration coverage"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-crag-3748-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-crag-3748",
+  "tddRequired": true
+}

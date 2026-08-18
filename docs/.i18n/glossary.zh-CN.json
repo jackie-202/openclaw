@@ -1126,5 +1126,17 @@
   {
     "source": "Z.AI (GLM)",
     "target": "Z.AI (GLM)"
+  },
+  {
+    "source": "Deliberation v1 Residue Audit",
+    "target": "Deliberation v1 残留审计"
+  },
+  {
+    "source": "Deliberation v2 Standard Plugin Capability Investigation",
+    "target": "Deliberation v2 标准插件能力调查"
+  },
+  {
+    "source": "Deliberation plugin",
+    "target": "Deliberation 插件"
   }
 ]

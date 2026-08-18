@@ -1,5 +1,5 @@
 ---
-summary: "Fail-closed Discord intake backed by the Deliberation Knowledge Manager."
+summary: "Fail-closed Discord and Slack intake backed by the Deliberation Knowledge Manager."
 read_when:
   - You are installing, configuring, or auditing the deliberation plugin
 title: "Deliberation plugin"
@@ -7,7 +7,7 @@ title: "Deliberation plugin"
 
 # Deliberation plugin
 
-The Deliberation plugin keeps configured Discord sources silent in ordinary dispatch and submits eligible inbound messages to an external Knowledge Manager (KM). The KM owns workflow controls and delivery state. OpenClaw does not currently activate an outbound sender because the canonical KM reservation does not identify an authorized Discord account and target.
+The Deliberation plugin keeps configured Discord and Slack sources silent in ordinary dispatch and submits eligible inbound messages to an external Knowledge Manager (KM). The KM owns workflow controls and delivery state. Slack intake keeps the child message timestamp separate from its thread timestamp and reads only that thread for history evidence. Final delivery uses the provider in the KM-authorized durable destination.
 
 ## Distribution
 
@@ -35,11 +35,22 @@ The processing route must differ from every source route. Credentials must be st
           failClosed: true,
           sources: [
             { channel: "discord", accountId: "<account-id>", target: "<source-channel-id>" },
+            {
+              channel: "slack",
+              accountId: "<workspace-account-id>",
+              target: "<source-channel-id>",
+            },
           ],
           processingSource: {
             channel: "discord",
             accountId: "<account-id>",
             target: "<processing-channel-id>",
+          },
+          deliveryTarget: {
+            provider: "discord",
+            accountId: "<delivery-account-id>",
+            channelId: "<delivery-channel-id>",
+            threadId: "<delivery-thread-id>",
           },
           km: {
             endpoint: "https://<km-host>",
@@ -64,12 +75,14 @@ Every request sends `X-Deliberation-Protocol-Version: 1`. The canonical KM API h
 - `GET /deliberation/v1/ready`
 - `POST /deliberation/v1/intake`
 - `POST /deliberation/v1/reservations`
+- `POST /deliberation/v1/invocations`
 - `POST /deliberation/v1/completions`
-- `POST /deliberation/v1/reconciliations`
 
 Request and response objects are closed schemas. The KM owns the `source-intake`, `claims`, `review`, and `sender` controls. Change them with KM operator tooling, not OpenClaw Gateway methods or plugin CLI commands.
 
-Accepted Discord intake uses `v1:<provider>:<account>:<channel>` as the canonical `sourceTarget`. For example, account `default` and channel `123456` produce `v1:discord:default:123456`. Account and channel components are both part of the KM record, deduplication, and correlation domain; an account-less `discord:channel:<id>` target is not accepted for new intake.
+Accepted Discord and Slack intake uses `v1:<provider>:<account>:<channel>` as the canonical `sourceTarget`. For example, Slack account `work` and channel `C123` produce `v1:slack:work:C123`. Account and channel components are both part of the KM record, deduplication, and correlation domain. Slack thread timestamps are routing identities and are not encoded into `sourceTarget`; a reply's own `message.ts` remains its `providerEventId`.
+
+`deliveryTarget` is optional and operator-owned. It is a closed Discord or Slack destination with `provider`, `accountId`, `channelId`, and `threadId`. Discord permits `threadId` to be omitted; Slack requires a canonical timestamp such as `1770000000.000001`. When configured, the plugin supplies the structured override only at its trusted KM reservation boundary; inbound events, reviewer output, and model output cannot select or replace it. KM must persist the effective structured destination in the delivery envelope so an in-flight reservation is unaffected by later configuration changes. Source provenance never selects or changes the destination provider.
 
 ## Probe intake
 
@@ -104,6 +117,8 @@ Discord removes exact self-authored messages before `inbound_claim`: the authent
 
 Runtime intake warnings use the same bounded KM stage, status, and code fields. They omit credentials, request and response bodies, endpoint values, Discord message content, and raw KM error messages.
 
-Outbound delivery is intentionally inactive. Reactivate it only after a later immutable KM contract carries the authorized destination through the ready or reservation flow. Do not infer a route, choose a default source, or maintain a second destination map in OpenClaw.
+The Gateway plugin service polls the KM ready queue at a bounded interval and processes at most one item per non-overlapping tick. It validates the ready destination, reserves it, verifies exact deep equality with the durable reservation, and records invocation evidence before making one call to the selected Discord or Slack transport. The canonical durable `deliveryTarget` selects the exact provider, account, channel, and thread for the provider call, invocation evidence, and completion evidence. Deliberation rejects text that the selected transport would split rather than creating multiple platform messages under one KM attempt. OpenClaw does not recompute the route from source provenance or current configuration after reservation.
+
+The KM remains authoritative for sender disablement, reservation conflicts, idempotency, crash recovery, and terminal `SENT` or `FAILED` state. Disabled or conflicted reservations do not call a provider. Malformed, unsupported, or mismatched destinations stop before invocation and send; provider receipts and bounded provider failures after invocation are completed through KM against the same durable target. Gateway stop or plugin reload clears the polling timer and waits for the active tick before releasing the service.
 
 <!-- openclaw-plugin-reference:manual-end -->

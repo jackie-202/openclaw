@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Converge OpenClaw Deliberation intake and mirrored KM contract: goal-001: Converge OpenClaw Deliberatio"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-wave-8241-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-wave-8241"
+}

@@ -1,0 +1,73 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The Slack-origin to canonical Discord-destination delivery behavior was not implemented.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff contains documentation, changelog, and contract-fixture changes but no final-adapter, KM client, plugin runtime, configuration, or focused behavioral test implementation for structured Discord delivery; the task checkpoint explicitly records implementation as blocked because the accepted contract remains string-based.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Without structured destination handling and destination-selected Discord dispatch, a Slack-origin ready item cannot make the required exact Discord account/channel/thread send.",
+      "required": "Implement the accepted structured Discord destination lifecycle and the Slack-origin to Discord dispatch behavior, including exact target fencing and one configured send.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-16_followup-fresh-fork-6542-deliberation-slack-to-discord-pilot-delivery.md:Primary-goals"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-16_fresh-fork-6542_deliberation-slack-to-discord-pilot-delivery-goal-001-a.md:Contract-Gate-and-Implementation"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-fork-6542.checkpoint.md:Steps-and-Context-for-resume"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED/GREEN TDD proof is absent.",
+      "crossCutting": true,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The run manifest declares tddRequired true, no TDD proof is supplied, and the follow-up checkpoint leaves genuine RED capture and GREEN verification incomplete.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The mandatory TDD process cannot be established from the supplied review material.",
+      "required": "Supply valid task-scoped genuine RED and GREEN proof for the required implementation.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/fresh-fork-6542-acceptance-001/manifest.json:20"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-fork-6542.checkpoint.md:Steps"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-fork-3487.evidence.md:Session-2"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation Slack-to-Discord pilot delivery: goal-001: A Slack-origin ready item with a canonical Disc"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-fork-6542-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "fresh-fork-6542"
+}

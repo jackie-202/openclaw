@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T08:42:55+00:00",
+    "implementingStartedAt": "2026-08-17T08:33:45+00:00",
+    "taskFile": "plans/tasks/2026-08-17_followup-cool-wave-8241-converge-openclaw-deliberation-intake-and-mirrored-km-contra.md",
+    "taskId": "cool-wave-8241",
+    "title": "[acceptance-fix] Converge OpenClaw Deliberation intake and mirrored KM contract: goal-001: Converge OpenClaw Deliberatio"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Converge OpenClaw Deliberation intake and mirrored KM contract: goal-001: Converge OpenClaw Deliberatio"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-wave-8241-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-wave-8241",
+  "tddRequired": true
+}

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T00:10:36+00:00",
+    "implementingStartedAt": "2026-08-16T23:45:10+00:00",
+    "taskFile": "plans/tasks/2026-08-16_followup-quick-fork-8802-deliberation-cross-provider-e2e-and-slack-pilot-readiness.md",
+    "taskId": "quick-fork-8802",
+    "title": "[acceptance-fix] Deliberation cross-provider E2E and Slack pilot readiness: goal-001: Deterministic E2E coverage proves "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation cross-provider E2E and Slack pilot readiness: goal-001: Deterministic E2E coverage proves"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-fork-8802-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-fork-8802",
+  "tddRequired": true
+}

@@ -238,6 +238,9 @@ openclaw-path-alias-*/
 /C:\\openclaw/
 *.log
 *.tmp
+
+# Local OpenClaw runtime/session artifacts
+.openclaw/
 *.heapsnapshot
 *.cpuprofile
 *.prof

@@ -1,0 +1,62 @@
+{
+  "findings": [
+    {
+      "claim": "The caller-declared mandatory TDD proof must demonstrate a complete behavior-linked RED/GREEN cycle for the intake and contract change.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied proof contains RED metadata and an exit code, but the visible output starts with the new sourceThreadId client assertion already passing and supplies neither the relevant failing assertion nor a GREEN phase with its outcome; the checkpoint's summary assertion does not replace that proof.",
+      "rationale": "With tddRequired true, an exit code alone does not establish that the required behavior failed before implementation and passed afterward.",
+      "required": "Provide the complete task-scoped RED/GREEN proof showing the intended sourceThreadId or contract assertion failing in RED and the same focused command passing in GREEN.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-reef-1568.red-green-proof.md:RED Phase"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-reef-1568.checkpoint.md:Last completed"
+        }
+      ]
+    },
+    {
+      "claim": "The task requires a final note that lists verification commands and results, identifies the intentional OpenClaw overlay retained outside the owner mirror, and records any owner-pin follow-up.",
+      "crossCutting": false,
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint reports aggregate pass counts and blockers and mentions the owner-pin follow-up, but it does not list the executed commands with their results or identify the retained OpenClaw overlay; no separate final note was supplied.",
+      "rationale": "The explicit acceptance record is incomplete, so reviewers cannot distinguish the generic owner mirror from intentionally stricter OpenClaw constraints or map reported outcomes to commands.",
+      "required": "Supply the required final note with each executed command and result, the retained OpenClaw overlay and rationale, and the unresolved owner provenance pin follow-up.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-17_converge-openclaw-deliberation-intake-and-mirrored-km-contra.md:Acceptance"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-reef-1568.checkpoint.md:Last completed"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Converge OpenClaw Deliberation intake and mirrored KM contract"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-reef-1568-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-reef-1568"
+}

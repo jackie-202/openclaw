@@ -6,6 +6,10 @@ import type {
 import type { DeliberationConfig } from "./config.js";
 import { KmRequestError, type KmClient } from "./km-client.js";
 import { admitInboundSource, matchesSource } from "./route-match.js";
+import {
+  registerSlackThreadIdentity,
+  type SlackThreadIdentityStore,
+} from "./thread-identity-store.js";
 
 type BeforeDispatchContext = {
   channelId?: string;
@@ -59,6 +63,7 @@ export function createInboundClaimHandler(
   config: DeliberationConfig,
   client: KmClient,
   logger: PluginLogger,
+  threadStore?: SlackThreadIdentityStore,
 ) {
   // Discord compares authenticated botUserId with author.id before this hook.
   // No authoritative self fact reaches plugins, so admission must not guess from display metadata.
@@ -78,12 +83,23 @@ export function createInboundClaimHandler(
       return { handled: false };
     }
     try {
+      if (admission.route.channel === "slack") {
+        if (!threadStore) {
+          throw new Error("Slack thread identity store is unavailable");
+        }
+        await registerSlackThreadIdentity(threadStore, {
+          sourceTarget: admission.sourceTarget,
+          providerEventId: admission.providerEventId,
+          threadId: admission.sourceThreadId,
+        });
+      }
       const occurredAt = canonicalUtcTimestamp(new Date(event.timestamp ?? Date.now()));
       const receivedAt = canonicalUtcTimestamp(new Date());
       await client.intake({
-        provider: "discord",
+        provider: admission.route.channel,
         providerEventId: admission.providerEventId,
         sourceTarget: admission.sourceTarget,
+        sourceThreadId: admission.sourceThreadId,
         senderId: admission.senderId,
         occurredAt,
         receivedAt,

@@ -1,0 +1,104 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required READY_TO_SEND-to-sole-send delivery behavior is not active in the serving Gateway.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task checkpoint states the running LaunchAgent Gateway is serving a version-mismatched artifact and has not received an authorized deploy or restart; the inherited live evidence still reports readyToSend: 1 without reservation or terminal delivery.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "The goal is to move READY_TO_SEND work through the canonical sender. A source-level sender that is absent from the running Gateway cannot deliver the pending record.",
+      "required": "Obtain the authorized canonical artifact verification and Gateway restart, then let the sole sender process the eligible record without manual intervention.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-reef-3383.checkpoint.md:Context for resume"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.final-note.md:Rollout And Live Evidence"
+        }
+      ]
+    },
+    {
+      "claim": "Required live exactly-once delivery evidence is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied checkpoint says rollout and live verification remain blocked. The inherited final note explicitly claims no SENT state, delivery-attempt row, provider message ID, or Discord reply for the pending record.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The operational goal requires proof that the named record was delivered once by the canonical sender; isolated source coverage cannot establish serving-runtime state or live provider receipt.",
+      "required": "After the authorized rollout, provide read-only evidence that the named record is SENT with exactly one delivery attempt, one provider message ID, and one matching Discord reply.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-reef-3383.checkpoint.md:Steps"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-vale-0017.final-note.md:Rollout And Live Evidence"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-18_warm-reef-3383_acceptance-fix-fix-deliberation-ready-to-send-records-not.md:Implementation"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof lacks a valid behavior-linked RED/GREEN cycle for the operational delivery behavior.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The supplied proof rejects the historical registration RED as unrelated, identifies the required operational RED/GREEN as pre-restart READY_TO_SEND followed by post-restart SENT evidence, and records that the fresh GREEN remains pending. The manifest sets tddRequired to true.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The sole valid cycle for this follow-up is the authorized operational transition. It has neither completed GREEN evidence nor a valid paired proof for the target delivery behavior.",
+      "required": "Capture an authorized operational RED before rollout and paired post-restart GREEN showing the same record reaches SENT exactly once, or provide caller-authorized TDD provenance that validly covers the operational repair.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-reef-3383.red-green-proof.md:RED Phase"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-reef-3383.red-green-proof.md:GREEN Phase"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/warm-reef-3383-acceptance-001/manifest.json:20"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-18_warm-reef-3383_acceptance-fix-fix-deliberation-ready-to-send-records-not.md:TDD"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix Deliberation READY_TO_SEND records not reaching sole-send delivery: goal-001: Fix"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-reef-3383-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "warm-reef-3383"
+}

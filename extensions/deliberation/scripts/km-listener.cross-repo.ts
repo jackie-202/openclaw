@@ -16,6 +16,9 @@ import { request } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { parseDeliberationConfig } from "../src/config.js";
+import { createFinalDeliveryAdapter } from "../src/final-adapter.js";
+import { createKmClient, KmRequestError } from "../src/km-client.js";
 import { runIntakeProducer } from "./intake-producer.js";
 
 const SENTINEL = ".openclaw-deliberation-integration-test";
@@ -25,7 +28,9 @@ const CANONICAL_OCCURRED_AT = "2026-08-09T08:32:34.252000Z";
 const RECEIVED_AT = "2026-08-09T08:33:00.123000Z";
 const CONFIGURED_KM_ROOT = (() => {
   const value = process.env.OPENCLAW_DELIBERATION_KM_ROOT;
-  if (!value) throw new Error("plugin: set OPENCLAW_DELIBERATION_KM_ROOT to the KM checkout");
+  if (!value) {
+    throw new Error("plugin: set OPENCLAW_DELIBERATION_KM_ROOT to the KM checkout");
+  }
   return value;
 })();
 
@@ -54,6 +59,17 @@ function requireKmRoot(): { kmRoot: string; listener: string; python: string } {
   const python = path.join(kmRoot, ".venv/bin/python3");
   assert.ok(existsSync(listener), `plugin: KM listener is missing at ${listener}`);
   assert.ok(existsSync(python), `plugin: KM Python is missing at ${python}`);
+  const provenance = JSON.parse(
+    readFileSync(path.join(import.meta.dirname, "../contracts/provenance.json"), "utf8"),
+  ) as { ownerFiles?: Record<string, string> };
+  assert.ok(provenance.ownerFiles, "provenance: accepted KM owner hashes are missing");
+  for (const [ownerFile, expected] of Object.entries(provenance.ownerFiles)) {
+    const relative = ownerFile.replace(/^km-system\//, "");
+    const file = path.join(kmRoot, relative);
+    assert.ok(existsSync(file), `provenance: KM owner file is missing: ${relative}`);
+    const actual = createHash("sha256").update(readFileSync(file)).digest("hex");
+    assert.equal(actual, expected, `provenance: KM owner hash mismatch: ${relative}`);
+  }
   return { kmRoot, listener, python };
 }
 
@@ -107,23 +123,60 @@ function runProbe(
   kmRoot: string,
   tempRoot: string,
   spoolRoot: string,
-  command: "init" | "read",
+  command: "init" | "prepare" | "read",
+  reviewedText?: string,
 ): unknown {
-  const result = spawnSync(
-    python,
-    [path.join(import.meta.dirname, "km-spool-probe.py"), command, tempRoot, spoolRoot],
-    {
-      encoding: "utf8",
-      env: childEnvironment(kmRoot, tempRoot),
-      timeout: 10_000,
-    },
-  );
+  const args = [path.join(import.meta.dirname, "km-spool-probe.py"), command, tempRoot, spoolRoot];
+  if (reviewedText !== undefined) {
+    args.push(reviewedText);
+  }
+  const result = spawnSync(python, args, {
+    encoding: "utf8",
+    env: childEnvironment(kmRoot, tempRoot),
+    timeout: 10_000,
+  });
   assert.equal(result.status, 0, `spool: probe failed: ${result.stderr.trim()}`);
   try {
     return JSON.parse(result.stdout) as unknown;
   } catch {
     assert.fail("spool: probe returned invalid JSON");
   }
+}
+
+function canonicalTarget(route: {
+  provider: string;
+  accountId: string;
+  channelId: string;
+}): string {
+  return `v1:${route.provider}:${route.accountId}:${route.channelId}`;
+}
+
+function createIntegrationKmClient(
+  context: ListenerContext,
+  deliveryTarget?: { provider: "discord"; accountId: string; channelId: string },
+) {
+  const config = parseDeliberationConfig({
+    enabled: true,
+    failClosed: true,
+    sources: [{ channel: "discord", accountId: "default", target: "source-a" }],
+    processingSource: { channel: "discord", accountId: "default", target: "processing" },
+    ...(deliveryTarget
+      ? {
+          deliveryTarget: {
+            provider: deliveryTarget.provider,
+            accountId: deliveryTarget.accountId,
+            channelId: deliveryTarget.channelId,
+          },
+        }
+      : {}),
+    km: {
+      endpoint: context.endpoint,
+      credential: context.credential,
+      requestTimeoutMs: 5_000,
+    },
+    restrictedSessionKeys: ["__deliberation-integration-restricted__"],
+  });
+  return createKmClient({ config, openclawConfig: {} as never });
 }
 
 async function awaitReadiness(child: ChildProcessWithoutNullStreams): Promise<number> {
@@ -147,7 +200,9 @@ async function awaitReadiness(child: ChildProcessWithoutNullStreams): Promise<nu
     child.stdout.on("data", (chunk: string) => {
       stdout += chunk;
       const newline = stdout.indexOf("\n");
-      if (newline === -1) return;
+      if (newline === -1) {
+        return;
+      }
       try {
         const ready = JSON.parse(stdout.slice(0, newline)) as {
           ready?: unknown;
@@ -166,13 +221,19 @@ async function awaitReadiness(child: ChildProcessWithoutNullStreams): Promise<nu
 }
 
 async function stopListener(child: ChildProcessWithoutNullStreams): Promise<void> {
-  if (child.exitCode !== null || child.signalCode !== null) return;
-  const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return;
+  }
+  const exited = new Promise<void>((resolve) => {
+    child.once("exit", () => resolve());
+  });
   child.kill("SIGTERM");
   if (
     await Promise.race([
       exited.then(() => true),
-      new Promise<false>((resolve) => setTimeout(() => resolve(false), 2_000)),
+      new Promise<false>((resolve) => {
+        setTimeout(() => resolve(false), 2_000);
+      }),
     ])
   ) {
     return;
@@ -226,7 +287,9 @@ async function createListenerFixture(): Promise<ListenerFixture> {
       tempRoot,
     };
   } catch (error) {
-    if (child) await stopListener(child);
+    if (child) {
+      await stopListener(child);
+    }
     rmSync(tempRoot, { recursive: true, force: true });
     throw error;
   }
@@ -244,7 +307,9 @@ async function disposeFixture(fixture: ListenerFixture): Promise<void> {
   } catch (error) {
     cleanupError ??= error;
   }
-  if (cleanupError) throw new Error(`cleanup: ${String(cleanupError)}`);
+  if (cleanupError) {
+    throw new Error(`cleanup: ${String(cleanupError)}`);
+  }
 }
 
 function postMalformed(context: ListenerContext): Promise<{ status: number; body: unknown }> {
@@ -291,7 +356,9 @@ function postMalformed(context: ListenerContext): Promise<{ status: number; body
 }
 
 function fingerprint(file: string): FileFingerprint | undefined {
-  if (!existsSync(file)) return undefined;
+  if (!existsSync(file)) {
+    return undefined;
+  }
   const bytes = readFileSync(file);
   const stat = statSync(file);
   return {
@@ -388,6 +455,338 @@ test("real producer reaches the isolated KM listener and canonical spool", async
     await disposeFixture(fixture);
   }
   assert.equal(existsSync(fixture.tempRoot), false, "cleanup: temporary root remains");
+});
+
+test("reviewed final delivery preserves source provenance and uses the durable target", async (t) => {
+  const source = { provider: "discord", accountId: "default", channelId: "source-a" } as const;
+  const processing = {
+    provider: "discord",
+    accountId: "default",
+    channelId: "processing",
+  } as const;
+  const override = {
+    provider: "discord",
+    accountId: "delivery",
+    channelId: "target-b",
+  } as const;
+  const reviewedText = "reviewed integration response";
+
+  for (const scenario of [
+    { name: "defaults final delivery to source A", delivery: undefined },
+    { name: "routes final delivery from source A to override B", delivery: override },
+  ] as const) {
+    await t.test(scenario.name, async () => {
+      const fixture = await createListenerFixture();
+      try {
+        const routes = {
+          sources: [source],
+          processing,
+          ...(scenario.delivery ? { delivery: scenario.delivery } : {}),
+        };
+        const sourceTarget = canonicalTarget(source);
+        const processingTarget = canonicalTarget(processing);
+        const sourceWireTarget = {
+          provider: source.provider,
+          account: source.accountId,
+          channel: source.channelId,
+          threadId: scenario.delivery ? "1535928766595866625" : "1535928766595866624",
+        };
+        const deliveryTarget = scenario.delivery
+          ? {
+              provider: scenario.delivery.provider,
+              account: scenario.delivery.accountId,
+              channel: scenario.delivery.channelId,
+            }
+          : sourceWireTarget;
+        assert.notEqual(
+          processingTarget,
+          sourceTarget,
+          "routing: processing source must remain distinct from intake source A",
+        );
+        assert.notEqual(
+          processingTarget,
+          canonicalTarget(deliveryTarget),
+          "routing: processing source must remain distinct from final delivery",
+        );
+
+        const result = await runIntakeProducer(
+          {
+            endpoint: fixture.context.endpoint,
+            routes,
+            event: {
+              provider: "discord",
+              eventType: "message",
+              eventKind: "user_request",
+              channelId: source.channelId,
+              accountId: source.accountId,
+              messageId: scenario.delivery ? "1535928766595866625" : "1535928766595866624",
+              senderId: "sender-routing",
+              timestamp: OCCURRED_AT,
+              content: "deliberation routing integration request",
+            },
+          },
+          { OPENCLAW_DELIBERATION_KM_CREDENTIAL: fixture.context.credential },
+        );
+        assert.equal(
+          result.handled,
+          true,
+          `routing: intake was not handled: ${JSON.stringify(result.diagnostic ?? {})}`,
+        );
+
+        const python = path.join(fixture.context.kmRoot, ".venv/bin/python3");
+        const prepared = runProbe(
+          python,
+          fixture.context.kmRoot,
+          fixture.tempRoot,
+          fixture.context.spoolRoot,
+          "prepare",
+          reviewedText,
+        ) as Record<string, unknown>;
+        assert.equal(prepared.state, "READY_TO_SEND", "routing: reviewed item is not ready");
+        assert.equal(prepared.sourceTarget, sourceTarget, "routing: source projection changed");
+
+        const client = createIntegrationKmClient(fixture.context, scenario.delivery);
+        const ready = await client.ready();
+        assert.equal(ready.items.length, 1, "routing: expected exactly one reviewed ready item");
+        const item = ready.items[0];
+        assert.ok(item, "routing: reviewed ready item is missing");
+        assert.equal(item.text, reviewedText, "routing: reviewed text changed before delivery");
+        assert.equal(
+          item.deliveryEnvelope.sourceTarget,
+          sourceTarget,
+          "routing: ready envelope lost source A",
+        );
+        assert.deepEqual(
+          item.deliveryEnvelope.deliveryTarget,
+          sourceWireTarget,
+          "routing: ready envelope must preserve the structured source destination",
+        );
+        assert.deepEqual(
+          item.effectiveDeliveryTarget,
+          deliveryTarget,
+          "routing: ready item must expose the effective structured destination",
+        );
+
+        const reserved = await client.reserve(item, "openclaw-deliberation-integration");
+        assert.equal(reserved.outcome, "reserved", "fencing: reviewed item was not reserved");
+        if (reserved.outcome !== "reserved") {
+          assert.fail("fencing: missing delivery reservation");
+        }
+        assert.equal(
+          reserved.reservation.deliveryEnvelope.sourceTarget,
+          sourceTarget,
+          "provenance: reservation lost source A",
+        );
+        assert.deepEqual(
+          reserved.reservation.deliveryEnvelope.deliveryTarget,
+          deliveryTarget,
+          "routing: reservation has the wrong durable delivery target",
+        );
+        const expectedProviderAttemptId = `provider:${reserved.reservation.attemptId}`;
+        const providerCalls: Array<{
+          accountId: string;
+          channelId: string;
+          text: string;
+          idempotencyKey: string;
+        }> = [];
+        let successfulCompletion: Parameters<typeof client.completeDelivery>[0] | undefined;
+        let deliveryKm = {
+          ...client,
+          ready: async () => ({ items: [item], nextCursor: null }),
+          reserve: async () => reserved,
+          completeDelivery: async (delivery: Parameters<typeof client.completeDelivery>[0]) => {
+            successfulCompletion = delivery;
+            return await client.completeDelivery(delivery);
+          },
+        };
+        if (scenario.delivery) {
+          const beforeRejectedInvocation = runProbe(
+            python,
+            fixture.context.kmRoot,
+            fixture.tempRoot,
+            fixture.context.spoolRoot,
+            "read",
+          ) as Array<Record<string, unknown>>;
+          const beforeRejectedDelivery = beforeRejectedInvocation[0]?.delivery as
+            | { attempts?: Array<Record<string, unknown>> }
+            | undefined;
+          const beforeRejectedAttempt = beforeRejectedDelivery?.attempts?.[0];
+          assert.ok(beforeRejectedAttempt, "fencing: reserved attempt evidence is missing");
+          await assert.rejects(
+            client.invoke(reserved.reservation, sourceWireTarget, "provider:mismatched-target"),
+            (error: unknown) =>
+              error instanceof KmRequestError &&
+              error.stage === "http" &&
+              error.status === 400 &&
+              error.code === "SCHEMA_INVALID",
+            "fencing: mismatched attempted target A did not fail closed",
+          );
+          const afterRejectedInvocation = runProbe(
+            python,
+            fixture.context.kmRoot,
+            fixture.tempRoot,
+            fixture.context.spoolRoot,
+            "read",
+          ) as Array<Record<string, unknown>>;
+          const rejectedInvocationDelivery = afterRejectedInvocation[0]?.delivery as
+            | { attempts?: Array<Record<string, unknown>> }
+            | undefined;
+          const rejectedInvocationAttempt = rejectedInvocationDelivery?.attempts?.[0];
+          assert.deepEqual(
+            rejectedInvocationAttempt,
+            beforeRejectedAttempt,
+            "fencing: rejected invocation changed durable attempt evidence",
+          );
+          assert.equal(providerCalls.length, 0, "provider: rejected invocation called provider");
+          const mismatchTarget = {
+            provider: "discord",
+            account: "other",
+            channel: "target-c",
+          } as const;
+          const completeDelivery = deliveryKm.completeDelivery;
+          deliveryKm = {
+            ...deliveryKm,
+            completeDelivery: async (delivery) => {
+              const beforeRejectedCompletion = runProbe(
+                python,
+                fixture.context.kmRoot,
+                fixture.tempRoot,
+                fixture.context.spoolRoot,
+                "read",
+              ) as Array<Record<string, unknown>>;
+              const completionDelivery = beforeRejectedCompletion[0]?.delivery as
+                | { attempts?: Array<Record<string, unknown>> }
+                | undefined;
+              const beforeRejectedCompletionAttempt = completionDelivery?.attempts?.[0];
+              assert.ok(
+                beforeRejectedCompletionAttempt,
+                "fencing: invoked attempt evidence is missing",
+              );
+              const callsBeforeRejection = providerCalls.length;
+              await assert.rejects(
+                client.completeDelivery({ ...delivery, attemptedTarget: mismatchTarget }),
+                (error: unknown) =>
+                  error instanceof KmRequestError &&
+                  error.stage === "http" &&
+                  error.status === 400 &&
+                  error.code === "SCHEMA_INVALID",
+                "fencing: mismatched completion target C did not fail closed",
+              );
+              const afterRejectedCompletion = runProbe(
+                python,
+                fixture.context.kmRoot,
+                fixture.tempRoot,
+                fixture.context.spoolRoot,
+                "read",
+              ) as Array<Record<string, unknown>>;
+              const rejectedCompletionDelivery = afterRejectedCompletion[0]?.delivery as
+                | { attempts?: Array<Record<string, unknown>> }
+                | undefined;
+              const rejectedCompletionAttempt = rejectedCompletionDelivery?.attempts?.[0];
+              assert.deepEqual(
+                rejectedCompletionAttempt,
+                beforeRejectedCompletionAttempt,
+                "fencing: rejected completion changed durable attempt evidence",
+              );
+              assert.equal(
+                providerCalls.length,
+                callsBeforeRejection,
+                "provider: rejected completion triggered another provider call",
+              );
+              return await completeDelivery(delivery);
+            },
+          };
+        }
+
+        const provider = {
+          send: async (call: (typeof providerCalls)[number]) => {
+            providerCalls.push(call);
+            return { receiptId: "fake-receipt-1", messageId: "fake-message-1" };
+          },
+        };
+        const completed = await createFinalDeliveryAdapter({
+          km: deliveryKm,
+          providers: { discord: provider },
+          owner: "openclaw-deliberation-integration",
+        }).runOnce();
+        assert.equal(completed?.state, "SENT", "routing: delivery did not reach SENT");
+        assert.ok(successfulCompletion, "fencing: adapter did not submit successful completion");
+        assert.deepEqual(
+          successfulCompletion,
+          {
+            reservation: reserved.reservation,
+            attemptedTarget: deliveryTarget,
+            providerAttemptId: expectedProviderAttemptId,
+            outcome: "SENT",
+            providerReceiptId: "fake-receipt-1",
+            providerMessageId: "fake-message-1",
+          },
+          "fencing: adapter submitted incorrect successful completion evidence",
+        );
+        assert.equal(providerCalls.length, 1, "provider: fake adapter was not called exactly once");
+        const [{ idempotencyKey, ...providerCall }] = providerCalls;
+        assert.deepEqual(
+          providerCall,
+          {
+            provider: "discord",
+            accountId: (scenario.delivery ?? source).accountId,
+            channelId: (scenario.delivery ?? source).channelId,
+            ...(scenario.delivery ? {} : { threadId: sourceWireTarget.threadId }),
+            text: reviewedText,
+          },
+          "provider: fake adapter received the wrong account, channel, or text",
+        );
+
+        const records = runProbe(
+          python,
+          fixture.context.kmRoot,
+          fixture.tempRoot,
+          fixture.context.spoolRoot,
+          "read",
+        ) as Array<Record<string, unknown>>;
+        assert.equal(records.length, 1, "spool: final delivery created another record");
+        const record = records[0];
+        assert.equal(record.sourceTarget, sourceTarget, "provenance: final record lost source A");
+        const review = record.review as { freshnessArtifacts?: Array<Record<string, unknown>> };
+        assert.equal(
+          review.freshnessArtifacts?.[0]?.sourceTarget,
+          sourceTarget,
+          "provenance: review freshness no longer identifies source A",
+        );
+        const delivery = record.delivery as { attempts?: Array<Record<string, unknown>> };
+        const attempt = delivery.attempts?.[0];
+        assert.equal(
+          attempt?.attemptId,
+          reserved.reservation.attemptId,
+          "fencing: final projection changed the reserved attempt identity",
+        );
+        assert.equal(
+          idempotencyKey,
+          expectedProviderAttemptId,
+          "provider: fake adapter did not receive the reserved attempt identity",
+        );
+        assert.equal(
+          attempt?.providerAttemptId,
+          expectedProviderAttemptId,
+          "fencing: durable invocation records the wrong provider attempt identity",
+        );
+        assert.deepEqual(
+          attempt?.attemptedTarget,
+          deliveryTarget,
+          "fencing: attempted target not durable",
+        );
+        assert.equal(attempt?.completionOutcome, "SENT", "fencing: completion outcome not durable");
+        assert.deepEqual(
+          (attempt?.deliveryEnvelope as Record<string, unknown>)?.deliveryTarget,
+          deliveryTarget,
+          "fencing: durable envelope records the wrong final target",
+        );
+      } finally {
+        await disposeFixture(fixture);
+      }
+      assert.equal(existsSync(fixture.tempRoot), false, "cleanup: routing temporary root remains");
+    });
+  }
 });
 
 test("listener rejects the production spool before opening SQLite", () => {

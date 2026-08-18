@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T08:22:55+00:00",
+    "implementingStartedAt": "2026-08-17T07:59:30+00:00",
+    "taskFile": "plans/tasks/2026-08-17_converge-openclaw-deliberation-intake-and-mirrored-km-contra.md",
+    "taskId": "quick-reef-1568",
+    "title": "Converge OpenClaw Deliberation intake and mirrored KM contract"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Converge OpenClaw Deliberation intake and mirrored KM contract"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-reef-1568-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-reef-1568",
+  "tddRequired": true
+}

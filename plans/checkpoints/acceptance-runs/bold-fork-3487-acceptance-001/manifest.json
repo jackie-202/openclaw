@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-16T20:40:49+00:00",
+    "implementingStartedAt": "2026-08-16T20:32:49+00:00",
+    "taskFile": "plans/tasks/2026-08-15_deliberation-slack-to-discord-pilot-delivery.md",
+    "taskId": "bold-fork-3487",
+    "title": "Deliberation Slack-to-Discord pilot delivery"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A Slack-origin ready item with a canonical Discord destination makes exactly one Discord send to its configured account/channel/thread."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Destination provider, not source provider, chooses the adapter."
+    },
+    {
+      "id": "goal-003",
+      "summary": "KM reservation is durable before send and exact target/receipt evidence is bound through completion."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Invalid/conflicting targets cause zero provider calls and no source fallback."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Discord \u2192 Discord behavior and sole-send tests remain green."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Slack-native provider path remains absent or disabled."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-fork-3487-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-fork-3487",
+  "tddRequired": true
+}

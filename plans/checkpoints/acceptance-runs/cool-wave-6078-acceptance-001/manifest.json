@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-16T17:28:39+00:00",
+    "implementingStartedAt": "2026-08-16T17:08:29+00:00",
+    "taskFile": "plans/tasks/2026-08-16_followup-cool-wave-6078-deliberation-slack-intake-and-one-thread-history.md",
+    "taskId": "cool-wave-6078",
+    "title": "[acceptance-fix] Deliberation Slack intake and one-thread history: goal-001: A configured Slack root and a reply are adm"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation Slack intake and one-thread history: goal-001: A configured Slack root and a reply are adm"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-wave-6078-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-wave-6078",
+  "tddRequired": true
+}

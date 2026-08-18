@@ -1,0 +1,50 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/swift-reef-8917.evidence.md",
+      "provenance": "evidence_repair:swift-reef-8917-acceptance-001-evidence-repair-001",
+      "size": 1807
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/swift-reef-8917.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/swift-reef-8917-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "03639ab0774c8a7a47f5301457e6c76a0474c415",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-14T14:29:52.431057+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=quick-crag-3748 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/scripts/intake-producer.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=quick-crag-3748 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- node scripts/run-vitest.mjs extensions/deliberation/scripts/intake-producer.test.ts --report",
+      "outcome": "[test] failed 1 Vitest shard in 74.58s"
+    },
+    {
+      "command": "TASK_ID=quick-crag-3748 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- node scripts/run-vitest.mjs extensions/deliberation/scripts/intake-producer.test.ts --repo",
+      "outcome": "[test] passed 1 Vitest shard in 4.26s"
+    },
+    {
+      "command": "node scripts/run-vitest.mjs extensions/deliberation/scripts/intake-producer.test.ts extensions/deliberation/src/final-adapter.test.ts extensions/deliberation/src/km-client.test.ts --reporter=verbose",
+      "outcome": "Test Files  3 passed (3)"
+    },
+    {
+      "command": "node scripts/run-vitest.mjs extensions/deliberation/scripts/intake-producer.test.ts extensions/deliberation/src/final-adapter.test.ts extensions/deliberation/src/km-client.test.ts --reporter=verbose",
+      "outcome": "Test Files  3 passed (3)"
+    }
+  ],
+  "repairRunId": "swift-reef-8917-acceptance-001-evidence-repair-001",
+  "sourceRunId": "swift-reef-8917-acceptance-001",
+  "startedAt": "2026-08-14T14:29:49.190513+00:00",
+  "status": "escalated"
+}

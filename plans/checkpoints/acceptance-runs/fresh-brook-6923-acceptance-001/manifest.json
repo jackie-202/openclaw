@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T14:18:23+00:00",
+    "implementingStartedAt": "2026-08-17T14:12:23+00:00",
+    "taskFile": "plans/tasks/2026-08-17_converge-deliberation-contract-provenance-and-rollout-readiness.md",
+    "taskId": "fresh-brook-6923",
+    "title": "Converge Deliberation contract provenance and rollout readiness"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Repository-local provenance/contract tests pass."
+    },
+    {
+      "id": "goal-002",
+      "summary": "The manifest is accepted by the repository-local validator and no longer reports `invalid provenance manifest`."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Every pinned file hash matches its current repository file."
+    },
+    {
+      "id": "goal-004",
+      "summary": "The final note distinguishes semantic evidence from hash evidence and records the exact accepted owner pin."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Focused Deliberation tests pass without real network/provider/transport calls."
+    },
+    {
+      "id": "goal-006",
+      "summary": "A concise rollout note states that a full gateway restart\u2014not a plugin-only reload\u2014is the remaining deployment step."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-brook-6923-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-brook-6923",
+  "tddRequired": false
+}

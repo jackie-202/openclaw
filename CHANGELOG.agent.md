@@ -1,5 +1,55 @@
 # Agent Changelog
 
+## 2026-08-18
+
+**READY_TO_SEND deliberations reach the sole-send delivery path**
+
+Deliberation records in READY_TO_SEND now flow into the sole-send delivery path. The delivery no longer stops those records short of send execution, so the state transition leads to the intended downstream delivery instead of being dropped before dispatch.
+
+**Aligns OpenClaw with the provider-neutral Deliberation owner contract**
+
+The shared OpenClaw wire now follows provider-neutral owner semantics, while provider-specific rules remain in OpenClaw-owned overlays and adapters.
+
+## 2026-08-17
+
+**Deliberation owner pin refresh separates semantic comparison from byte and hash checks**
+
+The refreshed `provenance.json` records the current exact owner revision and current exact owner file hashes, while semantic comparison is evaluated separately from byte and hash comparison.
+
+**Deliberation draft continuations bind to the current attempt payload**
+
+Draft continuation lookup now uses the active attempt payload instead of reusing prior attempt state, preventing continuations from drifting across attempts.
+
+**Draft continuations pin to the current attempt payload**
+
+Deliberation draft continuation resolution is now bound to the current attempt payload, so follow-on continuations stay attached to the same attempt data instead of drifting across older payload state.
+
+## 2026-08-16
+
+**Slack-native final delivery adapter sends through the canonical Slack transport**
+
+Final delivery routes now go through the established Slack transport to the exact account, channel, and thread. Both Slack-to-Slack and Discord-to-Slack paths use the same canonical destination handling and send once through that transport.
+
+**Slack-to-Discord pilot sends each ready item once to its canonical Discord destination**
+
+A Slack-origin ready item is delivered to its configured Discord account, channel, and thread with exactly one Discord send. The destination is resolved from the canonical Discord target rather than the source, so the pilot uses one outbound path per ready item instead of duplicating sends.
+
+**Slack intake normalizes thread identity and uses the message timestamp as providerEventId**
+
+Configured Slack roots and replies are admitted through the same intake path. providerEventId is derived from the actual Slack message timestamp, and the thread identity is normalized from the Slack thread fields so root and reply events land in one conversation boundary.
+
+## 2026-08-14
+
+**Deliberation plugin accepts an optional final delivery target override**
+
+The plugin can now take an optional override for the final delivery target, letting the last handoff be redirected without changing the rest of the deliberation flow.
+
+## 2026-08-13
+
+**Deliberation final sender wired into live plugin runtime**
+
+The existing Deliberation final sender is now connected to the live plugin runtime, so the final-sender path runs as part of normal production execution instead of remaining detached from it.
+
 ## 2026-08-09
 
 **Deliberation intake canonicalizes timestamp serialization**

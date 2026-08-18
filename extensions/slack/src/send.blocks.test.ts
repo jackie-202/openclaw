@@ -400,6 +400,28 @@ describe("sendMessageSlack blocks", () => {
     expect(client.chat.postMessage).not.toHaveBeenCalled();
   });
 
+  it("preserves structured Slack failure metadata when enriching its message", async () => {
+    const client = createSlackSendTestClient();
+    const error = Object.assign(new Error("An API error occurred: missing_scope"), {
+      code: "slack_webapi_platform_error",
+      data: { error: "missing_scope", needed: "chat:write" },
+    });
+    client.chat.postMessage.mockRejectedValueOnce(error);
+
+    const caught = await sendMessageSlack("channel:C123", "hi", {
+      token: "xoxb-test",
+      cfg: SLACK_TEST_CFG,
+      client,
+    }).catch((sendError: unknown) => sendError);
+
+    expect(caught).toBe(error);
+    expect(caught).toMatchObject({
+      code: "slack_webapi_platform_error",
+      data: { error: "missing_scope", needed: "chat:write" },
+    });
+    expect((caught as Error).message).toContain("needed: chat:write");
+  });
+
   it("rejects replyBroadcast combined with mediaUrl", async () => {
     const client = createSlackSendTestClient();
     await expect(

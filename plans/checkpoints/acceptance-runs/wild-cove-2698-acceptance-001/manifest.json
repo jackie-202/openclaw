@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-16T21:48:05+00:00",
+    "implementingStartedAt": "2026-08-16T21:04:14+00:00",
+    "taskFile": "plans/tasks/2026-08-16_followup-wild-cove-2698-acceptance-fix-deliberation-slack-to-discord-pilot-delivery.md",
+    "taskId": "wild-cove-2698",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation Slack-to-Discord pilot delivery: goal-001: A Slack-origin ready item with"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation Slack-to-Discord pilot delivery: goal-001: A Slack-origin ready item with"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "wild-cove-2698-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "wild-cove-2698",
+  "tddRequired": true
+}

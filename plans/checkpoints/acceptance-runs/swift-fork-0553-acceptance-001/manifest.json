@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-13T12:19:07+00:00",
+    "implementingStartedAt": "2026-08-13T12:01:43+00:00",
+    "taskFile": "plans/tasks/2026-08-13_wire-the-existing-deliberation-final-sender-into-the-live-pl.md",
+    "taskId": "swift-fork-0553",
+    "title": "Wire the existing Deliberation final sender into the live plugin runtime"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Wire the existing Deliberation final sender into the live plugin runtime"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-fork-0553-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-fork-0553",
+  "tddRequired": true
+}

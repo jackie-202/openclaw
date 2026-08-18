@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The mandatory TDD proof still does not demonstrate a genuine pre-implementation RED for the required default-route cross-repository scenario.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied swift-reef proof explicitly states that no historical default-route listener RED exists. Its fresh RED shows 'defaults final delivery to source A' passing and only the override route failing with HTTP 400 SCHEMA_INVALID, so it cannot establish a failing default-route test before that behavior was implemented.",
+      "rationale": "The canonical acceptance-fix task requires genuine RED and GREEN evidence for the default-route scenario in the planned integration harness. A RED for dependency drift on the override route does not satisfy that distinct caller-required TDD provenance.",
+      "required": "Provide credible historical pre-implementation RED evidence for the default-route cross-repository integration scenario and link it to the corresponding GREEN evidence; do not reconstruct or relabel a post-implementation run.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-14_followup-swift-reef-8917-deliberation-delivery-target-cross-repository-integration-co.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-8917.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-crag-3748.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation delivery target: cross-repository integration coverage: goal-001: Deliberation delivery ta"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-reef-8917-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "swift-reef-8917"
+}

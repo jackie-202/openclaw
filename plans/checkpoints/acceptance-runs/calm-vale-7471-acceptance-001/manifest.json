@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-16T16:57:55+00:00",
+    "implementingStartedAt": "2026-08-16T15:59:49+00:00",
+    "taskFile": "plans/tasks/2026-08-15_deliberation-slack-intake-one-thread-history.md",
+    "taskId": "calm-vale-7471",
+    "title": "Deliberation Slack intake and one-thread history"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A configured Slack root and a reply are admitted with `providerEventId` equal to the actual message timestamp and a normalized thread identity equal to `thread_ts ?? message.ts`."
+    },
+    {
+      "id": "goal-002",
+      "summary": "The history reader returns only that thread, with canonical `v1:slack:<account>:<channel>` provenance and existing message/byte bounds."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Conflicting, malformed, unconfigured, cross-account, or cross-channel Slack metadata fails closed."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Existing Discord route, history, freshness, and contract tests still pass."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Focused tests prove exact Slack timestamp validation/ordering and distinguish child-message identity from thread identity."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Final note records exact commands/results and any stable wire-contract detail needed by the following KM task."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-vale-7471-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-vale-7471",
+  "tddRequired": true
+}

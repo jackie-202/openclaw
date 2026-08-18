@@ -1,0 +1,66 @@
+{
+  "findings": [
+    {
+      "claim": "The current-attempt-pinning behavior was not delivered.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint states that implementation stopped at the Decision Gate and that no production code was edited; the task-scoped diff contains no draft-dispatch or embedded-runner implementation.",
+      "rationale": "The goal requires a trusted runtime-owned envelope and pre-side-effect stale-attempt fencing, but the supplied material establishes that no in-repository ingress or implementation was added.",
+      "required": "Deliver the authoritative draft-dispatch envelope and current-attempt execution/result fencing through a trusted in-repository ingress, or revise the task contract to resolve the absent ingress.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-peak-0850.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-peak-0850.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "Task-scoped diff"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is invalid.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof labels RED as 'TDD: skip' and GREEN as 'Not applicable'; it records only existing isolation-suite output and no regression test reproducing the required attempt-1/2/3 continuation sequence or malformed-envelope fail-closed behavior.",
+      "rationale": "The manifest declares tddRequired true, while the proof does not provide a RED-to-GREEN cycle for the required behavior.",
+      "required": "Provide valid RED and GREEN evidence for the required stale-attempt regression and inconsistent-envelope rejection after a trusted implementation path is available.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-peak-0850.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "manifest.json:20"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Pin Deliberation draft continuations to the current attempt payload"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-peak-0850-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bold-peak-0850"
+}

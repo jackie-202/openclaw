@@ -1,0 +1,92 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The supplied acceptance material must demonstrate that provenance.json contains the exact current KM owner revision and owner-file hashes, refreshed only after semantic verification.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-005"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied task-scoped diff does not include provenance.json, and the checkpoint only asserts completion without recording the owner revision, either owner-file SHA-256 value, or an ordering artifact that ties the refresh to semantic verification.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Without the exact pin and hashes in the caller-supplied material, acceptance cannot establish the provenance goal or distinguish a current semantically gated refresh from a stale or premature pin.",
+      "required": "Supply the resulting provenance.json values and semantic-verification evidence showing the exact current owner revision and both owner-file hashes were recorded only after compatibility was established.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-1698.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/contracts/provenance.json"
+        }
+      ]
+    },
+    {
+      "claim": "A final note must record the exact verification commands and results and state the remaining rollout sequence: host deploy verifier -> full gateway restart -> live smoke.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-006"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "No final note is present in the supplied artifacts. The checkpoint gives aggregate outcomes and the rollout sequence, while the TDD proof records only its contract-test command; neither records the exact command/result set claimed for the focused 238/238 run, canonical 7/7 verifier, scoped format/lint, build, proof checks, and autoreview.",
+      "policyRule": "catalog:required_artifact_missing:blocking",
+      "rationale": "The checkpoint summary cannot satisfy the explicitly required auditable final-note deliverable because its claimed verification outcomes cannot be mapped to exact commands and results.",
+      "required": "Provide the task final note with every exact verification command and corresponding result, plus the remaining rollout sequence in the required order.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-1698.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-1698.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Generic OpenClaw wire matches the provider-neutral KM owner semantics."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "Concrete provider rules remain in OpenClaw-owned overlays/adapters."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Canonical cross-repository verifier passes 7/7."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "Focused Deliberation contract, overlay, adapter, drafting-continuation, and delivery-fence tests pass."
+    },
+    {
+      "id": "goal-005",
+      "status": "UNMET",
+      "summary": "Provenance contains the exact current owner revision and hashes only after semantic verification."
+    },
+    {
+      "id": "goal-006",
+      "status": "UNMET",
+      "summary": "Final note records exact commands/results and states the remaining rollout: host deploy verifier \u2192 full gateway restart \u2192 live smoke."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-vale-1698-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-vale-1698"
+}

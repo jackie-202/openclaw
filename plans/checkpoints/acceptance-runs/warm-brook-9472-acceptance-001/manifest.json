@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-18T19:46:36+00:00",
+    "implementingStartedAt": "2026-08-18T19:39:03+00:00",
+    "taskFile": "plans/tasks/2026-08-18_followup-warm-brook-9472-fix-deliberation-ready-to-send-records-not-reaching-sole-sen.md",
+    "taskId": "warm-brook-9472",
+    "title": "[acceptance-fix] Fix Deliberation READY_TO_SEND records not reaching sole-send delivery: goal-001: Fix Deliberation READ"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix Deliberation READY_TO_SEND records not reaching sole-send delivery: goal-001: Fix Deliberation READ"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-brook-9472-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-brook-9472",
+  "tddRequired": true
+}

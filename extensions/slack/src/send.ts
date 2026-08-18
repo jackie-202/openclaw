@@ -229,7 +229,8 @@ function enrichSlackWebApiError(err: unknown): unknown {
   if (!message || !(err instanceof Error) || message === err.message) {
     return err;
   }
-  return new Error(message);
+  err.message = message;
+  return err;
 }
 
 function readSlackRequestErrorCode(value: unknown): string | undefined {

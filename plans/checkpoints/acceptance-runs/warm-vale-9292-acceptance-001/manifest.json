@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-18T08:49:27+00:00",
+    "implementingStartedAt": "2026-08-18T08:36:27+00:00",
+    "taskFile": "plans/tasks/2026-08-18_followup-warm-vale-9292-reconcile-openclaw-with-provider-neutral-deliberation-owner.md",
+    "taskId": "warm-vale-9292",
+    "title": "[acceptance-fix] Reconcile OpenClaw with provider-neutral Deliberation owner contract: goal-005: Provenance contains the"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Reconcile OpenClaw with provider-neutral Deliberation owner contract: goal-005: Provenance contains the"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-vale-9292-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-vale-9292",
+  "tddRequired": false
+}

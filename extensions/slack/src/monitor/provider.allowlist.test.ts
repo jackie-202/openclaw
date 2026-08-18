@@ -1,6 +1,7 @@
 // Slack tests cover provider.allowlist plugin behavior.
 import { CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY } from "openclaw/plugin-sdk/approval-handler-adapter-runtime";
 import type { ChannelRuntimeSurface } from "openclaw/plugin-sdk/channel-contract";
+import { CHANNEL_HISTORY_RUNTIME_CONTEXT_CAPABILITY } from "openclaw/plugin-sdk/channel-runtime-context";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   flush,
@@ -22,8 +23,10 @@ beforeEach(() => {
 function createRuntimeContextCapture(): {
   channelRuntime: ChannelRuntimeSurface;
   register: ChannelRuntimeSurface["runtimeContexts"]["register"];
+  dispose: ReturnType<typeof vi.fn>;
 } {
-  const register = vi.fn(() => ({ dispose: vi.fn() }));
+  const dispose = vi.fn();
+  const register = vi.fn(() => ({ dispose }));
   return {
     channelRuntime: {
       runtimeContexts: {
@@ -33,6 +36,7 @@ function createRuntimeContextCapture(): {
       },
     } as unknown as ChannelRuntimeSurface,
     register,
+    dispose,
   };
 }
 
@@ -69,6 +73,31 @@ describe("slack allowlist log formatting", () => {
 });
 
 describe("slack startup user allowlist resolution", () => {
+  it("registers account-scoped channel history for every active Slack monitor", async () => {
+    const { channelRuntime, register, dispose } = createRuntimeContextCapture();
+
+    const monitor = startSlackMonitor(monitorSlackProvider, { channelRuntime });
+    try {
+      await getSlackHandlerOrThrow("message");
+      await flush();
+
+      expect(register).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channelId: "slack",
+          accountId: "default",
+          capability: CHANNEL_HISTORY_RUNTIME_CONTEXT_CAPABILITY,
+          context: {
+            readMessage: expect.any(Function),
+            readThreadPage: expect.any(Function),
+          },
+        }),
+      );
+    } finally {
+      await stopSlackMonitor(monitor);
+    }
+    expect(dispose).toHaveBeenCalledOnce();
+  });
+
   it("registers the native approval runtime for plugin-only Slack approvals", async () => {
     resetSlackTestState({
       channels: {

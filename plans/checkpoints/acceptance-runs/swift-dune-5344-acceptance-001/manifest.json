@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-16T17:54:46+00:00",
+    "implementingStartedAt": "2026-08-16T17:37:22+00:00",
+    "taskFile": "plans/tasks/2026-08-16_followup-swift-dune-5344-acceptance-fix-deliberation-slack-intake-and-one-thread-hist.md",
+    "taskId": "swift-dune-5344",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation Slack intake and one-thread history: goal-001: A configured Slack root an"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation Slack intake and one-thread history: goal-001: A configured Slack root an"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-dune-5344-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-dune-5344",
+  "tddRequired": true
+}

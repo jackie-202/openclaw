@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The configured Slack root/reply admission implementation is absent from the caller-supplied review material.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff contains changelog, documentation, SDK documentation, and cutover-contract changes, but no production implementation for Slack route admission or normalization of providerEventId and thread identity. Checkpoints and proof prose assert preserved behavior without supplying the implementation paths for semantic review.",
+      "rationale": "Goal-001 requires delivered runtime admission behavior. Descriptions and passing-test summaries cannot establish that behavior when the supplied implementation diff omits the relevant production code.",
+      "required": "Supply the task-scoped production implementation material showing configured Slack roots and replies admitted with providerEventId equal to the actual message timestamp and thread identity normalized as thread_ts ?? message.ts.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:task-scoped-diff"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-16_cool-wave-6078_deliberation-slack-intake-and-one-thread-history-goal-001-a.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-wave-6078.evidence.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation Slack intake and one-thread history: goal-001: A configured Slack root and a reply are adm"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-wave-6078-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "cool-wave-6078"
+}

@@ -1,0 +1,97 @@
+{
+  "findings": [
+    {
+      "claim": "The required Slack final-delivery path and its KM-bound receipt/failure completion are not delivered.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-002",
+        "goal-004"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint says the pinned KM owner contract remains Discord-only and that real Slack delivery requires an owner-side contract/runtime update; the supplied Deliberation reference also states that final delivery remains Discord-only and describes only one Discord provider call.",
+      "rationale": "Without a Slack-authorized durable destination contract and runtime path, canonical Slack destinations cannot dispatch through Slack for either Slack or Discord sources, and Slack provider receipts or bounded failures cannot be completed through the required KM lifecycle.",
+      "required": "Deliver the owner-authorized Slack destination contract/runtime support and destination-selected Slack adapter, preserving exact account/channel/thread and binding bounded Slack receipt or failure evidence to KM completion.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/checkpoints/bold-dune-7459.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "docs/plugins/reference/deliberation.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/2026-08-16_bold-dune-7459_deliberation-slack-native-final-delivery-adapter.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is incomplete in the supplied material.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-002",
+        "goal-003",
+        "goal-004",
+        "goal-005"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied TDD artifact contains proof-capture metadata and a RED Phase with a failing command, but no GREEN Phase or passing post-implementation evidence is supplied.",
+      "rationale": "The manifest declares tddRequired true, so RED evidence alone does not establish the required RED-GREEN cycle.",
+      "required": "Supply the corresponding GREEN phase in the canonical TDD proof, with post-implementation command provenance and successful evidence for the scoped behavior.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/checkpoints/bold-dune-7459.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/checkpoints/acceptance-runs/bold-dune-7459-acceptance-001/manifest.json:40"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Canonical Slack destinations send once through the established Slack transport to exact account/channel/thread."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "Both Slack \u2192 Slack and Discord \u2192 Slack work through destination-based dispatch."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "Discord targets still use only Discord and all seq 4 regressions pass."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "Provider receipts and bounded failure evidence are completed through KM without target drift."
+    },
+    {
+      "id": "goal-005",
+      "status": "UNMET",
+      "summary": "Unsupported/malformed/conflicting destinations produce no provider call."
+    },
+    {
+      "id": "goal-006",
+      "status": "MET",
+      "summary": "No live config enables Slack-native delivery."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-dune-7459-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bold-dune-7459"
+}

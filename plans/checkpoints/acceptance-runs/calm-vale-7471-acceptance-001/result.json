@@ -1,0 +1,148 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required Slack admission, child-to-thread correlation, and one-thread history implementation is absent from the supplied task-scoped change set.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-002",
+        "goal-003"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied diff changes CHANGELOG.agent.md, two documentation files, and extensions/deliberation/contracts/cutover-controls-v1.json, but supplies no production changes to Deliberation config, route matching, intake, history reading, Slack runtime seams, or keyed-state correlation.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Checkpoint prose asserting completion cannot establish delivered runtime behavior when the caller-supplied implementation diff contains none of the components required by goals 001 through 003.",
+      "required": "Supply the production implementation for configured Slack root/reply admission, separate child and thread identities, exact thread-only bounded history, and fail-closed metadata validation.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:task-scoped-diff"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-16_calm-vale-7471_deliberation-slack-intake-and-one-thread-history.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is incomplete.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-005"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied proof contains a RED phase with exit code 1 and failing Slack tests, but no GREEN phase or passing result is supplied; the manifest declares tddRequired true.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "A RED-only artifact does not prove the required behavior was implemented through a completed RED/GREEN cycle, and checkpoint prose saying GREEN exists is not the proof itself.",
+      "required": "Provide the complete run-scoped TDD proof with both RED and GREEN phases, including the exact focused command and successful GREEN result.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-vale-7471.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-vale-7471.checkpoint.md"
+        }
+      ]
+    },
+    {
+      "claim": "The required final note is absent from the supplied artifacts.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-006"
+      ],
+      "id": "finding-003",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint gives a high-level completion summary, but no final note records the exact verification commands and results or a stable wire-contract handoff detail for the following KM task.",
+      "policyRule": "catalog:required_artifact_missing:blocking",
+      "rationale": "Goal 006 makes that final note a deliverable; a summary checkpoint does not contain the required exact command/result record or the KM-facing contract handoff.",
+      "required": "Provide the final note with exact commands and outcomes and the stable Slack wire-contract details needed by the next KM task.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-vale-7471.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-15_deliberation-slack-intake-one-thread-history.md"
+        }
+      ]
+    },
+    {
+      "claim": "The task-scoped change set contains broad unrelated semantic contract and final-delivery changes that prevent a trustworthy Discord contract-regression assessment.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "unknown",
+      "goalIds": [
+        "goal-004"
+      ],
+      "id": "finding-004",
+      "kind": "correctness",
+      "observed": "The diff rewrites extensions/deliberation/contracts/cutover-controls-v1.json with health, identity, intake, delivery-envelope, and reservation semantics and documents final sender polling/delivery behavior, although the evaluated task is limited to Slack intake and one-thread history and explicitly forbids unrelated refactors.",
+      "policyRule": "catalog:unknown:blocking",
+      "rationale": "This is material protocol and behavior churn rather than incidental formatting, no concurrent assignment was supplied for exclusion, and it obscures whether the existing Discord contract was preserved as required by goal 004.",
+      "required": "Remove the unrelated contract/final-delivery changes from this task-scoped change set or supply them under an independently attributable task before re-running acceptance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:task-scoped-diff"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/contracts/cutover-controls-v1.json"
+        },
+        {
+          "kind": "file",
+          "reference": "docs/plugins/reference/deliberation.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "A configured Slack root and a reply are admitted with `providerEventId` equal to the actual message timestamp and a normalized thread identity equal to `thread_ts ?? message.ts`."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "The history reader returns only that thread, with canonical `v1:slack:<account>:<channel>` provenance and existing message/byte bounds."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "Conflicting, malformed, unconfigured, cross-account, or cross-channel Slack metadata fails closed."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "Existing Discord route, history, freshness, and contract tests still pass."
+    },
+    {
+      "id": "goal-005",
+      "status": "UNMET",
+      "summary": "Focused tests prove exact Slack timestamp validation/ordering and distinguish child-message identity from thread identity."
+    },
+    {
+      "id": "goal-006",
+      "status": "UNMET",
+      "summary": "Final note records exact commands/results and any stable wire-contract detail needed by the following KM task."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-vale-7471-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "calm-vale-7471"
+}

@@ -1,6 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { z } from "zod";
 import { parseDeliberationConfig } from "../src/config.js";
+import { kmDeliveryTargetSchema } from "../src/delivery-target.js";
 import { createInboundClaimHandler } from "../src/intake.js";
 import { createKmClient, KmRequestError, type KmClient } from "../src/km-client.js";
 
@@ -21,6 +22,7 @@ const inputSchema = z
       .object({
         sources: z.array(configuredRouteSchema).min(1),
         processing: configuredRouteSchema,
+        delivery: kmDeliveryTargetSchema.optional(),
       })
       .strict(),
     event: z
@@ -70,6 +72,11 @@ export async function runIntakeProducer(
       accountId: routes.processing.accountId,
       target: routes.processing.channelId,
     },
+    ...(routes.delivery
+      ? {
+          deliveryTarget: routes.delivery,
+        }
+      : {}),
     km: {
       endpoint,
       credential: { source: "env", provider: "default", id: CREDENTIAL_ENV },

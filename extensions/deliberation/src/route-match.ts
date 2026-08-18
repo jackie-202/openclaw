@@ -1,20 +1,24 @@
 import { routeKey, type DeliberationConfig, type DeliberationRoute } from "./config.js";
+import { compareSlackTimestamps, isSlackTimestamp } from "./slack-timestamp.js";
 import { encodeSourceIdentity } from "./source-identity.js";
 
+const SOURCE_THREAD_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$/;
+
 type RouteCandidate = {
-  channelId?: string;
-  channel?: string;
-  accountId?: string;
-  conversationId?: string;
-  target?: string;
+  channelId?: unknown;
+  channel?: unknown;
+  accountId?: unknown;
+  conversationId?: unknown;
+  target?: unknown;
 };
 
 type InboundCandidate = RouteCandidate & {
-  provider?: string;
-  eventType?: string;
-  eventKind?: string;
-  messageId?: string;
-  senderId?: string;
+  provider?: unknown;
+  eventType?: unknown;
+  eventKind?: unknown;
+  messageId?: unknown;
+  senderId?: unknown;
+  threadId?: unknown;
 };
 
 export type SourceAdmission =
@@ -23,12 +27,14 @@ export type SourceAdmission =
       route: DeliberationRoute;
       sourceTarget: string;
       providerEventId: string;
+      sourceThreadId: string;
+      threadId?: string;
       senderId: string;
     }
   | { accepted: false; reason: string };
 
-function normalizedTarget(value: string | undefined): string | undefined {
-  if (!value) {
+function normalizedTarget(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value) {
     return undefined;
   }
   const target = value.startsWith("channel:") ? value.slice("channel:".length) : value;
@@ -37,20 +43,23 @@ function normalizedTarget(value: string | undefined): string | undefined {
     : undefined;
 }
 
-function agreedValue(...values: Array<string | undefined>): string | undefined {
-  const present = values.filter((value): value is string => value !== undefined);
-  return present.length > 0 && present.every((value) => value === present[0])
-    ? present[0]
-    : undefined;
+function isSupportedProvider(value: unknown): value is DeliberationRoute["channel"] {
+  return value === "discord" || value === "slack";
+}
+
+function agreedValue(...values: unknown[]): string | undefined {
+  const present = values.filter((value) => value !== undefined);
+  const first = present[0];
+  return typeof first === "string" && present.every((value) => value === first) ? first : undefined;
 }
 
 export function candidateRoute(candidate: RouteCandidate): DeliberationRoute | undefined {
   const channel = agreedValue(candidate.channelId, candidate.channel);
-  const accountId = candidate.accountId;
+  const accountId = agreedValue(candidate.accountId);
   const conversationId = normalizedTarget(candidate.conversationId);
   const targetValue = normalizedTarget(candidate.target);
   const target = agreedValue(conversationId, targetValue);
-  if (channel !== "discord" || !accountId || !target) {
+  if (!isSupportedProvider(channel) || !accountId || !target) {
     return undefined;
   }
   const sourceTarget = encodeSourceIdentity({
@@ -66,7 +75,7 @@ export function admitInboundSource(
   event: InboundCandidate,
   context: InboundCandidate,
 ): SourceAdmission {
-  if (event.provider !== "discord" || event.eventType !== "message") {
+  if (!isSupportedProvider(event.provider) || event.eventType !== "message") {
     return { accepted: false, reason: "unsupported-event" };
   }
   if (event.eventKind !== "user_request") {
@@ -80,12 +89,28 @@ export function admitInboundSource(
     return { accepted: false, reason: "malformed-route" };
   }
   const target = agreedValue(...targets);
-  if (channel !== "discord" || !accountId || !target) {
+  if (!isSupportedProvider(channel) || !accountId || !target) {
     return { accepted: false, reason: "ambiguous-route" };
   }
   const providerEventId = agreedValue(event.messageId, context.messageId);
   if (!providerEventId) {
     return { accepted: false, reason: "missing-message-id" };
+  }
+  const threadId = event.threadId;
+  if (
+    channel === "slack" &&
+    (!isSlackTimestamp(providerEventId) ||
+      (threadId !== undefined &&
+        (typeof threadId !== "string" ||
+          !isSlackTimestamp(threadId) ||
+          compareSlackTimestamps(threadId, providerEventId) > 0)))
+  ) {
+    return { accepted: false, reason: "malformed-message-id" };
+  }
+  const normalizedThreadId =
+    channel === "slack" && typeof threadId === "string" ? threadId : providerEventId;
+  if (!SOURCE_THREAD_ID_PATTERN.test(normalizedThreadId)) {
+    return { accepted: false, reason: "malformed-message-id" };
   }
   const senderId = agreedValue(event.senderId, context.senderId);
   if (!senderId) {
@@ -104,7 +129,15 @@ export function admitInboundSource(
     channel: route.target,
   });
   return sourceTarget
-    ? { accepted: true, route, sourceTarget, providerEventId, senderId }
+    ? {
+        accepted: true,
+        route,
+        sourceTarget,
+        providerEventId,
+        sourceThreadId: normalizedThreadId,
+        ...(channel === "slack" ? { threadId: normalizedThreadId } : {}),
+        senderId,
+      }
     : { accepted: false, reason: "malformed-route" };
 }
 

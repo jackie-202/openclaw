@@ -1,0 +1,88 @@
+{
+  "findings": [
+    {
+      "claim": "The Slack-origin to structured Discord-destination delivery behavior was not implemented.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-002",
+        "goal-003",
+        "goal-004"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff contains no changes to the Deliberation final adapter, KM client, configuration, plugin runtime, or focused tests, and the supplied checkpoint marks the structured-target tests, implementation, and GREEN verification incomplete because the repository-local contract still uses string targets without threadId.",
+      "rationale": "Without structured destination parsing and equality fencing, destination-selected provider dispatch, exact account/channel/thread routing, and lifecycle evidence binding, the required cross-provider pilot and fail-closed target behavior are absent.",
+      "required": "Implement the owner-authored structured target contract and the required destination-selected Discord delivery lifecycle, including exact target comparisons and zero-send rejection for malformed, unsupported, or conflicting targets.",
+      "sources": [
+        {
+          "kind": "plan",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/2026-08-16_bold-fork-3487_deliberation-slack-to-discord-pilot-delivery.md:Progress and Blocker Resolution"
+        },
+        {
+          "kind": "artifact",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/checkpoints/bold-fork-3487.checkpoint.md:Steps and Last completed"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED/GREEN TDD proof is absent.",
+      "crossCutting": true,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true, the caller supplies no TDD proof, and the checkpoint shows the RED, implementation, and GREEN steps incomplete.",
+      "rationale": "The mandatory TDD process cannot be established from the supplied materials.",
+      "required": "Supply valid run-scoped RED/GREEN proof for the required implementation after the structured target contract gate is resolved.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/checkpoints/acceptance-runs/bold-fork-3487-acceptance-001/manifest.json:40"
+        },
+        {
+          "kind": "artifact",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/checkpoints/bold-fork-3487.checkpoint.md:Steps"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "A Slack-origin ready item with a canonical Discord destination makes exactly one Discord send to its configured account/channel/thread."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "Destination provider, not source provider, chooses the adapter."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "KM reservation is durable before send and exact target/receipt evidence is bound through completion."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "Invalid/conflicting targets cause zero provider calls and no source fallback."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "Discord \u2192 Discord behavior and sole-send tests remain green."
+    },
+    {
+      "id": "goal-006",
+      "status": "MET",
+      "summary": "Slack-native provider path remains absent or disabled."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-fork-3487-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bold-fork-3487"
+}

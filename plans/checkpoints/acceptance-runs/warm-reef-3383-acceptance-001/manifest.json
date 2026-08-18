@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-18T20:02:32+00:00",
+    "implementingStartedAt": "2026-08-18T19:55:30+00:00",
+    "taskFile": "plans/tasks/2026-08-18_followup-warm-reef-3383-acceptance-fix-fix-deliberation-ready-to-send-records-not-re.md",
+    "taskId": "warm-reef-3383",
+    "title": "[acceptance-fix] [acceptance-fix] Fix Deliberation READY_TO_SEND records not reaching sole-send delivery: goal-001: Fix "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix Deliberation READY_TO_SEND records not reaching sole-send delivery: goal-001: Fix"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-reef-3383-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-reef-3383",
+  "tddRequired": true
+}

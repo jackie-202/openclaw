@@ -1,0 +1,47 @@
+{
+  "findings": [
+    {
+      "claim": "The configured Slack root/reply admission implementation remains absent from the caller-supplied semantic review material.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff contains changelog, documentation, SDK documentation, and cutover-contract changes, but no production implementation from the cited Slack preparation, deliberation route admission, or intake persistence paths. Supplied proof and checkpoint prose assert that providerEventId uses the child message timestamp and thread identity normalizes to thread_ts or the child timestamp, but the corresponding implementation content is not supplied.",
+      "rationale": "Goal-001 requires delivered runtime admission and identity-normalization behavior. Plans, test summaries, and evidence prose cannot establish the production semantics when the review bundle omits the relevant code, especially because this acceptance-fix task was created specifically to make that implementation attributable.",
+      "required": "Supply the task-scoped production implementation material showing configured Slack roots and replies admitted with providerEventId equal to the actual message timestamp and thread identity normalized as thread_ts ?? message.ts, including the relevant caller-to-intake path.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:task-scoped-diff"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-16_swift-dune-5344_acceptance-fix-deliberation-slack-intake-and-one-thread.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-dune-5344.evidence.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-dune-5344.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation Slack intake and one-thread history: goal-001: A configured Slack root an"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-dune-5344-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "swift-dune-5344"
+}

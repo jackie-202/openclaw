@@ -8,7 +8,10 @@ import {
   summarizeMapping,
 } from "openclaw/plugin-sdk/allow-from";
 import { CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY } from "openclaw/plugin-sdk/approval-handler-adapter-runtime";
-import { registerChannelRuntimeContext } from "openclaw/plugin-sdk/channel-runtime-context";
+import {
+  CHANNEL_HISTORY_RUNTIME_CONTEXT_CAPABILITY,
+  registerChannelRuntimeContext,
+} from "openclaw/plugin-sdk/channel-runtime-context";
 import type { SessionScope } from "openclaw/plugin-sdk/config-contracts";
 import { resolveTextChunkLimit } from "openclaw/plugin-sdk/reply-chunking";
 import { DEFAULT_GROUP_HISTORY_LIMIT } from "openclaw/plugin-sdk/reply-history";
@@ -45,6 +48,7 @@ import {
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "./config.runtime.js";
 import { createSlackMonitorContext } from "./context.js";
+import { createSlackChannelHistoryContext } from "./deliberation-history.js";
 import { registerSlackMonitorEvents } from "./events.js";
 import { createSlackMessageHandler } from "./message-handler.js";
 import {
@@ -541,6 +545,14 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
     }
   };
   opts.abortSignal?.addEventListener("abort", stopOnAbort, { once: true });
+  const historyContextLease = registerChannelRuntimeContext({
+    channelRuntime: opts.channelRuntime,
+    channelId: "slack",
+    accountId: account.accountId,
+    capability: CHANNEL_HISTORY_RUNTIME_CONTEXT_CAPABILITY,
+    context: createSlackChannelHistoryContext({ client: app.client, token: botToken }),
+    abortSignal: opts.abortSignal,
+  });
 
   try {
     if (slackMode === "socket") {
@@ -652,6 +664,7 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
     }
   } finally {
     opts.abortSignal?.removeEventListener("abort", stopOnAbort);
+    historyContextLease?.dispose();
     unregisterHttpHandler?.();
     await gracefulStop();
   }

@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The current-attempt-pinning behavior was not delivered.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied plan, implementation checkpoint, and task-scoped diff state that no authenticated KM draft-dispatch ingress, immutable attempt envelope path, or canonical draft-result recorder exists in this checkout; production Deliberation continuation code was not added.",
+      "rationale": "Goal-001 requires the owner-authenticated ingress to validate and atomically propagate a complete immutable attempt envelope, plus pre-side-effect stale/duplicate fencing at payload reads and result recording. With those required owner surfaces absent, the behavior cannot be delivered safely.",
+      "required": "Deliver the accepted KM-owner draft-dispatch and result-recorder contract, mirror it in the Deliberation contract provenance, and implement the owner-selected ingress with envelope validation, active-envelope replacement, and stale/duplicate fencing before side effects.",
+      "sources": [
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-17_cool-brook-7749_acceptance-fix-pin-deliberation-draft-continuations-to-the.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-brook-7749.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "Task-scoped diff"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Pin Deliberation draft continuations to the current attempt payload: goal-001: Pin Del"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-brook-7749-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "cool-brook-7749"
+}

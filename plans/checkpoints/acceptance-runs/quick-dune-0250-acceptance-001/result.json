@@ -1,0 +1,104 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The optional operator-owned deliveryTarget route and durable-target delivery behavior were not implemented.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint states work stopped before product edits because the repository-local KM contract lacked deliveryTarget; the task-scoped diff contains no changes to the manifest schema, runtime config, KM client, final adapter, or focused tests required by the target goal.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Without the configuration and adapter slice, configured source-A output cannot be routed deterministically to target B, and omission/validation/operator-control requirements are not delivered.",
+      "required": "Implement the accepted contract-dependent deliveryTarget configuration, trusted KM-boundary injection, durable envelope consumption, evidence consistency, documentation, and focused coverage described by the canonical task.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/quick-dune-0250.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-14_quick-dune-0250_deliberation-plugin-optional-final-delivery-target-override.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-14_deliberation-plugin-delivery-target-override.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-mandated RED/GREEN TDD proof is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true, the supplied TDD proof/provenance is explicitly empty, and the checkpoint says no RED/GREEN proof exists because implementation stopped before tests were changed.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The acceptance policy requires valid TDD proof whenever the immutable run manifest sets tddRequired true.",
+      "required": "Supply the required assertion-level RED and GREEN proof for the target task through the caller-owned TDD process.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "TDD proof/provenance: no TDD proof supplied"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/quick-dune-0250.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "manifest.json:20"
+        }
+      ]
+    },
+    {
+      "claim": "The explicitly required final verification note with exact commands and results is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The canonical task requires a final note recording exact verification commands and results, while the supplied checkpoint shows verification gates and final proof-artifact verification still pending and no final note is supplied.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "This is missing required validation evidence, independent of Test Gate execution; Acceptance does not request or interpret test runs.",
+      "required": "Provide the final task note recording the exact caller-owned verification commands and their results after implementation verification is completed.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-14_deliberation-plugin-delivery-target-override.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/quick-dune-0250.checkpoint.md"
+        },
+        {
+          "kind": "test-gate",
+          "reference": "not run; no Test Gate evidence exists"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Deliberation plugin: optional final delivery target override"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-dune-0250-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "quick-dune-0250"
+}

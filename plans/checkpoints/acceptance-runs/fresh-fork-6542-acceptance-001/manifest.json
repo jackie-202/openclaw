@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-16T20:54:50+00:00",
+    "implementingStartedAt": "2026-08-16T20:49:29+00:00",
+    "taskFile": "plans/tasks/2026-08-16_followup-fresh-fork-6542-deliberation-slack-to-discord-pilot-delivery.md",
+    "taskId": "fresh-fork-6542",
+    "title": "[acceptance-fix] Deliberation Slack-to-Discord pilot delivery: goal-001: A Slack-origin ready item with a canonical Disc"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation Slack-to-Discord pilot delivery: goal-001: A Slack-origin ready item with a canonical Disc"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-fork-6542-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-fork-6542",
+  "tddRequired": true
+}

@@ -15,6 +15,71 @@ const eventIdentity = {
 } as const;
 
 describe("deliberation intake producer", () => {
+  it("keeps the configured final target out of source intake", async () => {
+    let intake: Record<string, unknown> | undefined;
+    const server = createServer((request, response) => {
+      let body = "";
+      request.setEncoding("utf8");
+      request.on("data", (chunk) => (body += chunk));
+      request.on("end", () => {
+        intake = JSON.parse(body) as Record<string, unknown>;
+        response.writeHead(201, { "Content-Type": "application/json" });
+        response.end(
+          JSON.stringify({
+            protocolVersion: 1,
+            recordId: "record-1",
+            inboundId: "inbound-1",
+            duplicate: false,
+          }),
+        );
+      });
+    });
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", resolve);
+    });
+
+    try {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        throw new Error("missing listener address");
+      }
+      await runIntakeProducer(
+        {
+          endpoint: `http://127.0.0.1:${address.port}`,
+          routes: {
+            ...routes,
+            delivery: {
+              provider: "discord",
+              accountId: "delivery",
+              channelId: "target-b",
+              threadId: "thread-b",
+            },
+          },
+          event: {
+            ...eventIdentity,
+            channelId: "1494265174389948538",
+            messageId: "message-override",
+            senderId: "sender-1",
+            timestamp: "2026-08-04T12:50:19.483Z",
+            content: "route this reviewed reply",
+          },
+        },
+        { OPENCLAW_DELIBERATION_KM_CREDENTIAL: "0123456789abcdef" },
+      );
+
+      expect(intake).toMatchObject({
+        sourceTarget: "v1:discord:default:1494265174389948538",
+        sourceThreadId: "message-override",
+      });
+      expect(intake).not.toHaveProperty("source_thread_id");
+      expect(intake).not.toHaveProperty("deliveryTarget");
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  });
+
   it("validates input and reports duplicate replay without exposing content or credentials", async () => {
     const seen = new Map<string, string>();
     const server = createServer((request, response) => {

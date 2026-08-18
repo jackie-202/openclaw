@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T09:49:05+00:00",
+    "implementingStartedAt": "2026-08-17T09:40:59+00:00",
+    "taskFile": "plans/tasks/2026-08-17_pin-deliberation-draft-attempt-continuations-to-current-payload.md",
+    "taskId": "bold-peak-0850",
+    "title": "Pin Deliberation draft continuations to the current attempt payload"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Pin Deliberation draft continuations to the current attempt payload"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-peak-0850-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-peak-0850",
+  "tddRequired": true
+}

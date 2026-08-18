@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T15:40:22+00:00",
+    "implementingStartedAt": "2026-08-17T15:32:24+00:00",
+    "taskFile": "plans/tasks/2026-08-17_refresh-deliberation-owner-pin-against-live-canonical-contract.md",
+    "taskId": "cool-crag-7527",
+    "title": "Refresh Deliberation owner pin against the live canonical KM contract"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Semantic comparison is recorded separately from byte/hash comparison."
+    },
+    {
+      "id": "goal-002",
+      "summary": "`provenance.json` contains the current exact owner revision and current exact owner file hashes."
+    },
+    {
+      "id": "goal-003",
+      "summary": "`pnpm test:deliberation:km-integration` passes all seven tests against the explicitly approved KM root."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Focused contract/provenance tests pass."
+    },
+    {
+      "id": "goal-005",
+      "summary": "No real external provider or transport is called."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Final note explicitly says the remaining rollout sequence is: host deploy verifier \u2192 full gateway restart \u2192 live smoke."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-crag-7527-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-crag-7527",
+  "tddRequired": true
+}

@@ -1,0 +1,39 @@
+{
+  "findings": [
+    {
+      "claim": "Repository-local validator acceptance is not established by supplied verdict-grade evidence.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied material contains no canonical Test Gate reference or validator acceptance artifact. The RED/GREEN proof is task-authored prose about a focused contract test, while the stated Test Gate status is not run.",
+      "rationale": "The goal requires that the manifest be accepted by the repository-local validator and no longer report an invalid provenance manifest. Without canonical validator evidence, that required outcome cannot be verified; task prose and stdout are not verdict data.",
+      "required": "Provide the canonical repository-local validator acceptance artifact or canonical Test Gate reference establishing that the current manifest is accepted without an invalid provenance-manifest report.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-dune-9914.red-green-proof.md:20-30"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-17_calm-dune-9914_converge-deliberation-contract-provenance-and-rollout.md:82-85"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Converge Deliberation contract provenance and rollout readiness: goal-002: The manifest is accepted by"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-dune-9914-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "calm-dune-9914"
+}

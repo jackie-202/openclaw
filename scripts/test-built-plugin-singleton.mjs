@@ -225,6 +225,11 @@ assert.deepEqual(
     .map((hook) => hook.hookName),
   expectedDeliberationHooks,
 );
+assert.deepEqual(
+  deliberation.services,
+  ["deliberation-final-delivery"],
+  "built Deliberation runtime did not register its sole delivery service",
+);
 resetGlobalHookRunner();
 initializeGlobalHookRunner(deliberationRegistry);
 assert.equal(getGlobalHookRunner()?.hasHooks("inbound_claim"), true);

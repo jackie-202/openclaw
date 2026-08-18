@@ -41,6 +41,196 @@ function loggedMessages(logger: ReturnType<typeof createLogger>): string[] {
 }
 
 describe("deliberation hooks", () => {
+  it.each([
+    ["Discord root", "discord", "acct", "source", "m1", undefined, "m1"],
+    [
+      "Slack root",
+      "slack",
+      "workspace-a",
+      "C123",
+      "1723640000.000100",
+      undefined,
+      "1723640000.000100",
+    ],
+    [
+      "Slack reply",
+      "slack",
+      "workspace-a",
+      "C123",
+      "1723640000.000200",
+      "1723640000.000100",
+      "1723640000.000100",
+    ],
+  ] as const)(
+    "emits sourceThreadId for %s",
+    async (_name, provider, accountId, channelId, messageId, threadId, expected) => {
+      const intake = vi.fn().mockResolvedValue({
+        recordId: "record-1",
+        inboundId: "inbound-1",
+        duplicate: false,
+      });
+      const routeConfig = parseDeliberationConfig({
+        enabled: true,
+        failClosed: true,
+        sources: [{ channel: provider, accountId, target: channelId }],
+        processingSource: { channel: "discord", accountId: "acct", target: "processing" },
+        km: config.km,
+        restrictedSessionKeys: ["agent:reviewer"],
+      });
+      const threadStore = {
+        registerIfAbsent: vi.fn().mockResolvedValue(true),
+        lookup: vi.fn(),
+      };
+      const handler = createInboundClaimHandler(
+        routeConfig,
+        { intake } as never,
+        createLogger(),
+        threadStore as never,
+      );
+
+      await handler(
+        {
+          provider,
+          channel: provider,
+          eventType: "message",
+          eventKind: "user_request",
+          accountId,
+          conversationId: channelId,
+          messageId,
+          threadId,
+          senderId: "sender",
+          content: "message",
+          isGroup: true,
+        },
+        {
+          channelId: provider,
+          accountId,
+          conversationId: channelId,
+          messageId,
+          senderId: "sender",
+        },
+      );
+
+      expect(intake).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sourceTarget: `v1:${provider}:${accountId}:${channelId}`,
+          sourceThreadId: expected,
+        }),
+      );
+      expect(intake.mock.calls[0]?.[0]).not.toHaveProperty("source_thread_id");
+    },
+  );
+
+  it("registers Slack child-to-thread identity before sending the unchanged KM intake body", async () => {
+    const slackConfig = parseDeliberationConfig({
+      enabled: true,
+      failClosed: true,
+      sources: [{ channel: "slack", accountId: "workspace-a", target: "C123" }],
+      processingSource: { channel: "discord", accountId: "acct", target: "processing" },
+      km: config.km,
+      restrictedSessionKeys: ["agent:reviewer"],
+    });
+    const intake = vi.fn().mockResolvedValue({
+      recordId: "record-1",
+      inboundId: "inbound-1",
+      duplicate: false,
+    });
+    const registerIfAbsent = vi.fn().mockResolvedValue(true);
+    const handler = createInboundClaimHandler(slackConfig, { intake } as never, createLogger(), {
+      registerIfAbsent,
+      lookup: vi.fn(),
+    } as never);
+
+    await expect(
+      handler(
+        {
+          provider: "slack",
+          channel: "slack",
+          eventType: "message",
+          eventKind: "user_request",
+          accountId: "workspace-a",
+          conversationId: "C123",
+          content: "reply",
+          isGroup: true,
+          messageId: "1723640000.000200",
+          threadId: "1723640000.000100",
+          senderId: "U123",
+        },
+        {
+          channelId: "slack",
+          accountId: "workspace-a",
+          conversationId: "C123",
+          messageId: "1723640000.000200",
+          senderId: "U123",
+        },
+      ),
+    ).resolves.toEqual({ handled: true });
+
+    expect(registerIfAbsent).toHaveBeenCalledWith(expect.any(String), {
+      sourceTarget: "v1:slack:workspace-a:C123",
+      providerEventId: "1723640000.000200",
+      threadId: "1723640000.000100",
+    });
+    expect(intake).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "slack",
+        providerEventId: "1723640000.000200",
+        sourceTarget: "v1:slack:workspace-a:C123",
+        sourceThreadId: "1723640000.000100",
+      }),
+    );
+    expect(intake.mock.calls[0]?.[0]).not.toHaveProperty("threadId");
+    expect(registerIfAbsent.mock.invocationCallOrder[0]).toBeLessThan(
+      intake.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it("fails Slack intake closed when an existing child mapping conflicts", async () => {
+    const slackConfig = parseDeliberationConfig({
+      enabled: true,
+      failClosed: true,
+      sources: [{ channel: "slack", accountId: "workspace-a", target: "C123" }],
+      processingSource: { channel: "discord", accountId: "acct", target: "processing" },
+      km: config.km,
+      restrictedSessionKeys: ["agent:reviewer"],
+    });
+    const intake = vi.fn();
+    const handler = createInboundClaimHandler(slackConfig, { intake } as never, createLogger(), {
+      registerIfAbsent: vi.fn().mockResolvedValue(false),
+      lookup: vi.fn().mockResolvedValue({
+        sourceTarget: "v1:slack:workspace-a:C123",
+        providerEventId: "1723640000.000200",
+        threadId: "1723649999.000100",
+      }),
+    } as never);
+
+    await expect(
+      handler(
+        {
+          provider: "slack",
+          channel: "slack",
+          eventType: "message",
+          eventKind: "user_request",
+          accountId: "workspace-a",
+          conversationId: "C123",
+          content: "reply",
+          isGroup: true,
+          messageId: "1723640000.000200",
+          threadId: "1723640000.000100",
+          senderId: "U123",
+        },
+        {
+          channelId: "slack",
+          accountId: "workspace-a",
+          conversationId: "C123",
+          messageId: "1723640000.000200",
+          senderId: "U123",
+        },
+      ),
+    ).resolves.toEqual({ handled: false });
+    expect(intake).not.toHaveBeenCalled();
+  });
+
   it("keeps configured Discord accounts distinct for the same channel", async () => {
     const routeConfig = parseDeliberationConfig({
       enabled: true,
@@ -311,6 +501,7 @@ describe("deliberation hooks", () => {
         provider: "discord",
         providerEventId: "m1",
         sourceTarget: `v1:discord:${accountId}:source`,
+        sourceThreadId: "m1",
         senderId: "sender-1",
         occurredAt: "2026-08-01T12:00:00Z",
         receivedAt: "2026-08-01T12:00:01Z",
@@ -423,6 +614,7 @@ describe("deliberation hooks", () => {
       expect.objectContaining({
         providerEventId: "m1",
         sourceTarget: "v1:discord:acct:source",
+        sourceThreadId: "m1",
         content: "message",
       }),
     );

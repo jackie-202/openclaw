@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T00:30:32+00:00",
+    "implementingStartedAt": "2026-08-17T00:18:54+00:00",
+    "taskFile": "plans/tasks/2026-08-17_followup-cool-mist-3698-acceptance-fix-deliberation-cross-provider-e2e-and-slack-pil.md",
+    "taskId": "cool-mist-3698",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation cross-provider E2E and Slack pilot readiness: goal-001: Deterministic E2E"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation cross-provider E2E and Slack pilot readiness: goal-001: Deterministic E2E"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-mist-3698-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-mist-3698",
+  "tddRequired": true
+}

@@ -1,0 +1,38 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/calm-dune-9914.evidence.md",
+      "provenance": "evidence_repair:calm-dune-9914-acceptance-001-evidence-repair-001",
+      "size": 1072
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/calm-dune-9914.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/calm-dune-9914-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "03639ab0774c8a7a47f5301457e6c76a0474c415",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-17T14:36:25.142348+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "python3 .claude/skills/save-learning/add-frontmatter.py --title \"Preserve Test Lock Ownership During Contract-Gate Closeout\" --category \"tooling\" --component \"ci-cd\" --tags \"testing,vitest,contract-ga",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "python3 /Users/michal/.config/opencode/skills/save-learning/add-frontmatter.py --title \"Preserve Test Lock Ownership During Contract-Gate Closeout\" --category \"tooling\" --component \"ci-cd\" --tags \"tes",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "calm-dune-9914-acceptance-001-evidence-repair-001",
+  "sourceRunId": "calm-dune-9914-acceptance-001",
+  "startedAt": "2026-08-17T14:36:23.367491+00:00",
+  "status": "escalated"
+}

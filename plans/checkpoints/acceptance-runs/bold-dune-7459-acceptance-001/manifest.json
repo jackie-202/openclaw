@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-16T22:32:15+00:00",
+    "implementingStartedAt": "2026-08-16T22:02:10+00:00",
+    "taskFile": "plans/tasks/2026-08-15_deliberation-slack-native-final-delivery.md",
+    "taskId": "bold-dune-7459",
+    "title": "Deliberation Slack-native final delivery adapter"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Canonical Slack destinations send once through the established Slack transport to exact account/channel/thread."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Both Slack \u2192 Slack and Discord \u2192 Slack work through destination-based dispatch."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Discord targets still use only Discord and all seq 4 regressions pass."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Provider receipts and bounded failure evidence are completed through KM without target drift."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Unsupported/malformed/conflicting destinations produce no provider call."
+    },
+    {
+      "id": "goal-006",
+      "summary": "No live config enables Slack-native delivery."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-dune-7459-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-dune-7459",
+  "tddRequired": true
+}

@@ -762,6 +762,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     } as SlackMessageEvent);
 
     assertPrepared(prepared);
+    expect(prepared.ctxPayload.MessageSid).toBe("1.000");
     expect(prepared?.ackReactionMessageTs).toBeUndefined();
     expect(prepared?.ackReactionPromise).toBeNull();
   });

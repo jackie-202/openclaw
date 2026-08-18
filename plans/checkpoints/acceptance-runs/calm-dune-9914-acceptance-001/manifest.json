@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-17T14:34:24+00:00",
+    "implementingStartedAt": "2026-08-17T14:26:47+00:00",
+    "taskFile": "plans/tasks/2026-08-17_followup-calm-dune-9914-converge-deliberation-contract-provenance-and-rollout-readin.md",
+    "taskId": "calm-dune-9914",
+    "title": "[acceptance-fix] Converge Deliberation contract provenance and rollout readiness: goal-002: The manifest is accepted by "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Converge Deliberation contract provenance and rollout readiness: goal-002: The manifest is accepted by"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-dune-9914-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-dune-9914",
+  "tddRequired": true
+}

@@ -1,0 +1,125 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required accepted provenance manifest was not delivered.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-002"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied blocked checkpoint states that provenance.json remains unresolved and that km-listener.cross-repo.ts cannot accept it because ownerPin lacks an exact KM owner revision and a non-empty ownerFiles map.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal-002 requires repository-local validator acceptance without invalid provenance manifest; retaining ownerPin.status follow-up-required cannot satisfy that validator contract.",
+      "required": "Provide the immutable owner revision and complete ownerFiles path-to-SHA-256 map, then update and validate the manifest with the exact accepted owner pin.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-brook-6923.blocked.md:3-16"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-17_fresh-brook-6923_converge-deliberation-contract-provenance-and-rollout.md:45-51"
+        }
+      ]
+    },
+    {
+      "claim": "The provenance manifest was not reconciled after a pinned contract file changed.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-003"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The task-scoped diff changes extensions/deliberation/contracts/cutover-controls-v1.json, while the supplied blocker states that provenance.json remains unchanged and the task material identifies it as pinning the supplied hash for that file.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "A changed file has different content from the version represented by an unchanged SHA-256 pin, so the unchanged manifest cannot establish that every pin matches the current repository file.",
+      "required": "Reconcile the manifest only with authoritative provenance evidence, or restore an approved state in which every pinned contract file matches its recorded SHA-256.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/contracts/cutover-controls-v1.json:task-scoped-diff"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-brook-6923.blocked.md:13-16"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-17_fresh-brook-6923_converge-deliberation-contract-provenance-and-rollout.md:20-22"
+        }
+      ]
+    },
+    {
+      "claim": "The required final note with the exact accepted owner pin was not delivered.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-004"
+      ],
+      "id": "finding-003",
+      "kind": "correctness",
+      "observed": "The supplied task artifacts include fresh-brook-6923.blocked.md and checkpoint.md but no fresh-brook-6923.final-note.md; the blocker confirms the exact owner revision and ownerFiles map remain unavailable.",
+      "policyRule": "catalog:required_artifact_missing:blocking",
+      "rationale": "Goal-004 explicitly requires a final note that distinguishes semantic and hash evidence and records the exact accepted owner pin; a blocked note cannot record an unavailable accepted pin.",
+      "required": "After receiving the immutable owner bundle and accepting the manifest, add the final note with the exact owner pin and separate semantic, hash, and rollout evidence.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-brook-6923.blocked.md:3-16"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-brook-6923.checkpoint.md:7-9"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-17_fresh-brook-6923_converge-deliberation-contract-provenance-and-rollout.md:55-56"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Repository-local provenance/contract tests pass."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "The manifest is accepted by the repository-local validator and no longer reports `invalid provenance manifest`."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "Every pinned file hash matches its current repository file."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "The final note distinguishes semantic evidence from hash evidence and records the exact accepted owner pin."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "Focused Deliberation tests pass without real network/provider/transport calls."
+    },
+    {
+      "id": "goal-006",
+      "status": "MET",
+      "summary": "A concise rollout note states that a full gateway restart\u2014not a plugin-only reload\u2014is the remaining deployment step."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-brook-6923-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "fresh-brook-6923"
+}

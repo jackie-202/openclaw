@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-14T14:27:47+00:00",
+    "implementingStartedAt": "2026-08-14T14:21:50+00:00",
+    "taskFile": "plans/tasks/2026-08-14_followup-swift-reef-8917-deliberation-delivery-target-cross-repository-integration-co.md",
+    "taskId": "swift-reef-8917",
+    "title": "[acceptance-fix] Deliberation delivery target: cross-repository integration coverage: goal-001: Deliberation delivery ta"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation delivery target: cross-repository integration coverage: goal-001: Deliberation delivery ta"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-reef-8917-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-reef-8917",
+  "tddRequired": true
+}

@@ -1,0 +1,47 @@
+{
+  "name": "openclaw-deliberation-adapter-overlay",
+  "protocolVersion": 1,
+  "structuredDestinationVectors": {
+    "threadedDiscord": {
+      "provider": "discord",
+      "account": "delivery-account",
+      "channel": "delivery-channel",
+      "threadId": "delivery-thread"
+    },
+    "nonThreadedDiscord": {
+      "provider": "discord",
+      "account": "delivery-account",
+      "channel": "delivery-channel"
+    },
+    "threadedSlack": {
+      "provider": "slack",
+      "account": "workspace-a",
+      "channel": "C123",
+      "threadId": "1712345678.123456"
+    },
+    "lifecycle": [
+      "ready.deliveryEnvelope.deliveryTarget",
+      "reservation.deliveryEnvelope.deliveryTarget",
+      "invocation.attemptedTarget",
+      "completion.attemptedTarget",
+      "deliveryAttempt.attemptedTarget"
+    ],
+    "equality": "exact deep equality",
+    "sourceTarget": "v1:slack:workspace-a:C123"
+  },
+  "providerValidation": {
+    "allowedProviders": ["discord", "slack"],
+    "discord": {
+      "account": "OpenClaw account identifier",
+      "channel": "OpenClaw channel identifier",
+      "threadId": "optional OpenClaw thread identifier"
+    },
+    "slack": {
+      "account": "OpenClaw workspace/account identifier",
+      "channel": "OpenClaw channel identifier",
+      "threadId": "required Slack thread timestamp",
+      "threadIdPattern": "^\\d+\\.\\d+$"
+    }
+  },
+  "constraints": "OpenClaw adapters retain provider-specific Discord and Slack destination validation outside the generic KM owner mirror."
+}
