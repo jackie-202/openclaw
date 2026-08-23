@@ -9,12 +9,12 @@
 - ✅ Step 5: Run focused, build, package, singleton, and scoped static verification
 - ✅ Step 6: Run implementation validation and mandatory autoreview
 - ✅ Step 7: Record final evidence and verify checkpoint artifacts
-- ⬜ Step 8: Save at least one learning as the final action
+- ✅ Step 8: Save at least one learning as the final action
 
 ## Last completed
 
-Recorded the final note and verified the exact proof file contains genuine RED and passing GREEN sections for OR-22.
+COMPLETE: all implementation, package proof, review, evidence, and learning preparation steps are complete.
 
 ## Context for resume
 
-Only the mandatory save-learning step remains. Before invoking it, rerun final focused verification, persist evidence artifacts, and then make save-learning the final action.
+Final OR-22 and singleton reruns passed. The save-learning workflow is the final operation and writes the prepared package-boundary learning under `learnings/build-errors/`.
