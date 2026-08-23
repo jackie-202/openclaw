@@ -188,7 +188,12 @@ const deliberationRegistry = loadOpenClawPlugins({
           config: {
             enabled: true,
             failClosed: true,
-            sources: [{ channel: "discord", accountId: "default", target: "pilot" }],
+            pipelines: [
+              {
+                id: "discord-pilot",
+                source: { channel: "discord", accountId: "default", target: "pilot" },
+              },
+            ],
             processingSource: {
               channel: "discord",
               accountId: "default",
@@ -208,6 +213,7 @@ const deliberationRegistry = loadOpenClawPlugins({
 });
 
 const expectedDeliberationHooks = [
+  "inbound_event_policy",
   "inbound_claim",
   "before_dispatch",
   "before_tool_call",

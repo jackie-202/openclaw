@@ -68,6 +68,16 @@ describe("bundled plugin build entries", () => {
     expect(pickEntries(entries, Object.keys(expectedEntries))).toStrictEqual(expectedEntries);
   });
 
+  it("builds and packs the Deliberation doctor contract sidecar", () => {
+    const entries = listBundledPluginBuildEntries();
+    const artifacts = listBundledPluginPackArtifacts();
+
+    expect(entries["extensions/deliberation/doctor-contract-api"]).toBe(
+      "extensions/deliberation/doctor-contract-api.ts",
+    );
+    expect(artifacts).toContain("dist/extensions/deliberation/doctor-contract-api.js");
+  });
+
   it("filters bundled plugin build entries for bounded script lanes", () => {
     const entries = listBundledPluginBuildEntries({
       env: {
