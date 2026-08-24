@@ -1,0 +1,75 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "Passing named owner-runtime evidence for all 23 required OR-01 through OR-23 scenarios is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The follow-up proof and checkpoint report that the identical owner-runtime command exited 1 with 12 passing and 11 failing tests, positive intake was rejected with 400 SCHEMA_INVALID, and 0/23 matrix rows can be certified at the required approved owner-runtime boundary.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal goal-001 requires reviewable passing automated evidence for every owner-runtime scenario at the required owner-listener and isolated-SQLite boundaries; repository-local supporting totals and a failing aggregate owner run do not establish that gate.",
+      "required": "Provide an OR-01 through OR-23 mapping to passing named automated results at the required boundaries against an approved immutable converged owner checkout, including owner revision and hash provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-3048.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-3048.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_dark-crag-3048_acceptance-fix-close-deliberation-owner-runtime-convergence.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof has no valid matching-command GREEN result.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true. The supplied proof preserves a genuine historical RED, but its GREEN section explicitly records BLOCKED, exit 1, with 12 passing and 11 failing tests and states that a passing owner-backed GREEN could not be captured.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "A RED followed by another failing execution does not demonstrate the mandatory failing-then-passing behavioral cycle, regardless of the presence of a GREEN section heading or separate passing repository-local checks.",
+      "required": "Capture an exit-0 GREEN execution of the exact historical owner command against an approved immutable converged owner checkout while retaining the genuine RED and owner revision/hash provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-3048.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-reef-6539.red-green-proof.md"
+        },
+        {
+          "kind": "manifest",
+          "reference": "plans/checkpoints/acceptance-runs/dark-crag-3048-acceptance-001/manifest.json"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Close deliberation owner-runtime convergence gates before rollout: goal-001: All 23 ow"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-crag-3048-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-crag-3048"
+}

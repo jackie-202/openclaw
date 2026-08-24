@@ -1,0 +1,149 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "Passing named owner-runtime evidence for all 23 required scenarios is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied task checkpoint states that the owner-runtime dependency remains blocked because no approved converged owner checkout is available, and the earlier checkpoint explicitly says not to edit owner tests or contracts until that checkout is supplied. No supplied artifact maps 23 named scenarios to passing real owner-listener/SQLite results.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal goal-001 requires passing automated evidence for every named scenario; local supporting tests and a planned matrix cannot substitute for the unavailable owner-runtime boundary.",
+      "required": "Provide a reviewable 23-row mapping to passing named automated results at the required real owner/runtime boundaries using an approved immutable owner checkout.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-crag-4037.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_fresh-peak-7129_close-deliberation-owner-runtime-convergence-gates-before.md"
+        }
+      ]
+    },
+    {
+      "claim": "Canonical evidence that the full relevant tests and complete build pass is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-003"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The canonical Test Gate status supplied by the caller is not run and has no evidence. The task checkpoint also states that the current build omits the untracked doctor contract artifact and that canonical remote changed gates could not run.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal goal-003 explicitly requires full relevant tests and build to pass; neither local supporting totals nor a build that omits a required packaged artifact establishes that gate.",
+      "required": "Provide canonical Test Gate evidence for the complete relevant suites and a build/package result whose tracked inventory includes the required doctor contract artifact.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:status:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "learnings/build-errors/warm-cove-4137-build-success-can-omit-untracked-plugin-artifacts.md"
+        }
+      ]
+    },
+    {
+      "claim": "The required rollout-readiness report is not present in the supplied review material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-004"
+      ],
+      "id": "finding-003",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint says a 23-row NOT READY report was written, but the caller did not supply plans/checkpoints/fresh-peak-7129.rollout-readiness.md or its contents; only the checkpoint's summary assertion is available.",
+      "policyRule": "catalog:required_artifact_missing:blocking",
+      "rationale": "Goal goal-004 makes the report itself a deliverable and requires its text to explicitly distinguish implementation readiness from live activation approval, which cannot be semantically reviewed from a checkpoint summary.",
+      "required": "Supply the rollout-readiness report with separate explicit implementation-readiness and live-activation-approval conclusions.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_fresh-peak-7129_close-deliberation-owner-runtime-convergence-gates-before.md"
+        }
+      ]
+    },
+    {
+      "claim": "The mandatory TDD proof does not cover the required owner-runtime behavioral implementation.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-004",
+      "kind": "evidence",
+      "observed": "The supplied RED/GREEN proof runs the identical scoped oxlint command before and after the three lint edits. It contains no failing-then-passing named OR-* behavioral test against the approved owner listener, while the task checkpoint marks owner-runtime RED and implementation blocked.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The manifest declares TDD required, and the task's TDD contract requires test-first proof for the first missing owner-listener scenario; lint-rule remediation alone does not prove that behavioral cycle.",
+      "required": "Provide authentic identical-command RED/GREEN evidence for a required owner-runtime scenario against the approved owner listener and isolated SQLite boundary.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_fresh-peak-7129_close-deliberation-owner-runtime-convergence-gates-before.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "All 23 owner-runtime scenarios have passing, named automated evidence."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "No scoped lint errors remain."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "Full relevant tests and build pass."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "A rollout-readiness report explicitly distinguishes implementation readiness from live activation approval."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "Any remaining blocker produces `NOT READY` with exact evidence; do not self-certify live rollout."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-peak-7129-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "fresh-peak-7129"
+}

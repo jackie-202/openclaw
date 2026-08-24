@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T09:28:18+00:00",
+    "implementingStartedAt": "2026-08-21T09:08:54+00:00",
+    "taskFile": "plans/tasks/2026-08-21_followup-dark-mist-7145-define-deliberation-pipelines-config-and-legacy-normalizatio.md",
+    "taskId": "dark-mist-7145",
+    "title": "[acceptance-fix] Define deliberation pipelines config and legacy normalization: goal-001: Define deliberation pipelines "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Define deliberation pipelines config and legacy normalization: goal-001: Define deliberation pipelines"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-7145-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-mist-7145",
+  "tddRequired": true
+}

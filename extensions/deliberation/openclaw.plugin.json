@@ -3,6 +3,7 @@
   "name": "Deliberation",
   "description": "Fail-closed Discord and Slack intake backed by the Deliberation KM.",
   "expectedHooks": [
+    "inbound_event_policy",
     "inbound_claim",
     "before_dispatch",
     "before_tool_call",
@@ -12,19 +13,99 @@
     "onStartup": true
   },
   "configSchema": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": ["enabled", "failClosed", "sources", "processingSource", "km", "restrictedSessionKeys"],
-    "properties": {
-      "enabled": { "type": "boolean" },
-      "failClosed": { "const": true },
-      "sources": {
-        "type": "array",
-        "minItems": 1,
-        "items": { "$ref": "#/$defs/sourceRoute" }
+    "$ref": "#/$defs/canonicalConfig",
+    "$defs": {
+      "canonicalConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["enabled", "failClosed", "pipelines", "processingSource", "km", "restrictedSessionKeys"],
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "failClosed": { "const": true },
+          "pipelines": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/pipeline" }
+          },
+          "processingSource": { "$ref": "#/$defs/discordRoute" },
+          "km": { "$ref": "#/$defs/km" },
+          "restrictedSessionKeys": { "$ref": "#/$defs/restrictedSessionKeys" }
+        }
       },
-      "processingSource": { "$ref": "#/$defs/discordRoute" },
-      "deliveryTarget": { "$ref": "#/$defs/deliveryTarget" },
+      "pipeline": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:~-]{0,255}$"
+          },
+          "source": { "$ref": "#/$defs/sourceRoute" },
+          "target": { "$ref": "#/$defs/pipelineTarget" }
+        }
+      },
+      "sourceRoute": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["channel", "accountId", "target"],
+        "properties": {
+          "channel": { "enum": ["discord", "slack"] },
+          "accountId": { "$ref": "#/$defs/identityComponent" },
+          "target": { "$ref": "#/$defs/identityComponent" }
+        }
+      },
+      "discordRoute": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["channel", "accountId", "target"],
+        "properties": {
+          "channel": { "const": "discord" },
+          "accountId": { "$ref": "#/$defs/identityComponent" },
+          "target": { "$ref": "#/$defs/identityComponent" }
+        }
+      },
+      "pipelineTarget": {
+        "oneOf": [
+          { "$ref": "#/$defs/discordPipelineTarget" },
+          { "$ref": "#/$defs/slackPipelineTarget" }
+        ]
+      },
+      "discordPipelineTarget": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["channel", "accountId", "target"],
+        "properties": {
+          "channel": { "const": "discord" },
+          "accountId": { "$ref": "#/$defs/identityComponent" },
+          "target": { "$ref": "#/$defs/identityComponent" },
+          "threadId": { "$ref": "#/$defs/identityComponent" }
+        }
+      },
+      "slackPipelineTarget": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["channel", "accountId", "target"],
+        "properties": {
+          "channel": { "const": "slack" },
+          "accountId": { "$ref": "#/$defs/identityComponent" },
+          "target": { "$ref": "#/$defs/identityComponent" },
+          "threadId": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 96,
+            "pattern": "^\\d+\\.\\d+$"
+          }
+        }
+      },
+      "identityComponent": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 96,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
+      },
       "km": {
         "type": "object",
         "additionalProperties": false,
@@ -44,106 +125,6 @@
         "minItems": 1,
         "uniqueItems": true,
         "items": { "type": "string", "minLength": 1 }
-      }
-    },
-    "$defs": {
-      "sourceRoute": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["channel", "accountId", "target"],
-        "properties": {
-          "channel": { "enum": ["discord", "slack"] },
-          "accountId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 96,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
-          },
-          "target": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 96,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
-          }
-        }
-      },
-      "discordRoute": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["channel", "accountId", "target"],
-        "properties": {
-          "channel": { "const": "discord" },
-          "accountId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 96,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
-          },
-          "target": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 96,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
-          }
-        }
-      },
-      "deliveryTarget": {
-        "oneOf": [
-          { "$ref": "#/$defs/discordDeliveryTarget" },
-          { "$ref": "#/$defs/slackDeliveryTarget" }
-        ]
-      },
-      "discordDeliveryTarget": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["provider", "accountId", "channelId"],
-        "properties": {
-          "provider": { "const": "discord" },
-          "accountId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 96,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
-          },
-          "channelId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 96,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
-          },
-          "threadId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 96,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
-          }
-        }
-      },
-      "slackDeliveryTarget": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["provider", "accountId", "channelId", "threadId"],
-        "properties": {
-          "provider": { "const": "slack" },
-          "accountId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 96,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
-          },
-          "channelId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 96,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$"
-          },
-          "threadId": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 96,
-            "pattern": "^\\d+\\.\\d+$"
-          }
-        }
       }
     }
   },

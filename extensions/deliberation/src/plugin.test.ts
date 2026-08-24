@@ -2,8 +2,25 @@ import type { OpenClawPluginService } from "openclaw/plugin-sdk/plugin-entry";
 import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import plugin from "../index.js";
+import { deriveProviderAttemptId } from "./final-adapter.js";
 
 const { createKmClientMock } = vi.hoisted(() => ({ createKmClientMock: vi.fn() }));
+
+function createStateRuntime() {
+  const values = new Map<string, unknown>();
+  return {
+    openKeyedStore: vi.fn(() => ({
+      lookup: async (key: string) => values.get(key),
+      registerIfAbsent: async (key: string, value: unknown) => {
+        if (values.has(key)) {
+          return false;
+        }
+        values.set(key, value);
+        return true;
+      },
+    })),
+  };
+}
 
 vi.mock("./km-client.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./km-client.js")>()),
@@ -13,7 +30,12 @@ vi.mock("./km-client.js", async (importOriginal) => ({
 const pluginConfig = {
   enabled: true,
   failClosed: true,
-  sources: [{ channel: "discord", accountId: "acct-1", target: "source-1" }],
+  pipelines: [
+    {
+      id: "discord-source-1",
+      source: { channel: "discord", accountId: "acct-1", target: "source-1" },
+    },
+  ],
   processingSource: { channel: "discord", accountId: "acct-1", target: "process-1" },
   km: {
     endpoint: "https://km.invalid",
@@ -29,6 +51,7 @@ const reservation = {
   owner: "owner",
   leaseToken: "lease",
   deliveryEnvelope: {
+    pipelineId: "discord-source-1",
     sourceTarget: "v1:slack:workspace-a:C123",
     deliveryTarget: {
       provider: "discord" as const,
@@ -39,6 +62,20 @@ const reservation = {
   },
   deliveryEnvelopeDigest: "a".repeat(64),
 };
+
+function sentAttempt(messageId: string) {
+  return {
+    outcome: "sent" as const,
+    messageId,
+    receipt: {
+      primaryPlatformMessageId: messageId,
+      platformMessageIds: [messageId],
+      parts: [{ platformMessageId: messageId, kind: "text" as const, index: 0 }],
+      sentAt: Date.now(),
+    },
+    idempotency: "unsupported" as const,
+  };
+}
 
 function createKm(outcome: "reserved" | "disabled" | "conflict" = "reserved") {
   return {
@@ -62,19 +99,13 @@ function createKm(outcome: "reserved" | "disabled" | "conflict" = "reserved") {
 
 function registerPlugin(
   km: ReturnType<typeof createKm>,
-  sendText = vi.fn(),
-  slackSendText = vi.fn(),
+  sendTextAttempt = vi.fn(),
+  slackSendTextAttempt = vi.fn(),
 ) {
   createKmClientMock.mockReturnValue(km);
   const services: OpenClawPluginService[] = [];
   const loadAdapter = vi.fn((provider: string) => ({
-    sendText: provider === "slack" ? slackSendText : sendText,
-    textChunkLimit: provider === "slack" ? 4000 : 2000,
-    chunker:
-      provider === "slack"
-        ? null
-        : (text: string, limit: number) =>
-            text.length <= limit ? [text] : [text.slice(0, limit), text.slice(limit)],
+    sendTextAttempt: provider === "slack" ? slackSendTextAttempt : sendTextAttempt,
   }));
   const api = createTestPluginApi({
     config: {
@@ -82,10 +113,16 @@ function registerPlugin(
     } as never,
     pluginConfig,
     registerService: (service) => services.push(service),
-    runtime: { channel: { outbound: { loadAdapter } } } as never,
+    runtime: { channel: { outbound: { loadAdapter } }, state: createStateRuntime() } as never,
   });
   plugin.register(api);
-  return { api, services, loadAdapter, sendText, slackSendText };
+  return {
+    api,
+    services,
+    loadAdapter,
+    sendText: sendTextAttempt,
+    slackSendText: slackSendTextAttempt,
+  };
 }
 
 afterEach(() => {
@@ -109,17 +146,20 @@ describe("deliberation plugin boundary", () => {
         registerGatewayMethod,
         runtime: {
           channel: { outbound: { loadAdapter: vi.fn().mockReturnValue({ sendText: vi.fn() }) } },
+          state: createStateRuntime(),
         } as never,
       }),
     );
 
     expect(on.mock.calls.map((call) => call[0])).toEqual([
+      "inbound_event_policy",
       "inbound_claim",
       "before_dispatch",
       "before_tool_call",
       "message_sending",
     ]);
     expect(on.mock.calls.map((call) => call[2])).toEqual([
+      { priority: 1000 },
       { priority: 1000 },
       { priority: 1000 },
       { priority: 1000 },
@@ -140,22 +180,32 @@ describe("deliberation plugin boundary", () => {
 
   it("does not register final delivery while Deliberation is disabled", () => {
     const registerService = vi.fn();
+    const on = vi.fn();
     createKmClientMock.mockReturnValue(createKm());
 
     plugin.register(
       createTestPluginApi({
         pluginConfig: { ...pluginConfig, enabled: false },
         registerService,
+        on,
       }),
     );
 
     expect(registerService).not.toHaveBeenCalled();
+    const beforeDispatch = on.mock.calls.find(([hook]) => hook === "before_dispatch")?.[1];
+    expect(beforeDispatch).toEqual(expect.any(Function));
+    expect(
+      beforeDispatch?.(
+        {},
+        { channelId: "discord", accountId: "acct-1", conversationId: "source-1" },
+      ),
+    ).toEqual({ handled: true });
   });
 
   it("delivers one ready item through the exact Discord account and stops its timer", async () => {
     vi.useFakeTimers();
     const km = createKm();
-    const sendText = vi.fn().mockResolvedValue({ channel: "discord", messageId: "message-1" });
+    const sendText = vi.fn().mockResolvedValue(sentAttempt("message-1"));
     const { api, services, loadAdapter, slackSendText } = registerPlugin(km, sendText);
 
     expect(services).toHaveLength(1);
@@ -170,12 +220,7 @@ describe("deliberation plugin boundary", () => {
       to: "channel:channel-2",
       threadId: "thread-2",
       text: "reply",
-      formatting: {
-        chunkMode: "length",
-        maxLinesPerMessage: 1,
-        tableMode: "off",
-        textLimit: 2000,
-      },
+      idempotencyKey: deriveProviderAttemptId("attempt-1"),
     });
     expect(km.completeDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -212,11 +257,7 @@ describe("deliberation plugin boundary", () => {
       } as never);
       km.reserve.mockResolvedValue({ outcome: "reserved", reservation: slackReservation } as never);
       const discordSendText = vi.fn();
-      const slackSendText = vi.fn().mockResolvedValue({
-        channel: "slack",
-        messageId: "1712345678.777777",
-        receipt: { primaryPlatformMessageId: "receipt-1" },
-      });
+      const slackSendText = vi.fn().mockResolvedValue(sentAttempt("1712345678.777777"));
       const { api, services, loadAdapter } = registerPlugin(km, discordSendText, slackSendText);
 
       await services[0]?.start({ config: api.config, stateDir: "/tmp", logger: api.logger });
@@ -232,17 +273,82 @@ describe("deliberation plugin boundary", () => {
         to: "channel:C222",
         threadId: "1712345678.123456",
         text: "reply",
+        idempotencyKey: deriveProviderAttemptId("attempt-1"),
       });
       expect(km.completeDelivery).toHaveBeenCalledWith(
         expect.objectContaining({
-          attemptedTarget: target,
           outcome: "SENT",
-          providerReceiptId: "receipt-1",
+          providerReceiptId: "1712345678.777777",
           providerMessageId: "1712345678.777777",
         }),
       );
     },
   );
+
+  it("delivers an explicit Slack root without manufacturing a thread", async () => {
+    vi.useFakeTimers();
+    const target = {
+      provider: "slack",
+      account: "workspace-delivery",
+      channel: "C222",
+    } as const;
+    const km = createKm();
+    km.ready.mockResolvedValue({
+      items: [{ recordId: "record-1", text: "reply", effectiveDeliveryTarget: target }],
+    } as never);
+    km.reserve.mockResolvedValue({
+      outcome: "reserved",
+      reservation: {
+        ...reservation,
+        deliveryEnvelope: { ...reservation.deliveryEnvelope, deliveryTarget: target },
+      },
+    } as never);
+    const slackSendText = vi.fn().mockResolvedValue(sentAttempt("1723640000.777777"));
+    const { api, services } = registerPlugin(km, vi.fn(), slackSendText);
+
+    await services[0]?.start({ config: api.config, stateDir: "/tmp", logger: api.logger });
+    await services[0]?.stop?.({ config: api.config, stateDir: "/tmp", logger: api.logger });
+
+    expect(slackSendText).toHaveBeenCalledTimes(1);
+    expect(slackSendText.mock.calls[0]?.[0]).not.toHaveProperty("threadId");
+    expect(km.completeDelivery).toHaveBeenCalledWith(expect.objectContaining({ outcome: "SENT" }));
+  });
+
+  it("delivers a Discord source anchor through the channel-owned anchor operation", async () => {
+    vi.useFakeTimers();
+    const target = {
+      provider: "discord",
+      account: "acct-2",
+      channel: "channel-2",
+      threadId: "source-message-1",
+    } as const;
+    const km = createKm();
+    km.ready.mockResolvedValue({
+      items: [{ recordId: "record-1", text: "reply", effectiveDeliveryTarget: target }],
+    } as never);
+    km.reserve.mockResolvedValue({
+      outcome: "reserved",
+      reservation: {
+        ...reservation,
+        deliveryEnvelope: { ...reservation.deliveryEnvelope, deliveryTarget: target },
+      },
+    } as never);
+    const sendText = vi.fn().mockResolvedValue(sentAttempt("message-1"));
+    const { api, services } = registerPlugin(km, sendText);
+
+    await services[0]?.start({ config: api.config, stateDir: "/tmp", logger: api.logger });
+    await services[0]?.stop?.({ config: api.config, stateDir: "/tmp", logger: api.logger });
+
+    expect(sendText).toHaveBeenCalledTimes(1);
+    expect(sendText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "channel:channel-2",
+        threadId: "source-message-1",
+        text: "reply",
+        idempotencyKey: deriveProviderAttemptId("attempt-1"),
+      }),
+    );
+  });
 
   it("fails an oversized result without sending multiple Discord messages", async () => {
     vi.useFakeTimers();
@@ -257,12 +363,18 @@ describe("deliberation plugin boundary", () => {
       ],
     });
     km.completeDelivery.mockResolvedValue({ state: "FAILED" });
-    const { api, services, sendText } = registerPlugin(km);
+    const sendText = vi.fn().mockResolvedValue({
+      outcome: "rejected",
+      failureClass: "rejection",
+      error: "Discord rendered text exceeds 2000 characters",
+      idempotency: "native",
+    });
+    const { api, services } = registerPlugin(km, sendText);
 
     await services[0]?.start({ config: api.config, stateDir: "/tmp", logger: api.logger });
     await services[0]?.stop?.({ config: api.config, stateDir: "/tmp", logger: api.logger });
 
-    expect(sendText).not.toHaveBeenCalled();
+    expect(sendText).toHaveBeenCalledTimes(1);
     expect(km.completeDelivery).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: "FAILED", providerFailureClass: "rejection" }),
     );
@@ -321,9 +433,10 @@ describe("deliberation plugin boundary", () => {
     } as never);
     km.completeDelivery.mockResolvedValue({ state: "FAILED" });
     const slackSendText = vi.fn().mockResolvedValue({
-      channel: "slack",
-      messageId: "unknown",
-      receipt: { platformMessageIds: [] },
+      outcome: "unknown",
+      failureClass: "transport",
+      error: "request outcome unknown",
+      idempotency: "unsupported",
     });
     const { api, services } = registerPlugin(km, vi.fn(), slackSendText);
 
@@ -362,7 +475,7 @@ describe("deliberation plugin boundary", () => {
     expect(km.reserve).not.toHaveBeenCalled();
   });
 
-  it("contains provider failures and records FAILED", async () => {
+  it("leaves a thrown provider outcome unresolved", async () => {
     vi.useFakeTimers();
     const km = createKm();
     km.completeDelivery.mockResolvedValue({ state: "FAILED" });
@@ -374,9 +487,67 @@ describe("deliberation plugin boundary", () => {
     ).resolves.toBeUndefined();
     await services[0]?.stop?.({ config: api.config, stateDir: "/tmp", logger: api.logger });
 
-    expect(km.completeDelivery).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: "FAILED", providerFailureClass: "rejection" }),
-    );
+    expect(km.completeDelivery).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      name: "unknown Discord sentinel",
+      result: sentAttempt("unknown"),
+    },
+    {
+      name: "padded noncanonical ID",
+      result: {
+        ...sentAttempt("message-1"),
+        messageId: " message-1 ",
+        receipt: {
+          ...sentAttempt("message-1").receipt,
+          primaryPlatformMessageId: " message-1 ",
+        },
+      },
+    },
+    {
+      name: "missing primary ID",
+      result: {
+        ...sentAttempt("message-1"),
+        receipt: { ...sentAttempt("message-1").receipt, primaryPlatformMessageId: undefined },
+      },
+    },
+    {
+      name: "different receipt ID",
+      result: {
+        ...sentAttempt("message-1"),
+        receipt: {
+          ...sentAttempt("message-1").receipt,
+          primaryPlatformMessageId: "message-2",
+        },
+      },
+    },
+    {
+      name: "multiple receipt parts",
+      result: {
+        ...sentAttempt("message-1"),
+        receipt: {
+          ...sentAttempt("message-1").receipt,
+          platformMessageIds: ["message-1", "message-2"],
+          parts: [
+            { platformMessageId: "message-1", kind: "text", index: 0 },
+            { platformMessageId: "message-2", kind: "text", index: 1 },
+          ],
+        },
+      },
+    },
+  ])("leaves $name receipt evidence unresolved", async ({ result }) => {
+    vi.useFakeTimers();
+    const km = createKm();
+    const sendText = vi.fn().mockResolvedValue(result);
+    const { api, services } = registerPlugin(km, sendText);
+
+    await services[0]?.start({ config: api.config, stateDir: "/tmp", logger: api.logger });
+    await services[0]?.stop?.({ config: api.config, stateDir: "/tmp", logger: api.logger });
+
+    expect(sendText).toHaveBeenCalledTimes(1);
+    expect(km.completeDelivery).not.toHaveBeenCalled();
   });
 
   it("serializes repeated ticks and waits for the active tick during stop", async () => {

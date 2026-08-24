@@ -4,10 +4,9 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseDeliberationConfig } from "./config.js";
 
-const valid = {
+const common = {
   enabled: true,
   failClosed: true,
-  sources: [{ channel: "discord", accountId: "acct", target: "source" }],
   processingSource: { channel: "discord", accountId: "acct", target: "processing" },
   km: {
     endpoint: "https://km.invalid",
@@ -15,6 +14,16 @@ const valid = {
     requestTimeoutMs: 1000,
   },
   restrictedSessionKeys: ["agent:reviewer"],
+} as const;
+
+const valid = {
+  ...common,
+  pipelines: [
+    {
+      id: "discord-source",
+      source: { channel: "discord", accountId: "acct", target: "source" },
+    },
+  ],
 };
 
 const endpointCases = [
@@ -36,60 +45,54 @@ const endpointCases = [
 ] as const;
 
 describe("parseDeliberationConfig", () => {
-  it("normalizes the exact route and restricted-session sets", () => {
-    const parsed = parseDeliberationConfig(valid);
-    expect(parsed.sourceKeys.size).toBe(1);
-    expect(parsed.restrictedSessionKeySet.has("agent:reviewer")).toBe(true);
-  });
-
-  it("accepts an optional canonical final delivery target", () => {
-    const deliveryTarget = {
-      provider: "discord",
-      accountId: "delivery",
-      channelId: "channel",
-      threadId: "thread",
-    };
-
-    expect(parseDeliberationConfig(valid).deliveryTarget).toBeUndefined();
-    expect(parseDeliberationConfig({ ...valid, deliveryTarget }).deliveryTarget).toEqual(
-      deliveryTarget,
-    );
-  });
-
-  it("accepts any number of canonical Slack sources while keeping processing Discord-only", () => {
+  it("normalizes canonical pipelines as the sole runtime authority", () => {
     const parsed = parseDeliberationConfig({
-      ...valid,
-      sources: [
-        ...valid.sources,
-        { channel: "slack", accountId: "workspace-a", target: "C123" },
-        { channel: "slack", accountId: "workspace-b", target: "C123" },
+      ...common,
+      pipelines: [
+        {
+          id: "slack-aplikace",
+          source: { channel: "slack", accountId: "default", target: "C123" },
+          target: { channel: "discord", accountId: "default", target: "delivery" },
+        },
       ],
     });
 
-    expect(parsed.sourceKeys).toEqual(
-      new Set(["discord\0acct\0source", "slack\0workspace-a\0C123", "slack\0workspace-b\0C123"]),
-    );
+    expect(parsed.pipelines).toEqual([
+      {
+        id: "slack-aplikace",
+        source: { channel: "slack", accountId: "default", target: "C123" },
+        target: { channel: "discord", accountId: "default", target: "delivery" },
+      },
+    ]);
+    expect(parsed).not.toHaveProperty("sources");
+    expect(parsed).not.toHaveProperty("deliveryTarget");
+  });
+
+  it("rejects legacy config before runtime startup", () => {
+    expect(() =>
+      parseDeliberationConfig({
+        ...common,
+        sources: [{ channel: "discord", accountId: "acct", target: "source" }],
+      }),
+    ).toThrow();
     expect(() =>
       parseDeliberationConfig({
         ...valid,
-        processingSource: { channel: "slack", accountId: "workspace-a", target: "C123" },
+        deliveryTarget: { provider: "discord", accountId: "acct", channelId: "delivery" },
       }),
     ).toThrow();
-    const slackTarget = {
-      provider: "slack",
-      accountId: "workspace-a",
-      channelId: "C123",
-      threadId: "1712345678.123456",
-    };
-    expect(
-      parseDeliberationConfig({ ...valid, deliveryTarget: slackTarget }).deliveryTarget,
-    ).toEqual(slackTarget);
-    expect(() =>
-      parseDeliberationConfig({
+  });
+
+  it("keeps source-default targets omitted and accepts explicit provider roots", () => {
+    expect(parseDeliberationConfig(valid).pipelines[0]?.target).toBeUndefined();
+    for (const channel of ["discord", "slack"] as const) {
+      const target = { channel, accountId: "delivery", target: "channel" };
+      const parsed = parseDeliberationConfig({
         ...valid,
-        deliveryTarget: { ...slackTarget, threadId: "child-event-id" },
-      }),
-    ).toThrow();
+        pipelines: [{ ...valid.pipelines[0], target }],
+      });
+      expect(parsed.pipelines[0]?.target).toEqual(target);
+    }
   });
 
   it("accepts a credential materialized by the secrets runtime", () => {
@@ -102,49 +105,117 @@ describe("parseDeliberationConfig", () => {
   });
 
   it.each([
-    [{ ...valid, unknown: true }, "unknown keys"],
+    [
+      { ...valid, pipelines: [...valid.pipelines, { ...valid.pipelines[0] }] },
+      "duplicate ids and sources",
+      "must have unique ids",
+    ],
+    [
+      {
+        ...valid,
+        pipelines: [...valid.pipelines, { id: "other-id", source: valid.pipelines[0].source }],
+      },
+      "duplicate canonical sources",
+      "must have unique canonical sources",
+    ],
+    [
+      { ...valid, processingSource: valid.pipelines[0].source },
+      "processing overlap",
+      "must not overlap pipeline sources",
+    ],
+    [
+      { ...valid, restrictedSessionKeys: ["agent:reviewer", "agent:reviewer"] },
+      "duplicate restricted sessions",
+      "must not contain duplicates",
+    ],
+  ])("rejects %s deterministically", (input, _description, message) => {
+    expect(() => parseDeliberationConfig(input)).toThrow(message);
+  });
+
+  it.each([
+    [{ ...valid, unknown: true }, "unknown config key"],
     [{ ...valid, failClosed: false }, "non-fail-closed mode"],
-    [{ ...valid, sources: [...valid.sources, ...valid.sources] }, "duplicate routes"],
-    [{ ...valid, processingSource: valid.sources[0] }, "processing overlap"],
+    [{ ...valid, pipelines: [{ ...valid.pipelines[0], id: "bad id" }] }, "malformed id"],
+    [{ ...valid, pipelines: [{ ...valid.pipelines[0], id: " padded" }] }, "padded id"],
     [
-      { ...valid, sources: [{ channel: "discord", accountId: "acct", target: "channel:bad" }] },
-      "malformed source identity component",
+      {
+        ...valid,
+        pipelines: [
+          {
+            ...valid.pipelines[0],
+            source: { channel: "discord", accountId: "acct", target: "channel:bad" },
+          },
+        ],
+      },
+      "malformed source identity",
     ],
     [
       {
         ...valid,
-        deliveryTarget: { provider: "discord", accountId: "acct", channelId: "channel:bad" },
+        pipelines: [
+          {
+            ...valid.pipelines[0],
+            target: { channel: "discord", accountId: "acct", target: "channel:bad" },
+          },
+        ],
       },
-      "malformed delivery identity component",
+      "malformed target identity",
     ],
     [
       {
         ...valid,
-        deliveryTarget: {
-          provider: "discord",
-          accountId: "acct",
-          channelId: "delivery",
-          threadId: "t".repeat(97),
-        },
+        pipelines: [
+          {
+            ...valid.pipelines[0],
+            target: {
+              channel: "discord",
+              accountId: "acct",
+              target: "delivery",
+              inheritThread: true,
+            },
+          },
+        ],
       },
-      "oversized delivery thread identity",
+      "unknown thread inheritance",
     ],
     [
       {
         ...valid,
-        deliveryTarget: {
-          provider: "discord",
-          accountId: "acct",
-          channelId: "delivery",
-          unknown: true,
-        },
+        pipelines: [
+          {
+            ...valid.pipelines[0],
+            target: {
+              channel: "slack",
+              accountId: "acct",
+              target: "C123",
+              threadId: "child-event-id",
+            },
+          },
+        ],
       },
-      "unknown delivery route property",
+      "invalid Slack thread",
+    ],
+    [
+      {
+        ...valid,
+        pipelines: [
+          {
+            ...valid.pipelines[0],
+            target: {
+              channel: "discord",
+              accountId: "acct",
+              target: "delivery",
+              threadId: "t".repeat(97),
+            },
+          },
+        ],
+      },
+      "oversized Discord thread",
     ],
     [{ ...valid, km: { ...valid.km, endpoint: "http://km.invalid" } }, "non-loopback HTTP KM"],
     [{ ...valid, km: { ...valid.km, credential: "" } }, "empty credential"],
     [{ ...valid, km: { ...valid.km, pollIntervalMs: 1000 } }, "retired polling config"],
-  ])("rejects %s (%s)", (input, _description) => {
+  ])("rejects malformed config: %s (%s)", (input, _description) => {
     expect(() => parseDeliberationConfig(input)).toThrow();
   });
 
@@ -157,103 +228,67 @@ describe("parseDeliberationConfig", () => {
     }
   });
 
-  it("keeps the manifest endpoint pattern aligned with runtime validation", async () => {
+  it("keeps the canonical manifest aligned with runtime config", async () => {
     const extensionDir = join(dirname(fileURLToPath(import.meta.url)), "..");
     const manifest = JSON.parse(
       await readFile(join(extensionDir, "openclaw.plugin.json"), "utf8"),
     ) as {
-      configSchema: { properties: { km: { properties: { endpoint: { pattern: string } } } } };
+      configSchema: {
+        $ref: string;
+        $defs: Record<
+          string,
+          {
+            required?: string[];
+            additionalProperties?: boolean;
+            properties?: Record<string, Record<string, unknown>>;
+            oneOf?: Array<{ $ref: string }>;
+          }
+        >;
+      };
     };
-    const pattern = new RegExp(manifest.configSchema.properties.km.properties.endpoint.pattern);
+    const { configSchema } = manifest;
 
+    expect(configSchema.$ref).toBe("#/$defs/canonicalConfig");
+    expect(configSchema.$defs.canonicalConfig).toMatchObject({
+      additionalProperties: false,
+      required: [
+        "enabled",
+        "failClosed",
+        "pipelines",
+        "processingSource",
+        "km",
+        "restrictedSessionKeys",
+      ],
+    });
+    expect(configSchema.$defs.canonicalConfig?.properties).not.toHaveProperty("sources");
+    expect(configSchema.$defs.canonicalConfig?.properties).not.toHaveProperty("deliveryTarget");
+    expect(configSchema.$defs).not.toHaveProperty("legacyConfig");
+    expect(configSchema.$defs).not.toHaveProperty("legacyDeliveryTarget");
+    expect(configSchema.$defs.pipelineTarget?.oneOf).toEqual([
+      { $ref: "#/$defs/discordPipelineTarget" },
+      { $ref: "#/$defs/slackPipelineTarget" },
+    ]);
+    expect(configSchema.$defs.discordPipelineTarget?.required).not.toContain("threadId");
+    expect(configSchema.$defs.slackPipelineTarget?.required).not.toContain("threadId");
+  });
+
+  it("keeps manifest KM and credential constraints aligned with runtime validation", async () => {
+    const extensionDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+    const manifest = JSON.parse(
+      await readFile(join(extensionDir, "openclaw.plugin.json"), "utf8"),
+    ) as {
+      configSchema: {
+        $defs: {
+          km: { properties: { endpoint: { pattern: string }; credential: { type: string[] } } };
+        };
+      };
+    };
+    const km = manifest.configSchema.$defs.km;
+    const pattern = new RegExp(km.properties.endpoint.pattern);
+
+    expect(km.properties.credential.type).toEqual(["string", "object"]);
     for (const [endpoint, accepted] of endpointCases) {
       expect(pattern.test(endpoint), endpoint).toBe(accepted);
-      const parse = () => parseDeliberationConfig({ ...valid, km: { ...valid.km, endpoint } });
-      if (accepted) {
-        expect(parse).not.toThrow();
-      } else {
-        expect(parse).toThrow();
-      }
     }
-  });
-
-  it("keeps the manifest credential schema aligned with secrets materialization", async () => {
-    const extensionDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-    const manifest = JSON.parse(
-      await readFile(join(extensionDir, "openclaw.plugin.json"), "utf8"),
-    ) as {
-      configSchema: {
-        properties: { km: { properties: { credential: { type: string[] } } } };
-      };
-    };
-
-    expect(manifest.configSchema.properties.km.properties.credential.type).toEqual([
-      "string",
-      "object",
-    ]);
-  });
-
-  it("keeps the optional manifest delivery route aligned with runtime validation", async () => {
-    const extensionDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-    const manifest = JSON.parse(
-      await readFile(join(extensionDir, "openclaw.plugin.json"), "utf8"),
-    ) as {
-      configSchema: {
-        required: string[];
-        properties: {
-          sources: { items: { $ref: string } };
-          processingSource: { $ref: string };
-          deliveryTarget: { $ref: string };
-        };
-        $defs: {
-          deliveryTarget: { oneOf: Array<{ $ref: string }> };
-          discordDeliveryTarget: {
-            required: string[];
-            additionalProperties: boolean;
-            properties: Record<string, Record<string, unknown>>;
-          };
-          slackDeliveryTarget: {
-            required: string[];
-            additionalProperties: boolean;
-            properties: Record<string, Record<string, unknown>>;
-          };
-        };
-      };
-    };
-
-    expect(manifest.configSchema.required).not.toContain("deliveryTarget");
-    expect(manifest.configSchema.properties.sources.items).toEqual({
-      $ref: "#/$defs/sourceRoute",
-    });
-    expect(manifest.configSchema.properties.processingSource).toEqual({
-      $ref: "#/$defs/discordRoute",
-    });
-    expect(manifest.configSchema.properties.deliveryTarget).toEqual({
-      $ref: "#/$defs/deliveryTarget",
-    });
-    expect(manifest.configSchema.$defs.deliveryTarget.oneOf).toEqual([
-      { $ref: "#/$defs/discordDeliveryTarget" },
-      { $ref: "#/$defs/slackDeliveryTarget" },
-    ]);
-    expect(manifest.configSchema.$defs.discordDeliveryTarget).toMatchObject({
-      required: ["provider", "accountId", "channelId"],
-      additionalProperties: false,
-      properties: {
-        provider: { const: "discord" },
-        accountId: { minLength: 1, maxLength: 96 },
-        channelId: { minLength: 1, maxLength: 96 },
-        threadId: { minLength: 1, maxLength: 96 },
-      },
-    });
-    expect(manifest.configSchema.$defs.slackDeliveryTarget).toMatchObject({
-      required: ["provider", "accountId", "channelId", "threadId"],
-      additionalProperties: false,
-      properties: {
-        provider: { const: "slack" },
-        accountId: { minLength: 1, maxLength: 96 },
-        channelId: { minLength: 1, maxLength: 96 },
-        threadId: { minLength: 3, maxLength: 96, pattern: "^\\d+\\.\\d+$" },
-      },
-    });
   });
 });

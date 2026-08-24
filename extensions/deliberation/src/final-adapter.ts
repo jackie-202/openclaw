@@ -12,9 +12,13 @@ const FINAL_DELIVERY_OWNER = "openclaw-deliberation";
 const FINAL_DELIVERY_POLL_INTERVAL_MS = 5_000;
 const MAX_LOOP_WARNING_LENGTH = 256;
 
+export function deriveProviderAttemptId(attemptId: string): string {
+  return `provider:${attemptId}`;
+}
+
 export type FinalDeliveryProvider = {
   send(
-    params: KmDeliveryTarget & {
+    params: Omit<KmDeliveryTarget, "mode"> & {
       text: string;
       idempotencyKey: string;
     },
@@ -25,6 +29,17 @@ export class FinalDeliveryOutcomeUnknownError extends Error {
   override readonly name = "FinalDeliveryOutcomeUnknownError";
 }
 
+export class FinalDeliveryRejectedError extends Error {
+  override readonly name = "FinalDeliveryRejectedError";
+
+  constructor(
+    message: string,
+    readonly failureClass: "permission" | "rate_limit" | "rejection",
+  ) {
+    super(message);
+  }
+}
+
 type FinalDeliveryKmClient = {
   ready(): Promise<{ items: KmReadyItem[] }>;
   reserve(
@@ -33,14 +48,9 @@ type FinalDeliveryKmClient = {
   ): Promise<
     { outcome: "reserved"; reservation: KmReservation } | { outcome: "conflict" | "disabled" }
   >;
-  invoke(
-    reservation: KmReservation,
-    attemptedTarget: KmWireDeliveryTarget,
-    providerAttemptId: string,
-  ): Promise<unknown>;
+  invoke(reservation: KmReservation, providerAttemptId: string): Promise<unknown>;
   completeDelivery(params: {
     reservation: KmReservation;
-    attemptedTarget: KmWireDeliveryTarget;
     providerAttemptId: string;
     outcome: "SENT" | "FAILED";
     providerReceiptId?: string;
@@ -50,43 +60,15 @@ type FinalDeliveryKmClient = {
   }): Promise<Record<string, unknown>>;
 };
 
-type ProviderFailureClass = "permission" | "rejection" | "rate_limit" | "transport" | "timeout";
-
-function providerTarget(target: KmWireDeliveryTarget): KmDeliveryTarget {
-  return parseKmDeliveryTarget({
+function providerTarget(target: KmWireDeliveryTarget): Omit<KmDeliveryTarget, "mode"> {
+  const { mode: _mode, ...parsedTarget } = parseKmDeliveryTarget({
     provider: target.provider,
     accountId: target.account,
     channelId: target.channel,
+    mode: target.threadId === undefined ? "root" : "thread",
     ...(target.threadId === undefined ? {} : { threadId: target.threadId }),
   });
-}
-
-const SLACK_PERMISSION_ERRORS = new Set([
-  "account_inactive",
-  "invalid_auth",
-  "missing_scope",
-  "no_permission",
-  "not_authed",
-  "not_in_channel",
-  "token_revoked",
-]);
-const TRANSPORT_ERROR_CODES = new Set([
-  "EAI_AGAIN",
-  "ECONNABORTED",
-  "ECONNREFUSED",
-  "ECONNRESET",
-  "ENETUNREACH",
-  "ENOTFOUND",
-  "EPIPE",
-]);
-const TIMEOUT_ERROR_CODES = new Set(["ETIMEDOUT", "ESOCKETTIMEDOUT"]);
-
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
-}
-
-function boundedErrorCode(value: unknown): string | undefined {
-  return typeof value === "string" && /^[A-Za-z0-9._~-]{1,256}$/.test(value) ? value : undefined;
+  return parsedTarget;
 }
 
 function boundedProviderId(value: string, field: string): string {
@@ -94,64 +76,6 @@ function boundedProviderId(value: string, field: string): string {
     throw new Error(`provider returned an invalid ${field}`);
   }
   return value;
-}
-
-function providerFailure(error: unknown): {
-  failureClass: ProviderFailureClass;
-  evidence: Record<string, string | number>;
-} {
-  const candidate = asRecord(error) ?? {};
-  const data = asRecord(candidate.data);
-  const original = asRecord(candidate.original);
-  const statusValue = candidate.status ?? candidate.statusCode;
-  const status =
-    typeof statusValue === "number" && Number.isInteger(statusValue) ? statusValue : undefined;
-  const platformCode = boundedErrorCode(data?.error);
-  const sdkCode = boundedErrorCode(candidate.code);
-  const nestedCode = boundedErrorCode(original?.code);
-  const code = platformCode ?? nestedCode ?? sdkCode;
-  // Slack's SDK emits this plain error after exhausting a non-rejecting 429 attempt.
-  const exhaustedRateLimit =
-    error instanceof Error
-      ? /^A rate limit was exceeded \(url: .+, retry-after: (\d+)\)$/.exec(error.message)
-      : undefined;
-  const retryAfter =
-    candidate.retryAfter ?? (exhaustedRateLimit ? Number(exhaustedRateLimit[1]) : undefined);
-  const retryAfterSeconds =
-    typeof retryAfter === "number" && Number.isFinite(retryAfter) && retryAfter >= 0
-      ? Math.ceil(retryAfter)
-      : undefined;
-  const detail = code ? `provider failed (${code})` : "provider failed";
-  const evidence = {
-    ...(code ? { code } : {}),
-    ...(status === undefined ? {} : { status }),
-    ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds }),
-    detail,
-  };
-  if (
-    (error instanceof Error && error.name === "TimeoutError") ||
-    (code !== undefined && TIMEOUT_ERROR_CODES.has(code))
-  ) {
-    return { failureClass: "timeout", evidence };
-  }
-  if (
-    candidate.kind === "missing-permissions" ||
-    status === 401 ||
-    status === 403 ||
-    (platformCode !== undefined && SLACK_PERMISSION_ERRORS.has(platformCode))
-  ) {
-    return { failureClass: "permission", evidence };
-  }
-  if (status === 429 || sdkCode === "slack_webapi_rate_limited_error" || exhaustedRateLimit) {
-    return { failureClass: "rate_limit", evidence };
-  }
-  if (
-    (status !== undefined && status >= 500) ||
-    (code !== undefined && TRANSPORT_ERROR_CODES.has(code))
-  ) {
-    return { failureClass: "transport", evidence };
-  }
-  return { failureClass: "rejection", evidence };
 }
 
 /**
@@ -170,9 +94,7 @@ export function createFinalDeliveryAdapter(params: {
         return undefined;
       }
       const readyTarget = parseWireDeliveryTarget(item.effectiveDeliveryTarget, "deliveryTarget");
-      const targetForProvider = providerTarget(readyTarget);
-      const provider = params.providers[targetForProvider.provider];
-      if (!provider) {
+      if (!params.providers[providerTarget(readyTarget).provider]) {
         throw new Error("delivery envelope has an unsupported destination");
       }
       const reserved = await params.km.reserve(item, params.owner);
@@ -186,8 +108,13 @@ export function createFinalDeliveryAdapter(params: {
       if (!isDeepStrictEqual(attemptedTarget, readyTarget)) {
         throw new Error("delivery reservation target differs from ready target");
       }
-      const providerAttemptId = `provider:${reservation.attemptId}`;
-      await params.km.invoke(reservation, attemptedTarget, providerAttemptId);
+      const targetForProvider = providerTarget(attemptedTarget);
+      const provider = params.providers[targetForProvider.provider];
+      if (!provider) {
+        throw new Error("delivery envelope has an unsupported destination");
+      }
+      const providerAttemptId = deriveProviderAttemptId(reservation.attemptId);
+      await params.km.invoke(reservation, providerAttemptId);
 
       let result: { receiptId: string; messageId: string };
       try {
@@ -200,15 +127,18 @@ export function createFinalDeliveryAdapter(params: {
         if (error instanceof FinalDeliveryOutcomeUnknownError) {
           throw error;
         }
-        const failure = providerFailure(error);
-        return await params.km.completeDelivery({
-          reservation,
-          attemptedTarget,
-          providerAttemptId,
-          outcome: "FAILED",
-          providerFailureClass: failure.failureClass,
-          providerEvidence: failure.evidence,
-        });
+        if (error instanceof FinalDeliveryRejectedError) {
+          return await params.km.completeDelivery({
+            reservation,
+            providerAttemptId,
+            outcome: "FAILED",
+            providerFailureClass: error.failureClass,
+            providerEvidence: { detail: error.message.slice(0, MAX_LOOP_WARNING_LENGTH) },
+          });
+        }
+        throw new FinalDeliveryOutcomeUnknownError(
+          "Final delivery provider outcome is unknown after invocation",
+        );
       }
       // A resolved provider call may already have delivered. Invalid receipt evidence must
       // remain unresolved so KM recovery records DELIVERY_UNKNOWN instead of a false failure.
@@ -218,7 +148,6 @@ export function createFinalDeliveryAdapter(params: {
       };
       return await params.km.completeDelivery({
         reservation,
-        attemptedTarget,
         providerAttemptId,
         outcome: "SENT",
         providerReceiptId: receipt.receiptId,

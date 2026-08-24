@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-22T23:06:01+00:00",
+    "implementingStartedAt": "2026-08-22T22:46:33+00:00",
+    "taskFile": "plans/tasks/2026-08-22_followup-swift-cove-5006-red-green-enforce-exclusive-deliberation-ownership-before-ch.md",
+    "taskId": "swift-cove-5006",
+    "title": "[acceptance-fix] RED-GREEN: enforce exclusive deliberation ownership before channel side effects: goal-001: A configured"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] RED-GREEN: enforce exclusive deliberation ownership before channel side effects: goal-001: A configured"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-cove-5006-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-cove-5006",
+  "tddRequired": false
+}

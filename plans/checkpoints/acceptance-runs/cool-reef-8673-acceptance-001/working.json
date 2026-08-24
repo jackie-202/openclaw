@@ -1,0 +1,74 @@
+{
+  "findings": [
+    {
+      "claim": "The required canonical Test Gate pass is not evidenced.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-008"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller-supplied canonical Test Gate status is 'not run' and states that no Test Gate evidence exists; the checkpoint likewise records canonical npm test as infrastructure-blocked before execution.",
+      "rationale": "Goal goal-008 explicitly requires the canonical Test Gate to pass. Build, focused suites, packaging, lint, and format evidence cannot substitute for the absent caller-owned canonical Test Gate result.",
+      "required": "Run the canonical Test Gate through its owning infrastructure and supply a passing canonical Test Gate evidence reference.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical Test Gate reference: not run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-reef-8673.checkpoint.md:8"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "A temporary legacy config migrates deterministically to canonical `pipelines[]`."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "Mixed legacy/new authority is rejected rather than guessed."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Re-running `doctor --fix` is idempotent."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "Canonical startup/config validation succeeds on the migrated temporary config."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "Invalid duplicate routes and impossible thread inheritance remain rejected."
+    },
+    {
+      "id": "goal-006",
+      "status": "MET",
+      "summary": "Tests execute through the built/package CLI, not only imported source helpers."
+    },
+    {
+      "id": "goal-007",
+      "status": "MET",
+      "summary": "No live config is read or modified by tests."
+    },
+    {
+      "id": "goal-008",
+      "status": "UNMET",
+      "summary": "Build, focused doctor/config suites, packaging check, lint, and canonical Test Gate pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-reef-8673-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "cool-reef-8673"
+}

@@ -1,0 +1,38 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/dark-wave-6899.evidence.md",
+      "provenance": "evidence_repair:dark-wave-6899-acceptance-001-evidence-repair-001",
+      "size": 834
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/dark-wave-6899.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/dark-wave-6899-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "90eeb86db1e74fc6048a641a5095cdd4b665d72c",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-22T22:40:03.978487+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=dark-wave-6899 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test src/plugins/hooks.sync-only.test.ts src/plugin-sdk/channel-inbound.test.ts extensio",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=dark-wave-6899 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test src/plugins/hooks.sync-only.test.ts src/plugin-sdk/channel-inbound.test.ts extens",
+      "outcome": "Test Files  1 passed (1)"
+    }
+  ],
+  "repairRunId": "dark-wave-6899-acceptance-001-evidence-repair-001",
+  "sourceRunId": "dark-wave-6899-acceptance-001",
+  "startedAt": "2026-08-22T22:40:02.164194+00:00",
+  "status": "escalated"
+}

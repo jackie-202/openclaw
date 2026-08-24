@@ -1,0 +1,79 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The canonical full gate does not implement the required executable OR-07 through OR-21 leaves.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint marks the step to expose OR-07 through OR-21 as incomplete and states those scenarios cannot be honestly exposed; the final note confirms no behavioral leaves ran and no 23-row result is claimed.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal-001 requires one caller-owned command with real executable OR-01 through OR-23 leaves exactly once. Missing fifteen owner-runtime leaves means the delivered gate plumbing cannot establish the required full gate.",
+      "required": "Implement OR-07 through OR-21 as exact executable owner-boundary selectors and compose them with OR-01 through OR-23 in the canonical fail-closed command without synthetic rows.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-brook-1900.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-brook-1900.final-note.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_establish-caller-owned-deliberation-or-01-through-or-23-full.md"
+        }
+      ]
+    },
+    {
+      "claim": "The required canonical 23/23 Green ledger and completion evidence are absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied final note says the canonical command stopped at dirty-checkout preflight, executed no behavioral leaves, and did not create plans/checkpoints/quick-brook-1900.full-gate.json; Test Gate status is not run.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The task explicitly requires a zero-exit canonical run with 23/23 named leaves Green, a complete 23-row result artifact, exact clean revisions and hashes, negative fail-closed evidence, and elapsed output. The negative TDD characterization alone does not establish the full gate result.",
+      "required": "From an authorized clean workspace with verified immutable KM authority, run the canonical gate and preserve its validated 23-row Green ledger plus the specified completion evidence; do not reconstruct or synthesize rows.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-brook-1900.final-note.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.rollout-readiness.md"
+        },
+        {
+          "kind": "test-gate",
+          "reference": "status:not-run"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_establish-caller-owned-deliberation-or-01-through-or-23-full.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Establish caller-owned Deliberation OR-01 through OR-23 full gate"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-brook-1900-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "quick-brook-1900"
+}

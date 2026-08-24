@@ -1,8 +1,14 @@
 // Slack plugin module implements message handler behavior.
 import {
+  claimChannelInboundEvent,
+  classifyChannelInboundEvent,
   createChannelInboundDebouncer,
+  resolveChannelInboundEventPolicy,
+  resolveUnmentionedGroupInboundPolicy,
   shouldDebounceTextInbound,
 } from "openclaw/plugin-sdk/channel-inbound";
+import { hasControlCommand } from "openclaw/plugin-sdk/command-detection";
+import { isAbortRequestText } from "openclaw/plugin-sdk/command-primitives-runtime";
 import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
 import {
   asDateTimestampMs,
@@ -20,6 +26,7 @@ import {
   buildSlackDebounceKey,
   buildTopLevelSlackConversationKey,
 } from "./message-handler/debounce-key.js";
+import { resolveSlackTimestampMs } from "./message-handler/timestamp.js";
 import { createSlackThreadTsResolver } from "./thread-resolution.js";
 
 type SlackMessagePipeline = typeof import("./message-handler/pipeline.runtime.js");
@@ -45,13 +52,18 @@ export class SlackRetryableInboundError extends Error {
   }
 }
 
-function shouldDebounceSlackMessage(message: SlackMessageEvent, cfg: SlackMonitorContext["cfg"]) {
+function shouldDebounceSlackMessage(
+  message: SlackMessageEvent,
+  cfg: SlackMonitorContext["cfg"],
+  allowDebounce = true,
+) {
   const text = message.text ?? "";
   const textForCommandDetection = stripSlackMentionsForCommandDetection(text);
   return shouldDebounceTextInbound({
     text: textForCommandDetection,
     cfg,
     hasMedia: Boolean(message.files && message.files.length > 0),
+    allowDebounce,
   });
 }
 
@@ -72,11 +84,13 @@ export function createSlackMessageHandler(params: {
   const { debounceMs, debouncer } = createChannelInboundDebouncer<{
     message: SlackMessageEvent;
     opts: { source: "message" | "app_mention"; wasMentioned?: boolean };
+    allowDebounce: boolean;
   }>({
     cfg: ctx.cfg,
     channel: "slack",
     buildKey: (entry) => buildSlackDebounceKey(entry.message, ctx.accountId),
-    shouldDebounce: (entry) => shouldDebounceSlackMessage(entry.message, ctx.cfg),
+    shouldDebounce: (entry) =>
+      shouldDebounceSlackMessage(entry.message, ctx.cfg, entry.allowDebounce),
     onFlush: async (entries) => {
       const last = entries.at(-1);
       if (!last) {
@@ -241,6 +255,12 @@ export function createSlackMessageHandler(params: {
     ) {
       return;
     }
+    const policy = resolveChannelInboundEventPolicy({
+      provider: "slack",
+      accountId: ctx.accountId,
+      conversationId: message.channel ?? "",
+      providerEventId: message.ts,
+    });
     const seenMessageKey = buildSeenMessageKey(message.channel, message.ts);
     if (
       seenMessageKey &&
@@ -253,7 +273,12 @@ export function createSlackMessageHandler(params: {
       return;
     }
     const wasSeen = seenMessageKey ? ctx.markMessageSeen(message.channel, message.ts) : false;
-    if (seenMessageKey && opts.source === "message" && !wasSeen) {
+    if (
+      seenMessageKey &&
+      opts.source === "message" &&
+      !wasSeen &&
+      (policy.kind === "ordinary" || policy.kind === "separate")
+    ) {
       // Prime exactly one fallback app_mention allowance immediately so a near-simultaneous
       // app_mention is not dropped while message handling is still in-flight.
       rememberAppMentionRetryKey(seenMessageKey);
@@ -265,11 +290,66 @@ export function createSlackMessageHandler(params: {
         return;
       }
     }
+    if (policy.kind === "exclusive" || policy.kind === "ambiguous") {
+      const text = message.text ?? "";
+      const textForCommandDetection = stripSlackMentionsForCommandDetection(text);
+      const isDirectMessage =
+        message.channel_type === "im" || (!message.channel_type && message.channel.startsWith("D"));
+      const isGroupDm = message.channel_type === "mpim";
+      const providerEventId = message.ts ?? message.event_ts;
+      const ambiguousThreadId =
+        message.parent_user_id && !message.thread_ts ? "ambiguous" : undefined;
+      await claimChannelInboundEvent({
+        policy,
+        event: {
+          content: text,
+          body: text,
+          bodyForAgent: text,
+          timestamp: resolveSlackTimestampMs(providerEventId),
+          channel: "slack",
+          provider: "slack",
+          eventType: "message",
+          eventKind: classifyChannelInboundEvent({
+            conversation: { kind: isDirectMessage ? "direct" : isGroupDm ? "group" : "channel" },
+            unmentionedGroupPolicy: resolveUnmentionedGroupInboundPolicy({ cfg: ctx.cfg }),
+            wasMentioned: opts.wasMentioned === true || opts.source === "app_mention",
+            hasControlCommand: hasControlCommand(textForCommandDetection, ctx.cfg),
+            hasAbortRequest: isAbortRequestText(textForCommandDetection),
+          }),
+          accountId: ctx.accountId,
+          conversationId: message.channel,
+          senderId: message.user ?? message.bot_id,
+          threadId: message.thread_ts ?? ambiguousThreadId,
+          messageId: providerEventId,
+          isGroup: !isDirectMessage,
+          wasMentioned: opts.wasMentioned === true || opts.source === "app_mention",
+          metadata: {
+            mediaTypes: message.files?.map((file) => file.mimetype).filter(Boolean),
+            mediaUrls: message.files?.map((file) => file.url_private).filter(Boolean),
+          },
+        },
+        context: {
+          channelId: "slack",
+          accountId: ctx.accountId,
+          conversationId: message.channel,
+          senderId: message.user ?? message.bot_id,
+          messageId: providerEventId,
+        },
+        log: (entry) => ctx.logger.debug?.(entry),
+      });
+      if (seenMessageKey) {
+        appMentionRetryKeys.delete(seenMessageKey);
+        appMentionDispatchedKeys.delete(seenMessageKey);
+      }
+      return;
+    }
     trackEvent?.();
     const resolvedMessage = await threadTsResolver.resolve({ message, source: opts.source });
     const debounceKey = buildSlackDebounceKey(resolvedMessage, ctx.accountId);
     const conversationKey = buildTopLevelSlackConversationKey(resolvedMessage, ctx.accountId);
-    const canDebounce = debounceMs > 0 && shouldDebounceSlackMessage(resolvedMessage, ctx.cfg);
+    const allowDebounce = policy.kind === "ordinary";
+    const canDebounce =
+      debounceMs > 0 && shouldDebounceSlackMessage(resolvedMessage, ctx.cfg, allowDebounce);
     if (!canDebounce && conversationKey) {
       const pendingKeys = pendingTopLevelDebounceKeys.get(conversationKey);
       if (pendingKeys && pendingKeys.size > 0) {
@@ -284,6 +364,10 @@ export function createSlackMessageHandler(params: {
       pendingKeys.add(debounceKey);
       pendingTopLevelDebounceKeys.set(conversationKey, pendingKeys);
     }
-    await debouncer.enqueue({ message: resolvedMessage, opts });
+    await debouncer.enqueue({
+      message: resolvedMessage,
+      opts,
+      allowDebounce,
+    });
   };
 }

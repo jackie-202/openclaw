@@ -1,0 +1,29 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-19T17:15:00+00:00",
+    "implementingStartedAt": "2026-08-19T17:09:01+00:00",
+    "taskFile": "plans/tasks/2026-08-19_update-stale-deliberation-intake-producer-test-to-optional-d.md",
+    "taskId": "swift-vale-3239",
+    "title": "Update stale deliberation intake-producer test to optional Discord sourceThreadId semantics"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "The single stale assertion is aligned with optional-by-absence Discord sourceThreadId semantics."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Full deliberation extension suite green."
+    },
+    {
+      "id": "goal-003",
+      "summary": "No production code modified."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-vale-3239-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-vale-3239",
+  "tddRequired": false
+}

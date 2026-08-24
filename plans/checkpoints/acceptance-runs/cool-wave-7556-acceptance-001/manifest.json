@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-24T00:00:30+00:00",
+    "implementingStartedAt": "2026-08-23T23:24:58+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-cool-wave-7556-acceptance-fix-complete-openclaw-convergence-against-verifie.md",
+    "taskId": "cool-wave-7556",
+    "title": "[acceptance-fix] [acceptance-fix] Complete OpenClaw convergence against verified KM owner artifacts: goal-001: Complete "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Complete OpenClaw convergence against verified KM owner artifacts: goal-001: Complete"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-wave-7556-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-wave-7556",
+  "tddRequired": true
+}

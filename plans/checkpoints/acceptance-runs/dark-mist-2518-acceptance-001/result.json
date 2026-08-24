@@ -1,0 +1,46 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required named OR-22 leaf implementation is not present in the supplied task-scoped change material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The caller-supplied task-scoped diff contains no change to test/scripts/deliberation-doctor-package.e2e.test.ts and no statically reviewable installed-runtime probe or assertions for the exact ordered five hooks and sole deliberation-final-delivery service. The supplied plan describes the intended code, while checkpoint prose and captured test stdout only claim that it was applied.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "The acceptance-fix goal specifically requires the named OR-22 leaf itself to exercise the installed runtime and assert five-hook singleton behavior. Plans, agent prose, and stdout do not establish that the required implementation was delivered.",
+      "required": "Supply the actual OR-22 test implementation that loads the installed Deliberation runtime and asserts the exact ordered five hooks plus only the deliberation-final-delivery service, while retaining the standalone singleton smoke.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_followup-dark-mist-2518-ship-and-verify-openclaw-deliberation-doctor-migration-packa.md:10-27"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_dark-mist-2518_ship-and-verify-openclaw-deliberation-doctor-migration.md:Implementation steps 2-4"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied task-scoped diff"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Ship and verify OpenClaw Deliberation doctor migration package: goal-001: Ship and verify OpenClaw Deli"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-2518-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-mist-2518"
+}

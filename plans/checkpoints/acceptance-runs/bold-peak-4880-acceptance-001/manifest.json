@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-22T16:06:29+00:00",
+    "implementingStartedAt": "2026-08-22T15:57:06+00:00",
+    "taskFile": "plans/tasks/2026-08-22_followup-bold-peak-4880-acceptance-fix-deliberation-validate-fixtures-bound-legacy-c.md",
+    "taskId": "bold-peak-4880",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation: validate fixtures, bound legacy config, and repair integration proof: go"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation: validate fixtures, bound legacy config, and repair integration proof: go"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-peak-4880-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-peak-4880",
+  "tddRequired": false
+}

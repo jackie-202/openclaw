@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T09:00:18+00:00",
+    "implementingStartedAt": "2026-08-21T08:28:09+00:00",
+    "taskFile": "plans/tasks/2026-08-21_define-deliberation-pipelines-config-and-legacy-normalizatio.md",
+    "taskId": "warm-vale-8134",
+    "title": "Define deliberation pipelines config and legacy normalization"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Define deliberation pipelines config and legacy normalization"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-vale-8134-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-vale-8134",
+  "tddRequired": true
+}

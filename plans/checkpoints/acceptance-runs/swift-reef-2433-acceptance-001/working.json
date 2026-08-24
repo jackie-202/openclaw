@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The required canonical Test Gate pass is not evidenced.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller-supplied canonical Test Gate status is 'not run' with no Test Gate evidence, and the supplied swift-reef-2433 gate artifact is BLOCKED before runner allocation and explicitly states that npm test did not execute.",
+      "rationale": "The acceptance-fix goal exists specifically to supply the missing canonical Test Gate pass. Historical focused suites, build, package, lint, format, and RED/GREEN proof do not substitute for the absent caller-owned canonical run reference and passing result.",
+      "required": "Run npm test through the caller-owned canonical Test Gate infrastructure and supply a durable provider/run reference with a passing result.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical Test Gate reference: not run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-2433.test-gate.md:1-34"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-reef-2433.checkpoint.md:3-8"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] RED-GREEN: ship and verify the doctor migration artifact: goal-008: Build, focused doctor/config suites"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-reef-2433-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "swift-reef-2433"
+}

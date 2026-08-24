@@ -26,6 +26,129 @@ function createLogger(): HookRunnerLogger & {
 }
 
 describe("sync-only plugin hooks", () => {
+  it("keeps inbound events separate when an ownership policy claims the source", () => {
+    const runner = createHookRunner(
+      createMockPluginRegistry([
+        {
+          hookName: "inbound_event_policy" as never,
+          pluginId: "source-owner",
+          handler: (() => ({ aggregation: "separate", dispatch: "exclusive" })) as never,
+        },
+      ]),
+    );
+
+    const result = (
+      runner as typeof runner & {
+        runInboundEventPolicy: (event: {
+          provider: string;
+          accountId: string;
+          conversationId: string;
+          providerEventId: string;
+        }) => { aggregation: "separate"; dispatch?: "exclusive" } | undefined;
+      }
+    ).runInboundEventPolicy({
+      provider: "discord",
+      accountId: "default",
+      conversationId: "source",
+      providerEventId: "message-1",
+    });
+
+    expect(result).toEqual({ kind: "exclusive", ownerPluginId: "source-owner" });
+  });
+
+  it("fails closed when multiple plugins claim exclusive ownership", () => {
+    const firstPolicy = vi.fn(() => ({ aggregation: "separate", dispatch: "exclusive" }) as const);
+    const secondPolicy = vi.fn(() => ({ aggregation: "separate", dispatch: "exclusive" }) as const);
+    const runner = createHookRunner(
+      createMockPluginRegistry([
+        {
+          hookName: "inbound_event_policy" as never,
+          pluginId: "higher-priority-owner",
+          priority: 100,
+          handler: firstPolicy as never,
+        },
+        {
+          hookName: "inbound_event_policy" as never,
+          pluginId: "lower-priority-owner",
+          priority: 1,
+          handler: secondPolicy as never,
+        },
+      ]),
+    );
+
+    const result = runner.runInboundEventPolicy({
+      provider: "slack",
+      accountId: "default",
+      conversationId: "C123",
+      providerEventId: "1700000000.000100",
+    });
+
+    expect(result).toEqual({ kind: "ambiguous" });
+    expect(firstPolicy).toHaveBeenCalledOnce();
+    expect(secondPolicy).toHaveBeenCalledOnce();
+  });
+
+  it("fails safe to separate events when an inbound ownership policy is async", () => {
+    const logger = createLogger();
+    const runner = createHookRunner(
+      createMockPluginRegistry([
+        {
+          hookName: "inbound_event_policy" as never,
+          pluginId: "async-source-owner",
+          handler: (async () => ({ aggregation: "separate" })) as never,
+        },
+      ]),
+      { logger },
+    );
+
+    const result = (
+      runner as typeof runner & {
+        runInboundEventPolicy: (event: {
+          provider: string;
+          accountId: string;
+          conversationId: string;
+        }) => { aggregation: "separate" } | undefined;
+      }
+    ).runInboundEventPolicy({
+      provider: "slack",
+      accountId: "workspace",
+      conversationId: "C123",
+    });
+
+    expect(result).toEqual({ kind: "separate" });
+    expect(logger.warn).toHaveBeenCalledWith(
+      "[hooks] inbound_event_policy handler from async-source-owner returned a Promise; this hook is synchronous, so aggregation was disabled.",
+    );
+  });
+
+  it("keeps policy exception details out of fail-closed diagnostics", () => {
+    const logger = createLogger();
+    const runner = createHookRunner(
+      createMockPluginRegistry([
+        {
+          hookName: "inbound_event_policy" as never,
+          pluginId: "broken-source-owner",
+          handler: (() => {
+            throw new Error("credential=do-not-log");
+          }) as never,
+        },
+      ]),
+      { logger },
+    );
+
+    expect(
+      runner.runInboundEventPolicy({
+        provider: "discord",
+        accountId: "default",
+        conversationId: "source",
+      }),
+    ).toEqual({ kind: "separate" });
+    expect(logger.error).toHaveBeenCalledWith(
+      "[hooks] inbound_event_policy handler from broken-source-owner failed; aggregation was disabled.",
+    );
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain("do-not-log");
+  });
+
   it("warns and ignores accidental async tool_result_persist handlers", () => {
     const logger = createLogger();
     const originalMessage = createToolResultMessage("original");

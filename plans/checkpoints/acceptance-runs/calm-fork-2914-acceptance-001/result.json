@@ -1,0 +1,67 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required OpenClaw convergence with the supplied immutable KM Deliberation owner bundle was not delivered.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint states that the task stopped at the immutable-authority revision gate before production or test edits; implementation, focused verification, and GREEN steps remain incomplete. The task-scoped diff does not supply the required contract mirror, KM client, probe, adapter, or OR-07 through OR-21 harness convergence.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal goal-001 requires concrete OpenClaw behavior and boundary artifacts aligned to the approved KM owner bundle. A blocker checkpoint and unrelated documentation or architecture-review changes do not implement that convergence.",
+      "required": "Restore the approved KM checkout revision, then implement the task-scoped OpenClaw contract, client, probe, adapter, provenance, and named harness convergence without modifying KM.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-fork-2914.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_followup-calm-fork-2914-converge-openclaw-with-supplied-immutable-km-deliberation-ow.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED-GREEN TDD proof is incomplete.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true. The supplied proof links a genuine historical owner-boundary RED, but explicitly records an authority-gate block before implementation and contains no fresh GREEN phase or post-change passing evidence.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "Historical RED provenance alone does not satisfy the mandatory TDD contract; the same owner-backed boundary must have credible post-implementation GREEN evidence.",
+      "required": "After implementing the convergence, append fresh GREEN evidence for the owner-backed boundary to the task-scoped RED-GREEN proof while preserving the linked genuine historical RED.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-fork-2914.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-fork-2914.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Converge OpenClaw with supplied immutable KM Deliberation owner bundle: goal-001: Converge OpenClaw wit"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-fork-2914-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "calm-fork-2914"
+}

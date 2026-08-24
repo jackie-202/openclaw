@@ -1,8 +1,15 @@
 // Slack tests cover message handler plugin behavior.
+import type { ChannelInboundEventPolicyDecision } from "openclaw/plugin-sdk/channel-inbound";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const enqueueMock = vi.fn(async (_entry: unknown) => {});
 const flushKeyMock = vi.fn(async (_key: string) => {});
+const claimInboundEventMock = vi.fn(async (_params: unknown) => ({ status: "handled" as const }));
+const resolveInboundEventPolicyMock = vi.fn(
+  (_event: { providerEventId?: string }): ChannelInboundEventPolicyDecision => ({
+    kind: "ordinary",
+  }),
+);
 const resolveThreadTsMock = vi.fn(async ({ message }: { message: Record<string, unknown> }) => ({
   ...message,
 }));
@@ -14,14 +21,24 @@ vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
   );
   return {
     ...actual,
-    createChannelInboundDebouncer: () => ({
-      debounceMs: 10,
-      debouncer: {
-        enqueue: (entry: unknown) => enqueueMock(entry),
-        flushKey: (key: string) => flushKeyMock(key),
-      },
-    }),
-    shouldDebounceTextInbound: ({ hasMedia }: { hasMedia?: boolean }) => !hasMedia,
+    claimChannelInboundEvent: claimInboundEventMock,
+    createChannelInboundDebouncer: (_options: Record<string, unknown>) => {
+      return {
+        debounceMs: 10,
+        debouncer: {
+          enqueue: (entry: unknown) => enqueueMock(entry),
+          flushKey: (key: string) => flushKeyMock(key),
+        },
+      };
+    },
+    resolveChannelInboundEventPolicy: resolveInboundEventPolicyMock,
+    shouldDebounceTextInbound: ({
+      hasMedia,
+      allowDebounce,
+    }: {
+      hasMedia?: boolean;
+      allowDebounce?: boolean;
+    }) => allowDebounce !== false && !hasMedia,
   };
 });
 
@@ -42,11 +59,12 @@ function createContext(overrides?: {
       client: {},
     },
     runtime: {},
+    logger: { debug: vi.fn() },
     markMessageSeen: (channel: string | undefined, ts: string | undefined) =>
       overrides?.markMessageSeen?.(channel, ts) ?? false,
     releaseSeenMessage: (channel: string | undefined, ts: string | undefined) =>
       overrides?.releaseSeenMessage?.(channel, ts),
-  } as Parameters<typeof createSlackMessageHandler>[0]["ctx"];
+  } as unknown as Parameters<typeof createSlackMessageHandler>[0]["ctx"];
 }
 
 function createHandlerWithTracker(overrides?: {
@@ -80,7 +98,9 @@ describe("createSlackMessageHandler", () => {
   beforeEach(() => {
     enqueueMock.mockClear();
     flushKeyMock.mockClear();
+    claimInboundEventMock.mockClear();
     resolveThreadTsMock.mockClear();
+    resolveInboundEventPolicyMock.mockReset().mockReturnValue({ kind: "ordinary" });
   });
 
   it("does not track invalid non-message events from the message stream", async () => {
@@ -200,5 +220,37 @@ describe("createSlackMessageHandler", () => {
     );
 
     expect(flushKeyMock).toHaveBeenCalledWith("slack:default:C111:1709000000.000100:U111");
+  });
+
+  it("marks same-window configured source events as separate with their own IDs", async () => {
+    resolveInboundEventPolicyMock.mockReturnValue({
+      kind: "exclusive",
+      ownerPluginId: "deliberation",
+    });
+    const { handler } = createHandlerWithTracker();
+
+    for (const ts of ["1709000000.000100", "1709000000.000200"]) {
+      await handler(
+        {
+          type: "message",
+          channel: "C111",
+          user: "U111",
+          ts,
+          thread_ts: "1709000000.000001",
+          text: `message ${ts}`,
+        } as never,
+        { source: "message" },
+      );
+    }
+
+    expect(
+      resolveInboundEventPolicyMock.mock.calls.map(([event]) => event.providerEventId),
+    ).toEqual(["1709000000.000100", "1709000000.000200"]);
+    expect(
+      claimInboundEventMock.mock.calls.map(
+        ([params]) => (params as { event: { messageId?: string } }).event.messageId,
+      ),
+    ).toEqual(["1709000000.000100", "1709000000.000200"]);
+    expect(enqueueMock).not.toHaveBeenCalled();
   });
 });

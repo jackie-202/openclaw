@@ -14,6 +14,77 @@ import {
   type FinalizeChannelInboundContextResult,
 } from "../channels/inbound-event/context.js";
 import type { InboundEventKind } from "../channels/inbound-event/kind.js";
+import type {
+  PluginHookInboundClaimContext,
+  PluginHookInboundClaimEvent,
+} from "../plugins/hook-message.types.js";
+import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
+import type {
+  PluginHookInboundClaimResult,
+  PluginHookInboundEventPolicyDecision,
+  PluginHookInboundEventPolicyEvent,
+} from "../plugins/hook-types.js";
+
+export type ChannelInboundEventPolicyFacts = PluginHookInboundEventPolicyEvent;
+export type ChannelInboundEventPolicyDecision = PluginHookInboundEventPolicyDecision;
+
+export type ChannelInboundExclusiveClaimResult =
+  | { kind: "continue" }
+  | {
+      kind: "terminal";
+      reason:
+        | "ambiguous_owner"
+        | "runner_unavailable"
+        | "handled"
+        | "declined"
+        | "missing_plugin"
+        | "no_handler"
+        | "error";
+      ownerPluginId?: string;
+      result?: PluginHookInboundClaimResult;
+    };
+
+export function resolveChannelInboundEventPolicy(
+  event: ChannelInboundEventPolicyFacts,
+): ChannelInboundEventPolicyDecision {
+  return getGlobalHookRunner()?.runInboundEventPolicy(event) ?? { kind: "ordinary" };
+}
+
+export async function claimChannelInboundEvent(params: {
+  policy: ChannelInboundEventPolicyDecision;
+  event: PluginHookInboundClaimEvent;
+  context: PluginHookInboundClaimContext;
+  log?: (message: string) => void;
+}): Promise<ChannelInboundExclusiveClaimResult> {
+  if (params.policy.kind === "ordinary" || params.policy.kind === "separate") {
+    return { kind: "continue" };
+  }
+  if (params.policy.kind === "ambiguous") {
+    params.log?.("inbound exclusive claim stopped: reason=ambiguous_owner");
+    return { kind: "terminal", reason: "ambiguous_owner" };
+  }
+
+  const ownerPluginId = params.policy.ownerPluginId;
+  const runner = getGlobalHookRunner();
+  if (!runner) {
+    params.log?.(
+      `inbound exclusive claim stopped: owner=${ownerPluginId} reason=runner_unavailable`,
+    );
+    return { kind: "terminal", reason: "runner_unavailable", ownerPluginId };
+  }
+  const outcome = await runner.runInboundClaimForPluginOutcome(
+    ownerPluginId,
+    params.event,
+    params.context,
+  );
+  params.log?.(`inbound exclusive claim stopped: owner=${ownerPluginId} reason=${outcome.status}`);
+  return {
+    kind: "terminal",
+    reason: outcome.status,
+    ownerPluginId,
+    ...(outcome.status === "handled" ? { result: outcome.result } : {}),
+  };
+}
 
 export {
   createInboundDebouncer,

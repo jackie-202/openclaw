@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T22:52:23+00:00",
+    "implementingStartedAt": "2026-08-23T22:12:22+00:00",
+    "taskFile": "plans/tasks/2026-08-23_complete-openclaw-convergence-against-verified-km-owner-arti.md",
+    "taskId": "cool-vale-4616",
+    "title": "Complete OpenClaw convergence against verified KM owner artifacts"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Complete OpenClaw convergence against verified KM owner artifacts"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-vale-4616-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-vale-4616",
+  "tddRequired": true
+}

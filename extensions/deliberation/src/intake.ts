@@ -7,14 +7,16 @@ import type { DeliberationConfig } from "./config.js";
 import { KmRequestError, type KmClient } from "./km-client.js";
 import { admitInboundSource, matchesSource } from "./route-match.js";
 import {
+  registerDiscordHistoryIdentity,
   registerSlackThreadIdentity,
-  type SlackThreadIdentityStore,
+  type SourceHistoryIdentityStore,
 } from "./thread-identity-store.js";
 
 type BeforeDispatchContext = {
   channelId?: string;
   accountId?: string;
   conversationId?: string;
+  parentConversationId?: string;
 };
 
 const MIME_TYPE_PATTERN = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i;
@@ -63,7 +65,7 @@ export function createInboundClaimHandler(
   config: DeliberationConfig,
   client: KmClient,
   logger: PluginLogger,
-  threadStore?: SlackThreadIdentityStore,
+  historyStore?: SourceHistoryIdentityStore,
 ) {
   // Discord compares authenticated botUserId with author.id before this hook.
   // No authoritative self fact reaches plugins, so admission must not guess from display metadata.
@@ -83,19 +85,28 @@ export function createInboundClaimHandler(
       return { handled: false };
     }
     try {
+      if (!historyStore) {
+        throw new Error("Source history identity store is unavailable");
+      }
       if (admission.route.channel === "slack") {
-        if (!threadStore) {
-          throw new Error("Slack thread identity store is unavailable");
-        }
-        await registerSlackThreadIdentity(threadStore, {
+        await registerSlackThreadIdentity(historyStore, {
           sourceTarget: admission.sourceTarget,
           providerEventId: admission.providerEventId,
           threadId: admission.sourceThreadId,
+        });
+      } else {
+        await registerDiscordHistoryIdentity(historyStore, {
+          provider: "discord",
+          sourceTarget: admission.sourceTarget,
+          providerEventId: admission.providerEventId,
+          historyChannelId: admission.historyChannelId,
         });
       }
       const occurredAt = canonicalUtcTimestamp(new Date(event.timestamp ?? Date.now()));
       const receivedAt = canonicalUtcTimestamp(new Date());
       await client.intake({
+        pipelineId: admission.pipelineId,
+        deliveryTarget: admission.deliveryTarget,
         provider: admission.route.channel,
         providerEventId: admission.providerEventId,
         sourceTarget: admission.sourceTarget,
@@ -120,6 +131,19 @@ export function createInboundClaimHandler(
     }
     return { handled: false };
   };
+}
+
+export function createInboundEventPolicyHandler(config: DeliberationConfig) {
+  return (event: {
+    provider: string;
+    accountId: string;
+    conversationId: string;
+    parentConversationId?: string;
+    providerEventId?: string;
+  }) =>
+    matchesSource(config, { ...event, channelId: event.provider })
+      ? { aggregation: "separate" as const, dispatch: "exclusive" as const }
+      : undefined;
 }
 
 export function createBeforeDispatchHandler(config: DeliberationConfig) {

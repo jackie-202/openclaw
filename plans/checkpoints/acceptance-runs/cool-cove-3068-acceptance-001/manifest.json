@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T18:24:17+00:00",
+    "implementingStartedAt": "2026-08-23T17:56:30+00:00",
+    "taskFile": "plans/tasks/2026-08-23_ship-and-verify-openclaw-deliberation-doctor-migration-packa.md",
+    "taskId": "cool-cove-3068",
+    "title": "Ship and verify OpenClaw Deliberation doctor migration package"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Ship and verify OpenClaw Deliberation doctor migration package"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-cove-3068-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-cove-3068",
+  "tddRequired": true
+}

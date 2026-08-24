@@ -1,0 +1,63 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/bold-reef-6539.evidence.md",
+      "provenance": "evidence_repair:bold-reef-6539-acceptance-001-evidence-repair-001",
+      "size": 2197
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/bold-reef-6539.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/bold-reef-6539-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "90eeb86db1e74fc6048a641a5095cdd4b665d72c",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-23T02:17:00.036990+00:00",
+  "gaps": [
+    "command_lines_truncated",
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=bold-reef-6539 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- env OPENCLAW_DELIBERATION_KM_ROOT=/Users/michal/Projects/openclaw-fork/tmp/bold-wave-3956-age",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=bold-reef-6539 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- env OPENCLAW_DELIBERATION_KM_ROOT=/Users/michal/Projects/openclaw-fork/tmp/bold-wave-3956-a",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=fresh-peak-7129 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- node scripts/run-oxlint.mjs --tsconfig config/tsconfig/oxlint.extensions.json extensions/del",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "ps -ax -o pid=,command= | rg \"proof-capture.py|run-oxlint.mjs\"",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "pgrep -af \"proof-capture.py|run-oxlint.mjs\"",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=fresh-peak-7129 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- node scripts/run-oxlint.mjs --tsconfig config/tsconfig/oxlint.extensions.json extensions/del",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=fresh-peak-7129 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- node scripts/run-oxlint.mjs --tsconfig config/tsconfig/oxlint.extensions.json extensions/d",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=fresh-peak-7129 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- node scripts/run-oxlint.mjs --tsconfig config/tsconfig/oxlint.extensions.json extensions/d",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "bold-reef-6539-acceptance-001-evidence-repair-001",
+  "sourceRunId": "bold-reef-6539-acceptance-001",
+  "startedAt": "2026-08-23T02:16:58.247562+00:00",
+  "status": "escalated"
+}

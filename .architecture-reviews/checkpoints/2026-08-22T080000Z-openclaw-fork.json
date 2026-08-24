@@ -1,0 +1,17 @@
+{
+  "run_id": "2026-08-22T080000Z-openclaw-fork",
+  "time": "2026-08-22T08:35:00Z",
+  "project": "openclaw-fork",
+  "question": "Does the newly added Deliberation extension duplicate authorities or retain unnecessary fallback/lifecycle machinery?",
+  "verified_evidence": [
+    "Working-tree config accepts canonical pipelines and legacy sources/deliveryTarget and normalizes both to one runtime representation.",
+    "Live Deliberation config still uses legacy sources; README and tests explicitly state the branch must be removed after live config and operational fixtures migrate.",
+    "The compatibility seam duplicates schema authority in config.ts and openclaw.plugin.json and adds normalization/generated-ID behavior plus compatibility tests.",
+    "history-read v1 and v2 have different implemented semantics and both are covered by runtime tests; redundancy was not established.",
+    "KM wire, overlay, provenance and cutover JSON are cross-repository acceptance evidence consumed by contract tests, not competing runtime routing authorities.",
+    "Focused verification passed: 3 test files, 78 tests."
+  ],
+  "current_conclusion": "Review complete with one bounded finding: migrate the live config and operational fixtures to pipelines, then immediately delete the legacy startup compatibility branch and its manifest/test surface. Preserve it until migration because the live system currently depends on it.",
+  "next_trace": null,
+  "continuable": false
+}

@@ -1,0 +1,67 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The caller-required TDD record must contain credible RED and GREEN proof for task quick-peak-4528.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof records a RED phase with exit code 1 and failing-run output, but supplies no GREEN phase, successful command outcome, or complete GREEN evidence; the checkpoint's summary assertion does not supply that missing proof.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The manifest declares tddRequired true, and a RED-only artifact does not establish the required completed RED/GREEN cycle.",
+      "required": "Provide a complete task-scoped TDD proof containing both the genuine RED evidence and subsequent GREEN evidence with command provenance and outcome.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-peak-4528.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-peak-4528.checkpoint.md"
+        }
+      ]
+    },
+    {
+      "claim": "Configured Deliberation sources must be claimed before debounce and ordinary dispatch, preserving Discord source-parent identity and one intake per provider event.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff contains documentation and contract changes, but no implementation changes to the hook runtime, Discord or Slack monitors, Deliberation intake registration, or fast-abort dispatch paths required by the task.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Without delivered code in those runtime paths, the supplied material does not implement source ownership before transforms, per-event debounce bypass, auto-thread parent preservation, or suppression before fast-abort and ordinary reply/model dispatch.",
+      "required": "Deliver the required runtime implementation for inbound event policy registration, Discord and Slack per-event admission, auto-thread source-parent preservation, and pre-output source claiming.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-21_deliberation-preserve-source-ownership-and-one-intake-per-pr.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "task-scoped-diff"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Deliberation: preserve source ownership and one intake per provider event"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-peak-4528-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "quick-peak-4528"
+}

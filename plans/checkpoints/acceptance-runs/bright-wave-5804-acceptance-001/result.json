@@ -1,0 +1,50 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The mandatory TDD artifact does not demonstrate a valid RED and GREEN cycle using the required identical focused source-thread regression command.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The proof records RED status historical_source_thread_red_unavailable. Its fresh four-file command passed 106 tests, but the artifact explicitly classifies that run as verification_passed_but_not_tdd_green because no historical RED for the identical command was recoverable; lineage evidence contains only config.test.ts commands with outcome_unavailable.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The manifest declares tddRequired true, and the task requires both phases to use the exact four-file command. A passing verification run without a genuine behavior-specific RED does not establish the required TDD cycle.",
+      "required": "Supply credible historical RED provenance for the exact four-file source-thread command, including a nonzero behavior-specific failure, paired with the captured identical-command GREEN; otherwise the mandatory TDD requirement remains unmet.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-wave-5804.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-wave-5804.evidence.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-21_bright-wave-5804_acceptance-fix-define-deliberation-pipelines-config-and.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-21_followup-bright-wave-5804-acceptance-fix-define-deliberation-pipelines-config-and-lega.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Define deliberation pipelines config and legacy normalization: goal-001: Define delibe"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-wave-5804-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bright-wave-5804"
+}

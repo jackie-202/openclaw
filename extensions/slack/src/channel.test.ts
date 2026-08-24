@@ -1,4 +1,5 @@
 // Slack tests cover channel plugin behavior.
+import type { ChannelOutboundContext } from "openclaw/plugin-sdk/channel-contract";
 import { createRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { slackPlugin } from "./channel.js";
@@ -10,7 +11,8 @@ import { clearSlackRuntime, setSlackRuntime } from "./runtime.js";
 const { handleSlackActionMock } = vi.hoisted(() => ({
   handleSlackActionMock: vi.fn(),
 }));
-const { sendMessageSlackMock } = vi.hoisted(() => ({
+const { sendMessageSlackAttemptMock, sendMessageSlackMock } = vi.hoisted(() => ({
+  sendMessageSlackAttemptMock: vi.fn(),
   sendMessageSlackMock: vi.fn(),
 }));
 const { conversationsInfoMock, conversationsOpenMock } = vi.hoisted(() => ({
@@ -28,6 +30,7 @@ vi.mock("./action-runtime.js", async () => {
 
 vi.mock("./send.runtime.js", () => ({
   sendMessageSlack: sendMessageSlackMock,
+  sendMessageSlackAttempt: sendMessageSlackAttemptMock,
 }));
 
 vi.mock("./client.js", async () => {
@@ -47,6 +50,13 @@ beforeEach(async () => {
   handleSlackActionMock.mockReset();
   sendMessageSlackMock.mockReset();
   sendMessageSlackMock.mockResolvedValue({ messageId: "msg-1", channelId: "D123" });
+  sendMessageSlackAttemptMock.mockReset();
+  sendMessageSlackAttemptMock.mockResolvedValue({
+    outcome: "sent",
+    messageId: "msg-attempt-1",
+    receipt: { primaryPlatformMessageId: "msg-attempt-1" },
+    idempotency: "unsupported",
+  });
   conversationsInfoMock.mockReset();
   conversationsOpenMock.mockReset();
   setSlackRuntime({
@@ -84,6 +94,19 @@ function requireSlackSendText() {
     throw new Error("slack outbound.sendText unavailable");
   }
   return sendText;
+}
+
+function requireSlackSendTextAttempt() {
+  const outbound = slackPlugin.outbound as typeof slackPlugin.outbound & {
+    sendTextAttempt?: (
+      ctx: ChannelOutboundContext & { idempotencyKey: string; sourceMessageId?: string },
+    ) => Promise<unknown>;
+  };
+  const sendTextAttempt = outbound?.sendTextAttempt;
+  if (!sendTextAttempt) {
+    throw new Error("slack outbound.sendTextAttempt unavailable");
+  }
+  return sendTextAttempt;
 }
 
 function requireSlackSendMedia() {
@@ -674,6 +697,37 @@ describe("slackPlugin outbound", () => {
   it("advertises the 8000-character Slack default chunk limit", () => {
     expect(slackOutbound.textChunkLimit).toBe(8000);
     expect(slackPlugin.outbound?.textChunkLimit).toBe(8000);
+  });
+
+  it("wires the single-attempt capability through the lazy Slack send runtime", async () => {
+    const sendTextAttempt = requireSlackSendTextAttempt();
+
+    const result = await sendTextAttempt({
+      cfg,
+      to: "user:U123",
+      text: "hello",
+      accountId: "default",
+      threadId: "1712345678.123456",
+      idempotencyKey: "provider:attempt-1",
+      sourceMessageId: "source-1",
+    });
+
+    expect(sendMessageSlackAttemptMock).toHaveBeenCalledTimes(1);
+    expect(requireMockCallArgValue(sendMessageSlackAttemptMock, 0, 0)).toBe("user:U123");
+    expect(requireMockCallArgValue(sendMessageSlackAttemptMock, 0, 1)).toBe("hello");
+    expectRecordFields(requireMockCallArg(sendMessageSlackAttemptMock, 0, 2), "attempt options", {
+      cfg,
+      accountId: "default",
+      token: "xoxb-test",
+      threadTs: "1712345678.123456",
+      idempotencyKey: "provider:attempt-1",
+      sourceMessageId: "source-1",
+    });
+    expect(result).toMatchObject({
+      outcome: "sent",
+      messageId: "msg-attempt-1",
+      idempotency: "unsupported",
+    });
   });
 
   it("uses threadId as threadTs fallback for sendText", async () => {

@@ -1,0 +1,96 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required OpenClaw contract, producer/client/adapter, and named cross-repository gate convergence was not delivered.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint states the task stopped at the authority gate, no product or test file was edited, and implementation steps 3 through 5 remain incomplete.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal goal-001 requires concrete reconciliation of OpenClaw mirrors and lifecycle behavior plus the OR-07 through OR-21 harness; a blocker checkpoint without those changes leaves the goal unmet.",
+      "required": "Supply the immutable KM owner authority bundle, then implement the required OpenClaw convergence and named owner-runtime leaves without editing KM.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-cove-6185.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-cove-6185.red-green-proof.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED-GREEN TDD proof is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied proof is explicitly BLOCKED before behavioral RED, says no test result is claimed, and contains no GREEN phase; the manifest declares tddRequired true.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "A setup-blocker record is not the required genuine behavioral RED followed by GREEN using the owner-backed command, so the mandatory TDD evidence contract is unsatisfied.",
+      "required": "After resolving exact owner authority, capture genuine behavioral RED and post-implementation GREEN for the same owner-backed command in the task proof artifact.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-cove-6185.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/acceptance-runs/bright-cove-6185-acceptance-001/manifest.json"
+        }
+      ]
+    },
+    {
+      "claim": "The explicitly required cross-repository, focused OpenClaw, and pinned KM verification evidence is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "Test Gate status is not run, the proof says the mandatory integration command was not run, and the checkpoint leaves named OR results, focused checks, KM E2E, and final evidence incomplete.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The task contract requires exact KM revision and hashes, checkout cleanliness, OR-07 through OR-21 results, a green mandatory integration command, pinned KM E2E results, and focused OpenClaw checks; none is supplied as completed evidence.",
+      "required": "Provide the required completion evidence from the caller-owned verification flow, including exact owner provenance, all named OR leaves, the mandatory cross-repository result, pinned KM E2E result, and focused OpenClaw checks.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-cove-6185.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-cove-6185.checkpoint.md"
+        },
+        {
+          "kind": "test-gate",
+          "reference": "not run; no Test Gate evidence exists"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Converge OpenClaw Deliberation with canonical KM owner and cross-repository gate"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-cove-6185-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bright-cove-6185"
+}

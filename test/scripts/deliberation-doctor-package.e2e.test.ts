@@ -148,6 +148,67 @@ it("OR-22 doctor-package-writeback-built-five-hook-runtime", () => {
     const listPlugins = runCli(migratedPath, ["plugins", "list", "--json"]);
     expectSuccess(listPlugins, "discover packaged plugins");
 
+    const runtimeProbeSource = `
+      import fs from "node:fs";
+      import path from "node:path";
+      import { pathToFileURL } from "node:url";
+
+      const packageRoot = process.env.OPENCLAW_PROBE_PACKAGE_ROOT;
+      const configPath = process.env.OPENCLAW_PROBE_CONFIG_PATH;
+      const entry = path.join(packageRoot, "dist", "plugins", "build-smoke-entry.js");
+      const { loadOpenClawPlugins } = await import(pathToFileURL(entry).href);
+      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      const registry = loadOpenClawPlugins({
+        cache: false,
+        workspaceDir: path.dirname(configPath),
+        onlyPluginIds: ["deliberation"],
+        env: process.env,
+        config,
+      });
+      const plugin = registry.plugins.find(({ id }) => id === "deliberation");
+      const hooks = registry.typedHooks
+        .filter(({ pluginId }) => pluginId === "deliberation")
+        .map(({ hookName }) => hookName);
+      const services = registry.services
+        .filter(({ pluginId }) => pluginId === "deliberation")
+        .map(({ service }) => service.id);
+      console.log(
+        "OPENCLAW_RUNTIME_PROBE=" + JSON.stringify({ status: plugin?.status, hooks, services }),
+      );
+    `;
+    const runtime = spawnSync(
+      process.execPath,
+      ["--input-type=module", "--eval", runtimeProbeSource],
+      {
+        encoding: "utf8",
+        env: {
+          ...isolatedOpenClawEnv(root, migratedPath, packageRoot),
+          OPENCLAW_PROBE_PACKAGE_ROOT: packageRoot,
+          OPENCLAW_PROBE_CONFIG_PATH: migratedPath,
+        },
+        timeout: 60_000,
+      },
+    );
+    expectSuccess(runtime, "load installed Deliberation runtime");
+    const probeLine = runtime.stdout
+      .split("\n")
+      .find((line) => line.startsWith("OPENCLAW_RUNTIME_PROBE="));
+    expect(probeLine).toBeDefined();
+    const registration = JSON.parse(probeLine!.slice("OPENCLAW_RUNTIME_PROBE=".length)) as {
+      status: string;
+      hooks: string[];
+      services: string[];
+    };
+    expect(registration.status).toBe("loaded");
+    expect(registration.hooks).toEqual([
+      "inbound_event_policy",
+      "inbound_claim",
+      "before_dispatch",
+      "before_tool_call",
+      "message_sending",
+    ]);
+    expect(registration.services).toEqual(["deliberation-final-delivery"]);
+
     const refusalFixtures: Array<[string, JsonObject]> = [
       [
         "mixed-authority",

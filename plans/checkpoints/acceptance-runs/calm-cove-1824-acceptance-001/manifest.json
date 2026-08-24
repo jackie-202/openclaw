@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-22T15:18:05+00:00",
+    "implementingStartedAt": "2026-08-22T14:42:29+00:00",
+    "taskFile": "plans/tasks/2026-08-21_deliberation-validate-fixtures-bound-legacy-config-and-repai.md",
+    "taskId": "calm-cove-1824",
+    "title": "Deliberation: validate fixtures, bound legacy config, and repair integration proof"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation: validate fixtures, bound legacy config, and repair integration proof"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-cove-1824-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-cove-1824",
+  "tddRequired": true
+}

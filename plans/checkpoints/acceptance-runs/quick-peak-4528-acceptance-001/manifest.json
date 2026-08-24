@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T19:01:07+00:00",
+    "implementingStartedAt": "2026-08-21T18:07:41+00:00",
+    "taskFile": "plans/tasks/2026-08-21_deliberation-preserve-source-ownership-and-one-intake-per-pr.md",
+    "taskId": "quick-peak-4528",
+    "title": "Deliberation: preserve source ownership and one intake per provider event"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation: preserve source ownership and one intake per provider event"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-peak-4528-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-peak-4528",
+  "tddRequired": true
+}

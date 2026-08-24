@@ -45,23 +45,49 @@ an activation command:
 {
   enabled: true,
   failClosed: true,
-  sources: [
+  pipelines: [
     {
-      channel: "slack",
-      accountId: "<slack-account-id>",
-      target: "<slack-channel-id>",
+      id: "slack-pilot",
+      source: {
+        channel: "slack",
+        accountId: "<slack-account-id>",
+        target: "<slack-channel-id>",
+      },
+      // Explicit target without threadId represents root delivery.
+      target: {
+        channel: "discord",
+        accountId: "<discord-account-id>",
+        target: "<test-deliberation-channel-id>",
+      },
+    },
+    {
+      id: "discord-threaded",
+      source: {
+        channel: "discord",
+        accountId: "<discord-account-id>",
+        target: "<second-source-channel-id>",
+      },
+      target: {
+        channel: "discord",
+        accountId: "<discord-account-id>",
+        target: "<test-deliberation-channel-id>",
+        threadId: "<explicit-test-thread-id>",
+      },
+    },
+    {
+      id: "discord-source-default",
+      source: {
+        channel: "discord",
+        accountId: "<discord-account-id>",
+        target: "<third-source-channel-id>",
+      },
+      // Omitted target marks this pipeline for authenticated source-default resolution.
     },
   ],
   processingSource: {
     channel: "discord",
     accountId: "<processing-account-id>",
     target: "<processing-channel-id>",
-  },
-  deliveryTarget: {
-    provider: "discord",
-    accountId: "<discord-account-id>",
-    channelId: "<test-deliberation-channel-id>",
-    threadId: "<optional-test-thread-id>",
   },
   km: {
     endpoint: "<loopback-or-approved-km-endpoint>",
@@ -76,10 +102,25 @@ an activation command:
 }
 ```
 
-The only delivery target is the immutable Discord `test-deliberation` target.
-Do not configure a Slack delivery target, Slack sender route, fallback target,
-or second source channel. Slack-native delivery remains disabled until a
-separate approval.
+Authenticated intake selects the pipeline matching the provider, account, and
+source channel evidence, then sends its ID and effective target to KM. An
+omitted target resolves to the authenticated source and source thread. A
+Discord root becomes `mode: "source_anchor"`, which creates or reuses the thread
+attached to the source message before one text send. Discord child messages and
+Slack source defaults become `mode: "thread"`. Explicit targets are sent
+exactly: an omitted `threadId` becomes `mode: "root"`, while a present
+`threadId` becomes `mode: "thread"`. Pipelines may therefore use different
+explicit or source-default destinations. Message content cannot select a
+pipeline or replace its target.
+
+No tagged release through `v2026.8.1-beta.2` included the Deliberation plugin.
+Later tagged builds accept only canonical `pipelines` at startup. If an untagged
+fork build wrote `sources` or a global `deliveryTarget`, run
+`openclaw doctor --fix` before starting the Gateway. The plugin-owned doctor
+migration creates one stable `v1:<provider>:<account>:<channel>` pipeline per
+source, copies the global target to each pipeline, removes the legacy keys, and
+refuses mixed legacy and canonical authority for manual repair. There is no
+runtime legacy fallback, common-target projection, or reservation-time override.
 
 ### Bound the smoke cases
 
@@ -94,7 +135,7 @@ Evaluate only these cases during a separately approved pilot window:
 
 For each case, inspect the canonical Slack source identity, child/root timestamp
 separation, history `complete` flag, message and 32 KiB bounds, immutable target
-at ready/reservation/invocation/completion, provider attempt ID, Discord message
+and pipeline ID at ready/reservation/invocation/completion, provider attempt ID, Discord message
 ID, completion receipt, and total Discord/Slack provider call counts. The Slack
 provider call count must remain zero.
 
@@ -107,8 +148,8 @@ channel, or contradictory contract evidence.
 
 To disable the pilot, set `plugins.entries.deliberation.config.enabled` to
 `false`, remove `<slack-channel-id>` from the separately managed pilot
-allowlist, and keep the configured source entry so source traffic remains
-fail-closed. Keep the Slack delivery target absent. Confirm the final delivery
+allowlist, and keep the configured pipeline so source traffic remains
+fail-closed. Keep its Slack target absent. Confirm the final delivery
 service is not registered, no reservation is invoked, and both provider call
 counts stay at zero. Preserve KM records and receipts for audit; do not retry or
 reroute an invoked attempt manually.

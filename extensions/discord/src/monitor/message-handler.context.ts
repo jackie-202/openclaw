@@ -341,7 +341,7 @@ export async function buildDiscordMessageProcessContext(params: {
       id: messageChannelId,
       label: fromLabel,
       spaceId: isGuildMessage ? (guildInfo?.id ?? guildSlug) || undefined : undefined,
-      parentId: threadChannel ? threadParentId : undefined,
+      parentId: threadChannel ? threadParentId : autoThreadContext ? messageChannelId : undefined,
       threadId: threadChannel?.id ?? autoThreadContext?.createdThreadId ?? undefined,
     },
     route: {

@@ -1,5 +1,49 @@
 # Agent Changelog
 
+## 2026-08-23
+
+**OpenClaw Deliberation converges on the canonical KM owner behind a cross-repository gate**
+
+**OpenClaw Deliberation closes the exclusive-ownership channel boundary**
+
+**Doctor migrates legacy config to canonical `pipelines[]` and rejects mixed authority**
+
+Legacy config is converted into canonical `pipelines[]` instead of leaving dual authority in place. If a config mixes legacy and new sources, the migration fails closed rather than guessing which source wins.
+
+## 2026-08-22
+
+**One-event intake preserves safe uncertain-delivery semantics**
+
+The delivery flow keeps intake to a single authenticated event and preserves the safe handling path for uncertain deliveries. This delivery is about the pipeline boundary itself: one event enters per delivery, and uncertain outcomes stay in the guarded branch instead of being collapsed into a misleading success path.
+
+**Exclusive deliberation ownership gates channel side effects**
+
+A configured source is handled under exclusive deliberation ownership before any ordinary acknowledgement, typing, auto-thread, assistant-dispatch, or fallback side effects. The delivery closes the side-effect boundary around the configured source path instead of letting those channel actions fire first.
+
+## 2026-08-21
+
+**Per-pipeline deliberation routes source-default replies**
+
+Deliberation is routed per pipeline, and the source-default reply path is delivered from that routed decision flow.
+
+**Source-specific deliberation returns the source default reply**
+
+Requests are routed through the matching source-specific deliberation flow, and the reply comes from that source's default response instead of a shared path.
+
+**Deliberation pipeline identity carries through intake**
+
+The intake path now supplies deliberation pipeline identity and effective target to downstream processing, and the effective target is kept immutable.
+
+**Deliberation pipeline config adds legacy normalization**
+
+The deliberation pipeline definition now includes explicit config plus normalization for legacy inputs, so older source shapes map into the current pipeline structure instead of remaining ad hoc. This establishes the config-driven path as the operative boundary for both new and legacy records.
+
+## 2026-08-20
+
+**OpenAI compaction accepts local bridge OAuth auth**
+
+Provider-auth validation no longer rejects the supported local bridge/OAuth arrangement with the quoted OAuth-vs-API-key error. Normal OpenAI provider initialization and compaction can proceed under that auth path.
+
 ## 2026-08-18
 
 **READY_TO_SEND deliberations reach the sole-send delivery path**

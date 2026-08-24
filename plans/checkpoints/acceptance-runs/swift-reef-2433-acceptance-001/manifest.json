@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T00:44:51+00:00",
+    "implementingStartedAt": "2026-08-23T00:39:30+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-swift-reef-2433-red-green-ship-and-verify-the-doctor-migration-artifact.md",
+    "taskId": "swift-reef-2433",
+    "title": "[acceptance-fix] RED-GREEN: ship and verify the doctor migration artifact: goal-008: Build, focused doctor/config suites"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] RED-GREEN: ship and verify the doctor migration artifact: goal-008: Build, focused doctor/config suites"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-reef-2433-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-reef-2433",
+  "tddRequired": false
+}

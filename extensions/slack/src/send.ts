@@ -114,6 +114,36 @@ type SlackSendOpts = {
   metadata?: MessageMetadata;
 };
 
+type SlackTextAttemptIdempotency = "unsupported";
+
+export type SlackTextAttemptResult =
+  | {
+      outcome: "sent";
+      messageId: string;
+      receipt: MessageReceipt;
+      idempotency: SlackTextAttemptIdempotency;
+    }
+  | {
+      outcome: "rejected";
+      failureClass: "permission" | "rate_limit" | "rejection";
+      error: string;
+      idempotency: SlackTextAttemptIdempotency;
+    }
+  | {
+      outcome: "unknown";
+      failureClass: "timeout" | "transport" | "unknown";
+      error: string;
+      idempotency: SlackTextAttemptIdempotency;
+    };
+
+export type SlackTextAttemptOpts = Pick<
+  SlackSendOpts,
+  "cfg" | "token" | "accountId" | "client" | "threadTs" | "identity"
+> & {
+  idempotencyKey: string;
+  sourceMessageId?: string;
+};
+
 type SlackWebApiErrorData = {
   error?: unknown;
   needed?: unknown;
@@ -173,6 +203,30 @@ function buildSlackPostMessagePayload(params: {
     ...(params.metadata ? { metadata: params.metadata } : {}),
     ...threadPayload,
     ...unfurlPayload,
+  };
+}
+
+function buildSlackIdentityPayload(
+  basePayload: SlackBasePostMessagePayload,
+  identity?: SlackSendIdentity,
+) {
+  if (identity?.iconUrl) {
+    return {
+      ...basePayload,
+      ...(identity.username ? { username: identity.username } : {}),
+      icon_url: identity.iconUrl,
+    };
+  }
+  if (identity?.iconEmoji) {
+    return {
+      ...basePayload,
+      ...(identity.username ? { username: identity.username } : {}),
+      icon_emoji: identity.iconEmoji,
+    };
+  }
+  return {
+    ...basePayload,
+    ...(identity?.username ? { username: identity.username } : {}),
   };
 }
 
@@ -325,32 +379,8 @@ async function postSlackMessageBestEffort(params: {
   const basePayload = buildSlackPostMessagePayload(params);
   const postChatMessage = params.client.chat.postMessage.bind(params.client.chat);
   try {
-    // Slack Web API types model icon_url and icon_emoji as mutually exclusive.
-    // Build payloads in explicit branches so TS and runtime stay aligned.
-    const identity = params.identity;
-    if (identity?.iconUrl) {
-      return await withSlackDnsRequestRetry("chat.postMessage", () =>
-        postChatMessage({
-          ...basePayload,
-          ...(identity.username ? { username: identity.username } : {}),
-          icon_url: identity.iconUrl,
-        }),
-      );
-    }
-    if (identity?.iconEmoji) {
-      return await withSlackDnsRequestRetry("chat.postMessage", () =>
-        postChatMessage({
-          ...basePayload,
-          ...(identity.username ? { username: identity.username } : {}),
-          icon_emoji: identity.iconEmoji,
-        }),
-      );
-    }
     return await withSlackDnsRequestRetry("chat.postMessage", () =>
-      postChatMessage({
-        ...basePayload,
-        ...(identity?.username ? { username: identity.username } : {}),
-      }),
+      postChatMessage(buildSlackIdentityPayload(basePayload, params.identity)),
     );
   } catch (err) {
     if (!hasCustomIdentity(params.identity) || !isSlackCustomizeScopeError(err)) {
@@ -422,6 +452,185 @@ function parseRecipient(raw: string): SlackRecipient {
     throw new Error("Recipient is required for Slack sends");
   }
   return { kind: target.kind, id: target.id };
+}
+
+function renderSlackTextChunks(params: {
+  cfg: OpenClawConfig;
+  accountId: string;
+  text: string;
+}): string[] {
+  const textLimit = resolveTextChunkLimit(params.cfg, "slack", params.accountId, {
+    fallbackLimit: SLACK_TEXT_LIMIT,
+  });
+  const chunkLimit = Math.min(textLimit, SLACK_TEXT_LIMIT);
+  const tableMode = resolveMarkdownTableMode({
+    cfg: params.cfg,
+    channel: "slack",
+    accountId: params.accountId,
+  });
+  const chunkMode = resolveChunkMode(params.cfg, "slack", params.accountId);
+  const markdownChunks =
+    chunkMode === "newline"
+      ? chunkMarkdownTextWithMode(params.text, chunkLimit, chunkMode)
+      : [params.text];
+  const chunks = markdownChunks.flatMap((markdown) =>
+    markdownToSlackMrkdwnChunks(markdown, chunkLimit, { tableMode }),
+  );
+  return resolveTextChunksWithFallback(params.text, chunks);
+}
+
+function formatSlackAttemptError(err: unknown): string {
+  return (
+    formatSlackWebApiErrorMessage(err) ??
+    (err instanceof Error ? err.message : undefined) ??
+    "Unknown Slack postMessage error"
+  );
+}
+
+function classifySlackPlatformFailure(err: unknown): "permission" | "rate_limit" | "rejection" {
+  const error = normalizeLowercaseStringOrEmpty(
+    normalizeSlackApiString(getSlackWebApiErrorData(err)?.error),
+  );
+  if (error.includes("rate_limit") || error === "ratelimited") {
+    return "rate_limit";
+  }
+  if (
+    error.includes("scope") ||
+    error.includes("auth") ||
+    error.includes("permission") ||
+    error === "not_allowed_token_type"
+  ) {
+    return "permission";
+  }
+  return "rejection";
+}
+
+function classifySlackUnknownFailure(err: unknown): "timeout" | "transport" | "unknown" {
+  const code = readSlackRequestErrorCode(err);
+  const message = readSlackRequestErrorMessage(err);
+  if (code?.includes("TIMEOUT") || /\b(?:timeout|timed out)\b/i.test(message)) {
+    return "timeout";
+  }
+  if (
+    code === "SLACK_WEBAPI_REQUEST_ERROR" ||
+    code === "SLACK_WEBAPI_HTTP_ERROR" ||
+    code === "SLACK_WEBAPI_RATE_LIMITED_ERROR" ||
+    hasSlackDnsRequestSignal(err)
+  ) {
+    return "transport";
+  }
+  return "unknown";
+}
+
+/** Performs one rendered Slack message-create attempt without retry or fallback. */
+export async function sendMessageSlackAttempt(
+  to: string,
+  message: string,
+  opts: SlackTextAttemptOpts,
+): Promise<SlackTextAttemptResult> {
+  const idempotency = "unsupported" as const;
+  let account: ReturnType<typeof resolveSlackAccount>;
+  let token: string;
+  let recipient: SlackRecipient;
+  let renderedText: string;
+  let client: WebClient;
+  try {
+    const cfg = requireRuntimeConfig(opts.cfg, "Slack send attempt");
+    account = resolveSlackAccount({ cfg, accountId: opts.accountId });
+    token = resolveToken({
+      explicit: opts.token,
+      accountId: account.accountId,
+      fallbackToken: account.botToken,
+      fallbackSource: account.botTokenSource,
+    });
+    recipient = parseRecipient(to);
+    const trimmedMessage = normalizeOptionalString(message) ?? "";
+    const chunks = renderSlackTextChunks({
+      cfg,
+      accountId: account.accountId,
+      text: trimmedMessage,
+    });
+    if (!trimmedMessage || chunks.length !== 1 || !chunks[0]) {
+      return {
+        outcome: "rejected",
+        failureClass: "rejection",
+        error: "Slack send attempt must render to exactly one non-empty message",
+        idempotency,
+      };
+    }
+    renderedText = chunks[0];
+    client = opts.client ?? getSlackWriteClient(token);
+  } catch (err) {
+    return {
+      outcome: "rejected",
+      failureClass: "rejection",
+      error: formatSlackAttemptError(err),
+      idempotency,
+    };
+  }
+
+  const channelId = recipient.id;
+  const payload = buildSlackIdentityPayload(
+    buildSlackPostMessagePayload({
+      channelId,
+      text: renderedText,
+      threadTs: opts.threadTs,
+      unfurl: {
+        unfurlLinks: account.config.unfurlLinks,
+        unfurlMedia: account.config.unfurlMedia,
+      },
+    }),
+    opts.identity,
+  );
+  try {
+    const createMessage = client.chat.postMessage.bind(client.chat);
+    const response = await createMessage(payload);
+    const messageId = normalizeOptionalString(response.ts);
+    if (!messageId) {
+      return {
+        outcome: "unknown",
+        failureClass: "unknown",
+        error: "Slack chat.postMessage returned no message timestamp",
+        idempotency,
+      };
+    }
+    const deliveredChannelId = resolvePostedMessageChannelId(response, channelId);
+    return {
+      outcome: "sent",
+      messageId,
+      receipt: createSlackSendReceipt({
+        platformMessageIds: [messageId],
+        channelId: deliveredChannelId,
+        kind: "text",
+        threadTs: opts.threadTs,
+      }),
+      idempotency,
+    };
+  } catch (err) {
+    const errorCode = readSlackRequestErrorCode(err);
+    if (errorCode === "SLACK_WEBAPI_PLATFORM_ERROR") {
+      return {
+        outcome: "rejected",
+        failureClass: classifySlackPlatformFailure(err),
+        error: formatSlackAttemptError(err),
+        idempotency,
+      };
+    }
+    if (errorCode === "SLACK_WEBAPI_RATE_LIMITED_ERROR") {
+      return {
+        outcome: "rejected",
+        failureClass: "rate_limit",
+        error: formatSlackAttemptError(err),
+        idempotency,
+      };
+    }
+    return {
+      outcome: "unknown",
+      failureClass: classifySlackUnknownFailure(err),
+      error: formatSlackAttemptError(err),
+      idempotency,
+    };
+  }
 }
 
 function createSlackSendQueueKey(params: {
@@ -749,24 +958,11 @@ async function sendMessageSlackQueuedInner(params: {
       }),
     };
   }
-  const textLimit = resolveTextChunkLimit(cfg, "slack", account.accountId, {
-    fallbackLimit: SLACK_TEXT_LIMIT,
-  });
-  const chunkLimit = Math.min(textLimit, SLACK_TEXT_LIMIT);
-  const tableMode = resolveMarkdownTableMode({
+  const resolvedChunks = renderSlackTextChunks({
     cfg,
-    channel: "slack",
     accountId: account.accountId,
+    text: trimmedMessage,
   });
-  const chunkMode = resolveChunkMode(cfg, "slack", account.accountId);
-  const markdownChunks =
-    chunkMode === "newline"
-      ? chunkMarkdownTextWithMode(trimmedMessage, chunkLimit, chunkMode)
-      : [trimmedMessage];
-  const chunks = markdownChunks.flatMap((markdown) =>
-    markdownToSlackMrkdwnChunks(markdown, chunkLimit, { tableMode }),
-  );
-  const resolvedChunks = resolveTextChunksWithFallback(trimmedMessage, chunks);
   const mediaMaxBytes =
     typeof account.config.mediaMaxMb === "number"
       ? account.config.mediaMaxMb * 1024 * 1024

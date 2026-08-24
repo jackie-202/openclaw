@@ -1,0 +1,74 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/cool-reef-8673.evidence.md",
+      "provenance": "evidence_repair:cool-reef-8673-acceptance-001-evidence-repair-001",
+      "size": 2540
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/cool-reef-8673.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/cool-reef-8673-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "90eeb86db1e74fc6048a641a5095cdd4b665d72c",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-23T00:32:55.069257+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=cool-reef-8673 OPENCLAW_CURRENT_PACKAGE_TGZ=\"/Users/michal/.openclaw/tmp/opencode/cool-reef-8673-red/openclaw-current.tgz\" python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capt",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=cool-reef-8673 OPENCLAW_CURRENT_PACKAGE_TGZ=\"/Users/michal/.openclaw/tmp/opencode/cool-reef-8673-green/openclaw-current.tgz\" python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-ca",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=cool-reef-8673 OPENCLAW_CURRENT_PACKAGE_TGZ=\"/Users/michal/.openclaw/tmp/opencode/cool-reef-8673-green/openclaw-current.tgz\" python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-ca",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=cool-reef-8673 OPENCLAW_CURRENT_PACKAGE_TGZ=\"/Users/michal/.openclaw/tmp/opencode/cool-reef-8673-green/openclaw-current.tgz\" python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-ca",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=cool-reef-8673 OPENCLAW_CURRENT_PACKAGE_TGZ=\"/Users/michal/.openclaw/tmp/opencode/cool-reef-8673-green/openclaw-current.tgz\" python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-ca",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=cool-reef-8673 OPENCLAW_CURRENT_PACKAGE_TGZ=\"/Users/michal/.openclaw/tmp/opencode/cool-reef-8673-green/openclaw-current.tgz\" python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-ca",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "pnpm crabbox:run -- --idle-timeout 90m --ttl 240m --timing-json -- npm test",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "node scripts/crabbox-wrapper.mjs run -- --idle-timeout 90m --ttl 240m --timing-json -- npm test",
+      "outcome": "[ELIFECYCLE] Command failed with exit code 3."
+    },
+    {
+      "command": "pnpm crabbox:run -- --provider aws --idle-timeout 90m --ttl 240m --timing-json -- npm test",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "node scripts/crabbox-wrapper.mjs run -- --provider aws --idle-timeout 90m --ttl 240m --timing-json -- npm test",
+      "outcome": "[ELIFECYCLE] Command failed with exit code 2."
+    },
+    {
+      "command": "node scripts/crabbox-wrapper.mjs run --provider blacksmith-testbox --blacksmith-org openclaw --blacksmith-workflow .github/workflows/ci-check-testbox.yml --blacksmith-job check --blacksmith-ref main -",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "cool-reef-8673-acceptance-001-evidence-repair-001",
+  "sourceRunId": "cool-reef-8673-acceptance-001",
+  "startedAt": "2026-08-23T00:32:51.620988+00:00",
+  "status": "escalated"
+}

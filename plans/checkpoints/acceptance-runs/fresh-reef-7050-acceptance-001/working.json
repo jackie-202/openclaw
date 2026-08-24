@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The required focused and smallest suitable broader-suite passing verification is not established by canonical Test Gate evidence.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied Test Gate status is not run and no canonical Test Gate evidence exists. The checkpoint reports local Vitest summaries, but the task and supplied guidance require a caller-owned non-not-run Test Gate reference for this goal.",
+      "rationale": "Goal-001 carries the original goal-006 requirement for focused and broader-suite passing verification. Acceptance may recognize these execution results only through the supplied canonical Test Gate reference.",
+      "required": "Provide caller-owned canonical Test Gate evidence with a non-not-run run reference and passing results for the required focused and five-file broader Vitest commands.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical Test Gate reference: status not run; no evidence"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-reef-7050.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-20_fresh-reef-7050_fix-compaction-openai-oauth-bridge-provider-auth-validation.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Fix compaction OpenAI OAuth/bridge provider-auth validation: goal-006: Relevant focused tests and the s"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-reef-7050-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "fresh-reef-7050"
+}

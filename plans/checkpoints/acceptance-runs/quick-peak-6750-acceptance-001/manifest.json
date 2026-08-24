@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-22T13:38:05+00:00",
+    "implementingStartedAt": "2026-08-22T13:18:49+00:00",
+    "taskFile": "plans/tasks/2026-08-22_followup-quick-peak-6750-acceptance-fix-deliberation-repair-completion-and-receipt-se.md",
+    "taskId": "quick-peak-6750",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation: repair completion and receipt semantics: goal-001: Deliberation: repair "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation: repair completion and receipt semantics: goal-001: Deliberation: repair"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-peak-6750-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-peak-6750",
+  "tddRequired": true
+}

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-22T23:44:18+00:00",
+    "implementingStartedAt": "2026-08-22T23:38:51+00:00",
+    "taskFile": "plans/tasks/2026-08-22_followup-calm-crag-4037-red-green-preserve-one-event-intake-and-safe-uncertain-deliv.md",
+    "taskId": "calm-crag-4037",
+    "title": "[acceptance-fix] RED-GREEN: preserve one-event intake and safe uncertain-delivery semantics: goal-001: One authenticated"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] RED-GREEN: preserve one-event intake and safe uncertain-delivery semantics: goal-001: One authenticated"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-crag-4037-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-crag-4037",
+  "tddRequired": true
+}

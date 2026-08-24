@@ -1,0 +1,47 @@
+{
+  "findings": [
+    {
+      "claim": "The required OpenClaw owner-convergence implementation remains absent from the supplied task-scoped diff.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied diff changes architecture-review artifacts, the agent changelog, and plugin documentation, but contains no attributable hunks for the contract/provenance mirrors, intake producer, spool probe, KM client, final adapter, direct OR-07..OR-21 owner-backed harness, or focused regressions required by the task. The supplied checkpoint and evidence ledgers assert that these boundaries exist, but they do not supply the implementation for semantic review.",
+      "rationale": "Goal-001 specifically requires the complete owner-backed convergence implementation to be delivered in the reviewed task change set. Summaries and historical verification artifacts cannot establish delivery when every required product boundary is omitted from the caller-supplied diff.",
+      "required": "Supply the attributable task-scoped implementation changes for the contract/provenance mirrors, producer and probe, KM client, final adapter, direct OR-07..OR-21 harness, and focused regressions so goal-001 can be semantically reviewed.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:task-scoped-diff"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_followup-cool-wave-7556-acceptance-fix-complete-openclaw-convergence-against-verifie.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-24_cool-wave-7556_acceptance-fix-complete-openclaw-convergence-against.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-wave-7556.evidence.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Complete OpenClaw convergence against verified KM owner artifacts: goal-001: Complete"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-wave-7556-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "cool-wave-7556"
+}

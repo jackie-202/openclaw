@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Close OpenClaw Deliberation exclusive-ownership channel boundary"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-crag-4682-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "swift-crag-4682"
+}

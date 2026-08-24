@@ -1,6 +1,16 @@
 {
   "protocolVersion": 1,
   "notes": "Every case is a complete synthetic exchange. Each case starts from its declared concrete precondition; cases do not share runtime state.",
+  "pipelineVectors": {
+    "live": ["discord-source", "slack-source", "synthetic-diagnostic"],
+    "historical": "__historical_v1__",
+    "targets": [
+      {"pipelineId": "discord-source", "deliveryTarget": {"provider": "discord", "account": "default", "channel": "root"}},
+      {"pipelineId": "discord-source", "deliveryTarget": {"provider": "discord", "account": "default", "channel": "threaded", "threadId": "message-1"}},
+      {"pipelineId": "slack-source", "deliveryTarget": {"provider": "slack", "account": "workspace-1", "channel": "C123"}},
+      {"pipelineId": "slack-source", "deliveryTarget": {"provider": "slack", "account": "workspace-1", "channel": "C123", "threadId": "1750000001.000001"}}
+    ]
+  },
   "identityVectors": {
     "positive": [
       {
@@ -313,7 +323,13 @@
           "receivedAt": "2026-07-27T12:00:00Z",
           "content": "synthetic input",
           "unknown": true,
-          "sourceThreadId": "event-001"
+          "sourceThreadId": "001",
+          "pipelineId": "test-source",
+          "deliveryTarget": {
+            "provider": "test",
+            "account": "default",
+            "channel": "001"
+          }
         }
       },
       "response": {
@@ -358,7 +374,13 @@
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "must not persist",
           "debounceSeconds": 17,
-          "sourceThreadId": "event-override"
+          "sourceThreadId": "override",
+          "pipelineId": "test-source",
+          "deliveryTarget": {
+            "provider": "test",
+            "account": "default",
+            "channel": "override"
+          }
         }
       },
       "response": {
@@ -398,7 +420,12 @@
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "synthetic input",
           "eventType": "message",
-          "sourceThreadId": "event-001"
+          "pipelineId": "test-source",
+          "deliveryTarget": {
+            "provider": "test",
+            "account": "default",
+            "channel": "001"
+          }
         }
       },
       "response": {
@@ -438,7 +465,13 @@
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "synthetic input",
           "eventType": "message",
-          "sourceThreadId": "event-001"
+          "sourceThreadId": "001",
+          "pipelineId": "test-source",
+          "deliveryTarget": {
+            "provider": "test",
+            "account": "default",
+            "channel": "001"
+          }
         }
       },
       "response": {
@@ -476,7 +509,13 @@
           "occurredAt": "2026-07-27T12:00:00Z",
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "account a",
-          "sourceThreadId": "shared-event"
+          "sourceThreadId": "shared-channel",
+          "pipelineId": "discord-source",
+          "deliveryTarget": {
+            "provider": "discord",
+            "account": "account-a",
+            "channel": "shared-channel"
+          }
         }
       },
       "response": {
@@ -514,7 +553,13 @@
           "occurredAt": "2026-07-27T12:00:00Z",
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "account b",
-          "sourceThreadId": "shared-event"
+          "sourceThreadId": "shared-channel",
+          "pipelineId": "discord-source",
+          "deliveryTarget": {
+            "provider": "discord",
+            "account": "account-b",
+            "channel": "shared-channel"
+          }
         }
       },
       "response": {
@@ -552,7 +597,13 @@
           "occurredAt": "2026-07-27T12:00:00Z",
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "second channel",
-          "sourceThreadId": "shared-event"
+          "sourceThreadId": "second-channel",
+          "pipelineId": "discord-source",
+          "deliveryTarget": {
+            "provider": "discord",
+            "account": "account-a",
+            "channel": "second-channel"
+          }
         }
       },
       "response": {
@@ -590,7 +641,13 @@
           "occurredAt": "2026-07-27T12:00:00Z",
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "diagnostic",
-          "sourceThreadId": "diagnostic-event"
+          "sourceThreadId": "fixture-001",
+          "pipelineId": "synthetic-source",
+          "deliveryTarget": {
+            "provider": "synthetic",
+            "account": "diagnostic",
+            "channel": "fixture-001"
+          }
         }
       },
       "response": {
@@ -630,7 +687,13 @@
           "occurredAt": "2026-07-27T12:00:00Z",
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "changed input",
-          "sourceThreadId": "event-001"
+          "sourceThreadId": "001",
+          "pipelineId": "test-source",
+          "deliveryTarget": {
+            "provider": "test",
+            "account": "default",
+            "channel": "001"
+          }
         }
       },
       "response": {
@@ -674,7 +737,13 @@
           "occurredAt": "2026-07-27T12:00:00Z",
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "must not persist",
-          "sourceThreadId": "event-mismatch"
+          "sourceThreadId": "001",
+          "pipelineId": "discord-source",
+          "deliveryTarget": {
+            "provider": "telegram",
+            "account": "default",
+            "channel": "001"
+          }
         }
       },
       "response": {
@@ -718,7 +787,13 @@
           "occurredAt": "2026-07-27T12:00:00Z",
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "must not persist",
-          "sourceThreadId": "event-account-missing"
+          "sourceThreadId": "001",
+          "pipelineId": "discord-source",
+          "deliveryTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "fixture"
+          }
         }
       },
       "response": {
@@ -762,7 +837,13 @@
           "occurredAt": "2026-07-27T12:00:00Z",
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "must not persist",
-          "sourceThreadId": "event-impersonation"
+          "sourceThreadId": "001",
+          "pipelineId": "synthetic-source",
+          "deliveryTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "001"
+          }
         }
       },
       "response": {
@@ -803,7 +884,13 @@
           "occurredAt": "2026-07-27T12:00:00Z",
           "receivedAt": "2026-07-27T12:00:01Z",
           "content": "must not reopen",
-          "sourceThreadId": "event-historical"
+          "sourceThreadId": "001",
+          "pipelineId": "discord-source",
+          "deliveryTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "fixture"
+          }
         }
       },
       "response": {
@@ -880,7 +967,8 @@
                 "deliveryTarget": {
                   "provider": "discord",
                   "account": "default",
-                  "channel": "001"
+                  "channel": "001",
+                  "threadId": "001"
                 },
                 "recordId": "record-001",
                 "inboundId": "inbound-001",
@@ -889,7 +977,15 @@
                 "reviewAttempt": 1,
                 "reviewCorrelationId": "review-correlation-001",
                 "candidateRevision": 1,
-                "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "pipelineId": "discord-source"
+              },
+              "pipelineId": "discord-source",
+              "deliveryTarget": {
+                "provider": "discord",
+                "account": "default",
+                "channel": "001",
+                "threadId": "001"
               }
             }
           ],
@@ -936,7 +1032,8 @@
                 "deliveryTarget": {
                   "provider": "discord",
                   "account": "default",
-                  "channel": "002"
+                  "channel": "002",
+                  "threadId": "002"
                 },
                 "recordId": "record-002",
                 "inboundId": "inbound-002",
@@ -945,7 +1042,15 @@
                 "reviewAttempt": 1,
                 "reviewCorrelationId": "review-correlation-002",
                 "candidateRevision": 1,
-                "reviewedTextHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                "reviewedTextHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "pipelineId": "discord-source"
+              },
+              "pipelineId": "discord-source",
+              "deliveryTarget": {
+                "provider": "discord",
+                "account": "default",
+                "channel": "002",
+                "threadId": "002"
               }
             }
           ],
@@ -980,12 +1085,7 @@
           "expectedVersion": 7,
           "owner": "sender-001",
           "idempotencyKey": "reserve-001",
-          "leaseSeconds": 60,
-          "deliveryTarget": {
-            "provider": "discord",
-            "account": "default",
-            "channel": "001"
-          }
+          "leaseSeconds": 60
         }
       },
       "response": {
@@ -1008,7 +1108,8 @@
               "deliveryTarget": {
                 "provider": "discord",
                 "account": "default",
-                "channel": "001"
+                "channel": "001",
+                "threadId": "001"
               },
               "recordId": "record-001",
               "inboundId": "inbound-001",
@@ -1017,9 +1118,10 @@
               "reviewAttempt": 1,
               "reviewCorrelationId": "review-correlation-001",
               "candidateRevision": 1,
-              "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "pipelineId": "discord-source"
             },
-            "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75"
           }
         }
       }
@@ -1071,7 +1173,8 @@
               "deliveryTarget": {
                 "provider": "discord",
                 "account": "default",
-                "channel": "001"
+                "channel": "001",
+                "threadId": "001"
               },
               "recordId": "record-001",
               "inboundId": "inbound-001",
@@ -1080,9 +1183,244 @@
               "reviewAttempt": 1,
               "reviewCorrelationId": "review-correlation-001",
               "candidateRevision": 1,
-              "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "pipelineId": "discord-source"
             },
-            "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75"
+          }
+        }
+      }
+    },
+    {
+      "name": "reserve.delivery-target-override",
+      "precondition": {
+        "controls": {
+          "sender": true
+        },
+        "record": {
+          "recordId": "record-delivery",
+          "state": "READY_TO_SEND",
+          "version": 7,
+          "sourceTarget": "v1:discord:default:001"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/reservations",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-delivery",
+          "expectedVersion": 7,
+          "owner": "sender-001",
+          "idempotencyKey": "reserve-delivery",
+          "leaseSeconds": 60
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "protocolVersion": 1,
+          "reservation": {
+            "recordId": "record-delivery",
+            "attemptId": "attempt-delivery",
+            "ordinal": 1,
+            "version": 8,
+            "owner": "sender-001",
+            "leaseToken": "lease-token-delivery",
+            "leaseExpiresAt": "2026-07-27T12:02:00Z",
+            "candidateRevision": 1,
+            "reviewedTextHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "deliveryEnvelope": {
+              "schemaVersion": 1,
+              "sourceTarget": "v1:discord:default:001",
+              "deliveryTarget": {
+                "provider": "discord",
+                "account": "default",
+                "channel": "delivery",
+                "threadId": "delivery"
+              },
+              "recordId": "record-delivery",
+              "inboundId": "inbound-delivery",
+              "draftAttempt": 1,
+              "draftCorrelationId": "draft-correlation-delivery",
+              "reviewAttempt": 1,
+              "reviewCorrelationId": "review-correlation-delivery",
+              "candidateRevision": 1,
+              "reviewedTextHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "pipelineId": "discord-source"
+            },
+            "deliveryEnvelopeDigest": "7776dcc2a9cab98d983ba06f64fe4cd8fe023a9f2fa29ea56639c23ace5b2058"
+          }
+        }
+      }
+    },
+    {
+      "name": "reserve.delivery-target-malformed",
+      "precondition": {
+        "controls": {
+          "sender": true
+        },
+        "record": {
+          "recordId": "record-delivery",
+          "state": "READY_TO_SEND",
+          "version": 7,
+          "sourceTarget": "v1:discord:default:001"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/reservations",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-delivery",
+          "expectedVersion": 7,
+          "owner": "sender-001",
+          "idempotencyKey": "reserve-delivery-malformed",
+          "leaseSeconds": 60,
+          "deliveryTarget": {
+            "provider": "discord",
+            "channel": "delivery",
+            "threadId": "delivery"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "protocolVersion": 1,
+          "error": {
+            "code": "SCHEMA_INVALID",
+            "message": "request body does not match the closed schema"
+          }
+        }
+      }
+    },
+    {
+      "name": "reserve.delivery-target-provider-independent",
+      "precondition": {
+        "controls": {
+          "sender": true
+        },
+        "record": {
+          "recordId": "record-delivery",
+          "state": "READY_TO_SEND",
+          "version": 7,
+          "sourceTarget": "v1:discord:default:001"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/reservations",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-delivery",
+          "expectedVersion": 7,
+          "owner": "sender-001",
+          "idempotencyKey": "reserve-delivery-provider-mismatch",
+          "leaseSeconds": 60
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "protocolVersion": 1,
+          "reservation": {
+            "recordId": "record-delivery",
+            "attemptId": "attempt-delivery-independent",
+            "ordinal": 1,
+            "version": 8,
+            "owner": "sender-001",
+            "leaseToken": "lease-token-delivery-independent",
+            "leaseExpiresAt": "2026-07-27T12:02:00Z",
+            "candidateRevision": 1,
+            "reviewedTextHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "deliveryEnvelope": {
+              "schemaVersion": 1,
+              "sourceTarget": "v1:discord:default:001",
+              "deliveryTarget": {
+                "provider": "matrix",
+                "account": "tenant-a",
+                "channel": "room-a"
+              },
+              "recordId": "record-delivery",
+              "inboundId": "inbound-delivery",
+              "draftAttempt": 1,
+              "draftCorrelationId": "draft-correlation-delivery",
+              "reviewAttempt": 1,
+              "reviewCorrelationId": "review-correlation-delivery",
+              "candidateRevision": 1,
+              "reviewedTextHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "pipelineId": "discord-source"
+            },
+            "deliveryEnvelopeDigest": "b5f4f7caa790a184f86c1fa91e312f18a8df202a9fc4af48c286b45749312354"
+          }
+        }
+      }
+    },
+    {
+      "name": "reserve.delivery-target-changed-replay",
+      "precondition": {
+        "persistedReservation": {
+          "recordId": "record-delivery",
+          "idempotencyKey": "reserve-delivery",
+          "leaseSeconds": 60,
+          "deliveryTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "delivery",
+            "threadId": "delivery"
+          }
+        }
+      },
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/reservations",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-delivery",
+          "expectedVersion": 7,
+          "owner": "sender-001",
+          "idempotencyKey": "reserve-delivery",
+          "leaseSeconds": 60,
+          "deliveryTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "changed",
+            "threadId": "changed"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "protocolVersion": 1,
+          "error": {
+            "code": "SCHEMA_INVALID",
+            "message": "request body does not match the closed schema"
           }
         }
       }
@@ -1090,6 +1428,9 @@
     {
       "name": "reserve.cas-conflict",
       "precondition": {
+        "controls": {
+          "sender": true
+        },
         "record": {
           "recordId": "record-001",
           "state": "READY_TO_SEND",
@@ -1194,7 +1535,8 @@
             "deliveryTarget": {
               "provider": "discord",
               "account": "default",
-              "channel": "001"
+              "channel": "001",
+              "threadId": "001"
             },
             "recordId": "record-001",
             "inboundId": "inbound-001",
@@ -1203,13 +1545,15 @@
             "reviewAttempt": 1,
             "reviewCorrelationId": "review-correlation-001",
             "candidateRevision": 1,
-            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "pipelineId": "discord-source"
           },
-          "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75",
           "attemptedTarget": {
             "provider": "discord",
             "account": "default",
-            "channel": "001"
+            "channel": "001",
+            "threadId": "001"
           },
           "idempotencyKey": "invoke-001",
           "providerAttemptId": "provider-attempt-001"
@@ -1228,7 +1572,8 @@
               "deliveryTarget": {
                 "provider": "discord",
                 "account": "default",
-                "channel": "001"
+                "channel": "001",
+                "threadId": "001"
               },
               "recordId": "record-001",
               "inboundId": "inbound-001",
@@ -1237,12 +1582,14 @@
               "reviewAttempt": 1,
               "reviewCorrelationId": "review-correlation-001",
               "candidateRevision": 1,
-              "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "pipelineId": "discord-source"
             },
             "attemptedTarget": {
               "provider": "discord",
               "account": "default",
-              "channel": "001"
+              "channel": "001",
+              "threadId": "001"
             },
             "invocationIdempotencyKey": "invoke-001",
             "providerAttemptId": "provider-attempt-001",
@@ -1252,14 +1599,240 @@
       }
     },
     {
-      "name": "invoke.replay",
+      "name": "invoke.delivery-target-override-success",
       "precondition": {
         "record": {
-          "recordId": "record-001",
+          "recordId": "record-delivery",
           "state": "SENDING",
           "version": 8
         },
-        "attemptId": "attempt-001"
+        "attemptId": "attempt-delivery"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/invocations",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-delivery",
+          "attemptId": "attempt-delivery",
+          "owner": "sender-001",
+          "leaseToken": "lease-token-delivery",
+          "deliveryEnvelope": {
+            "schemaVersion": 1,
+            "sourceTarget": "v1:discord:default:001",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "delivery",
+              "threadId": "delivery"
+            },
+            "recordId": "record-delivery",
+            "inboundId": "inbound-delivery",
+            "draftAttempt": 1,
+            "draftCorrelationId": "draft-correlation-delivery",
+            "reviewAttempt": 1,
+            "reviewCorrelationId": "review-correlation-delivery",
+            "candidateRevision": 1,
+            "reviewedTextHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "pipelineId": "discord-source"
+          },
+          "deliveryEnvelopeDigest": "7776dcc2a9cab98d983ba06f64fe4cd8fe023a9f2fa29ea56639c23ace5b2058",
+          "attemptedTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "delivery",
+            "threadId": "delivery"
+          },
+          "idempotencyKey": "invoke-delivery",
+          "providerAttemptId": "provider-attempt-delivery"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "protocolVersion": 1,
+          "invocation": {
+            "recordId": "record-delivery",
+            "attemptId": "attempt-delivery",
+            "deliveryEnvelope": {
+              "schemaVersion": 1,
+              "sourceTarget": "v1:discord:default:001",
+              "deliveryTarget": {
+                "provider": "discord",
+                "account": "default",
+                "channel": "delivery",
+                "threadId": "delivery"
+              },
+              "recordId": "record-delivery",
+              "inboundId": "inbound-delivery",
+              "draftAttempt": 1,
+              "draftCorrelationId": "draft-correlation-delivery",
+              "reviewAttempt": 1,
+              "reviewCorrelationId": "review-correlation-delivery",
+              "candidateRevision": 1,
+              "reviewedTextHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "pipelineId": "discord-source"
+            },
+            "attemptedTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "delivery",
+              "threadId": "delivery"
+            },
+            "invocationIdempotencyKey": "invoke-delivery",
+            "providerAttemptId": "provider-attempt-delivery",
+            "invokedAt": "2026-07-27T12:01:05Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "invoke.delivery-target-source-rejected",
+      "precondition": {
+        "record": {
+          "recordId": "record-delivery",
+          "state": "SENDING",
+          "version": 8
+        },
+        "attemptId": "attempt-delivery"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/invocations",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-delivery",
+          "attemptId": "attempt-delivery",
+          "owner": "sender-001",
+          "leaseToken": "lease-token-delivery",
+          "deliveryEnvelope": {
+            "schemaVersion": 1,
+            "sourceTarget": "v1:discord:default:001",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "delivery",
+              "threadId": "delivery"
+            },
+            "recordId": "record-delivery",
+            "inboundId": "inbound-delivery",
+            "draftAttempt": 1,
+            "draftCorrelationId": "draft-correlation-delivery",
+            "reviewAttempt": 1,
+            "reviewCorrelationId": "review-correlation-delivery",
+            "candidateRevision": 1,
+            "reviewedTextHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "pipelineId": "discord-source"
+          },
+          "deliveryEnvelopeDigest": "7776dcc2a9cab98d983ba06f64fe4cd8fe023a9f2fa29ea56639c23ace5b2058",
+          "attemptedTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "001",
+            "threadId": "001"
+          },
+          "idempotencyKey": "invoke-delivery-source",
+          "providerAttemptId": "provider-attempt-delivery-source"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "protocolVersion": 1,
+          "error": {
+            "code": "SCHEMA_INVALID",
+            "message": "attemptedTarget must equal deliveryEnvelope.deliveryTarget"
+          }
+        }
+      }
+    },
+    {
+      "name": "invoke.delivery-target-arbitrary-rejected",
+      "precondition": {
+        "record": {
+          "recordId": "record-delivery",
+          "state": "SENDING",
+          "version": 8
+        },
+        "attemptId": "attempt-delivery"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/invocations",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-delivery",
+          "attemptId": "attempt-delivery",
+          "owner": "sender-001",
+          "leaseToken": "lease-token-delivery",
+          "deliveryEnvelope": {
+            "schemaVersion": 1,
+            "sourceTarget": "v1:discord:default:001",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "delivery",
+              "threadId": "delivery"
+            },
+            "recordId": "record-delivery",
+            "inboundId": "inbound-delivery",
+            "draftAttempt": 1,
+            "draftCorrelationId": "draft-correlation-delivery",
+            "reviewAttempt": 1,
+            "reviewCorrelationId": "review-correlation-delivery",
+            "candidateRevision": 1,
+            "reviewedTextHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "pipelineId": "discord-source"
+          },
+          "deliveryEnvelopeDigest": "7776dcc2a9cab98d983ba06f64fe4cd8fe023a9f2fa29ea56639c23ace5b2058",
+          "attemptedTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "arbitrary",
+            "threadId": "arbitrary"
+          },
+          "idempotencyKey": "invoke-delivery-arbitrary",
+          "providerAttemptId": "provider-attempt-delivery-arbitrary"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "protocolVersion": 1,
+          "error": {
+            "code": "SCHEMA_INVALID",
+            "message": "attemptedTarget must equal deliveryEnvelope.deliveryTarget"
+          }
+        }
+      }
+    },
+    {
+      "name": "invoke.replay",
+      "precondition": {
+        "record": {
+          "recordId": "record-002",
+          "state": "SENDING",
+          "version": 8
+        },
+        "attemptId": "attempt-002"
       },
       "request": {
         "method": "POST",
@@ -1282,7 +1855,8 @@
             "deliveryTarget": {
               "provider": "discord",
               "account": "default",
-              "channel": "001"
+              "channel": "001",
+              "threadId": "001"
             },
             "recordId": "record-001",
             "inboundId": "inbound-001",
@@ -1291,13 +1865,15 @@
             "reviewAttempt": 1,
             "reviewCorrelationId": "review-correlation-001",
             "candidateRevision": 1,
-            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "pipelineId": "discord-source"
           },
-          "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75",
           "attemptedTarget": {
             "provider": "discord",
             "account": "default",
-            "channel": "001"
+            "channel": "001",
+            "threadId": "001"
           },
           "idempotencyKey": "invoke-001",
           "providerAttemptId": "provider-attempt-001"
@@ -1316,7 +1892,8 @@
               "deliveryTarget": {
                 "provider": "discord",
                 "account": "default",
-                "channel": "001"
+                "channel": "001",
+                "threadId": "001"
               },
               "recordId": "record-001",
               "inboundId": "inbound-001",
@@ -1325,12 +1902,14 @@
               "reviewAttempt": 1,
               "reviewCorrelationId": "review-correlation-001",
               "candidateRevision": 1,
-              "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "pipelineId": "discord-source"
             },
             "attemptedTarget": {
               "provider": "discord",
               "account": "default",
-              "channel": "001"
+              "channel": "001",
+              "threadId": "001"
             },
             "invocationIdempotencyKey": "invoke-001",
             "providerAttemptId": "provider-attempt-001",
@@ -1343,11 +1922,15 @@
       "name": "invoke.conflict",
       "precondition": {
         "record": {
-          "recordId": "record-001",
+          "recordId": "record-003",
           "state": "SENDING",
           "version": 8
         },
-        "attemptId": "attempt-001"
+        "attemptId": "attempt-003",
+        "persistedInvocation": {
+          "idempotencyKey": "invoke-001",
+          "providerAttemptId": "provider-attempt-001"
+        }
       },
       "request": {
         "method": "POST",
@@ -1370,7 +1953,8 @@
             "deliveryTarget": {
               "provider": "discord",
               "account": "default",
-              "channel": "001"
+              "channel": "001",
+              "threadId": "001"
             },
             "recordId": "record-001",
             "inboundId": "inbound-001",
@@ -1379,16 +1963,18 @@
             "reviewAttempt": 1,
             "reviewCorrelationId": "review-correlation-001",
             "candidateRevision": 1,
-            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "pipelineId": "discord-source"
           },
-          "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75",
           "attemptedTarget": {
             "provider": "discord",
             "account": "default",
-            "channel": "002"
+            "channel": "001",
+            "threadId": "001"
           },
           "idempotencyKey": "invoke-001",
-          "providerAttemptId": "provider-attempt-001"
+          "providerAttemptId": "provider-attempt-conflict"
         }
       },
       "response": {
@@ -1432,7 +2018,8 @@
             "deliveryTarget": {
               "provider": "discord",
               "account": "default",
-              "channel": "001"
+              "channel": "001",
+              "threadId": "001"
             },
             "recordId": "record-001",
             "inboundId": "inbound-001",
@@ -1441,13 +2028,15 @@
             "reviewAttempt": 1,
             "reviewCorrelationId": "review-correlation-001",
             "candidateRevision": 1,
-            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "pipelineId": "discord-source"
           },
-          "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75",
           "attemptedTarget": {
             "provider": "discord",
             "account": "default",
-            "channel": "001"
+            "channel": "001",
+            "threadId": "001"
           },
           "invocationIdempotencyKey": "invoke-001",
           "outcome": "SENT",
@@ -1468,29 +2057,23 @@
             "delivery": {
               "attempts": [
                 {
-                  "ordinal": 1,
                   "attemptId": "attempt-001",
-                  "candidateRevision": 1,
-                  "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                  "reservedRecordVersion": 7,
-                  "owner": "sender-001",
-                  "leaseExpiresAt": "2026-07-27T12:02:00Z",
+                  "ordinal": 1,
                   "completionOutcome": "SENT",
                   "outcome": "SENT",
                   "providerAttemptId": "provider-attempt-001",
                   "providerReceiptId": "provider-receipt-001",
                   "providerMessageId": "provider-message-001",
                   "proofReference": null,
-                  "reservedAt": "2026-07-27T12:01:00Z",
                   "completedAt": "2026-07-27T12:01:10Z",
-                  "reconciledAt": null,
                   "deliveryEnvelope": {
                     "schemaVersion": 1,
                     "sourceTarget": "v1:discord:default:001",
                     "deliveryTarget": {
                       "provider": "discord",
                       "account": "default",
-                      "channel": "001"
+                      "channel": "001",
+                      "threadId": "001"
                     },
                     "recordId": "record-001",
                     "inboundId": "inbound-001",
@@ -1499,24 +2082,142 @@
                     "reviewAttempt": 1,
                     "reviewCorrelationId": "review-correlation-001",
                     "candidateRevision": 1,
-                    "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "pipelineId": "discord-source"
                   },
-                  "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-                  "reserveIdempotencyKey": "reserve-001",
-                  "invocationIdempotencyKey": "invoke-001",
-                  "completionIdempotencyKey": "complete-001",
-                  "invokedAt": "2026-07-27T12:01:05Z",
-                  "attemptedTarget": {
-                    "provider": "discord",
-                    "account": "default",
-                    "channel": "001"
-                  },
-                  "providerFailureClass": null,
-                  "providerEvidence": null,
-                  "terminalReason": "delivery_sent"
+                  "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75",
+                  "reserveIdempotencyKey": "reserve-001"
                 }
               ]
-            }
+            },
+            "pipelineId": "discord-source",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "001",
+              "threadId": "001"
+            },
+            "sourceSequence": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "complete.delivery-target-override-sent",
+      "precondition": {
+        "persistedInvocation": {
+          "recordId": "record-delivery",
+          "attemptId": "attempt-delivery",
+          "attemptedTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "delivery",
+            "threadId": "delivery"
+          },
+          "idempotencyKey": "invoke-delivery"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/completions",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-delivery",
+          "attemptId": "attempt-delivery",
+          "owner": "sender-001",
+          "leaseToken": "lease-token-delivery",
+          "deliveryEnvelope": {
+            "schemaVersion": 1,
+            "sourceTarget": "v1:discord:default:001",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "delivery",
+              "threadId": "delivery"
+            },
+            "recordId": "record-delivery",
+            "inboundId": "inbound-delivery",
+            "draftAttempt": 1,
+            "draftCorrelationId": "draft-correlation-delivery",
+            "reviewAttempt": 1,
+            "reviewCorrelationId": "review-correlation-delivery",
+            "candidateRevision": 1,
+            "reviewedTextHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "pipelineId": "discord-source"
+          },
+          "deliveryEnvelopeDigest": "7776dcc2a9cab98d983ba06f64fe4cd8fe023a9f2fa29ea56639c23ace5b2058",
+          "attemptedTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "delivery",
+            "threadId": "delivery"
+          },
+          "invocationIdempotencyKey": "invoke-delivery",
+          "outcome": "SENT",
+          "idempotencyKey": "complete-delivery",
+          "providerAttemptId": "provider-attempt-delivery",
+          "providerReceiptId": "provider-receipt-delivery",
+          "providerMessageId": "provider-message-delivery"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "protocolVersion": 1,
+          "record": {
+            "recordId": "record-delivery",
+            "state": "SENT",
+            "version": 9,
+            "delivery": {
+              "attempts": [
+                {
+                  "attemptId": "attempt-delivery",
+                  "ordinal": 1,
+                  "completionOutcome": "SENT",
+                  "outcome": "SENT",
+                  "providerAttemptId": "provider-attempt-delivery",
+                  "providerReceiptId": "provider-receipt-delivery",
+                  "providerMessageId": "provider-message-delivery",
+                  "proofReference": null,
+                  "completedAt": "2026-07-27T12:01:10Z",
+                  "deliveryEnvelope": {
+                    "schemaVersion": 1,
+                    "sourceTarget": "v1:discord:default:001",
+                    "deliveryTarget": {
+                      "provider": "discord",
+                      "account": "default",
+                      "channel": "delivery",
+                      "threadId": "delivery"
+                    },
+                    "recordId": "record-delivery",
+                    "inboundId": "inbound-delivery",
+                    "draftAttempt": 1,
+                    "draftCorrelationId": "draft-correlation-delivery",
+                    "reviewAttempt": 1,
+                    "reviewCorrelationId": "review-correlation-delivery",
+                    "candidateRevision": 1,
+                    "reviewedTextHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                    "pipelineId": "discord-source"
+                  },
+                  "deliveryEnvelopeDigest": "7776dcc2a9cab98d983ba06f64fe4cd8fe023a9f2fa29ea56639c23ace5b2058",
+                  "reserveIdempotencyKey": "reserve-delivery"
+                }
+              ]
+            },
+            "pipelineId": "discord-source",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "delivery",
+              "threadId": "delivery"
+            },
+            "sourceSequence": 1
           }
         }
       }
@@ -1551,7 +2252,8 @@
             "deliveryTarget": {
               "provider": "discord",
               "account": "default",
-              "channel": "001"
+              "channel": "001",
+              "threadId": "001"
             },
             "recordId": "record-001",
             "inboundId": "inbound-001",
@@ -1560,13 +2262,15 @@
             "reviewAttempt": 1,
             "reviewCorrelationId": "review-correlation-001",
             "candidateRevision": 1,
-            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "pipelineId": "discord-source"
           },
-          "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75",
           "attemptedTarget": {
             "provider": "discord",
             "account": "default",
-            "channel": "001"
+            "channel": "001",
+            "threadId": "001"
           },
           "invocationIdempotencyKey": "invoke-001",
           "outcome": "SENT",
@@ -1587,29 +2291,23 @@
             "delivery": {
               "attempts": [
                 {
-                  "ordinal": 1,
                   "attemptId": "attempt-001",
-                  "candidateRevision": 1,
-                  "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                  "reservedRecordVersion": 7,
-                  "owner": "sender-001",
-                  "leaseExpiresAt": "2026-07-27T12:02:00Z",
+                  "ordinal": 1,
                   "completionOutcome": "SENT",
                   "outcome": "SENT",
                   "providerAttemptId": "provider-attempt-001",
                   "providerReceiptId": "provider-receipt-001",
                   "providerMessageId": "provider-message-001",
                   "proofReference": null,
-                  "reservedAt": "2026-07-27T12:01:00Z",
                   "completedAt": "2026-07-27T12:01:10Z",
-                  "reconciledAt": null,
                   "deliveryEnvelope": {
                     "schemaVersion": 1,
                     "sourceTarget": "v1:discord:default:001",
                     "deliveryTarget": {
                       "provider": "discord",
                       "account": "default",
-                      "channel": "001"
+                      "channel": "001",
+                      "threadId": "001"
                     },
                     "recordId": "record-001",
                     "inboundId": "inbound-001",
@@ -1618,24 +2316,22 @@
                     "reviewAttempt": 1,
                     "reviewCorrelationId": "review-correlation-001",
                     "candidateRevision": 1,
-                    "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "pipelineId": "discord-source"
                   },
-                  "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-                  "reserveIdempotencyKey": "reserve-001",
-                  "invocationIdempotencyKey": "invoke-001",
-                  "completionIdempotencyKey": "complete-001",
-                  "invokedAt": "2026-07-27T12:01:05Z",
-                  "attemptedTarget": {
-                    "provider": "discord",
-                    "account": "default",
-                    "channel": "001"
-                  },
-                  "providerFailureClass": null,
-                  "providerEvidence": null,
-                  "terminalReason": "delivery_sent"
+                  "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75",
+                  "reserveIdempotencyKey": "reserve-001"
                 }
               ]
-            }
+            },
+            "pipelineId": "discord-source",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "001",
+              "threadId": "001"
+            },
+            "sourceSequence": 1
           }
         }
       }
@@ -1670,7 +2366,8 @@
             "deliveryTarget": {
               "provider": "discord",
               "account": "default",
-              "channel": "001"
+              "channel": "001",
+              "threadId": "001"
             },
             "recordId": "record-001",
             "inboundId": "inbound-001",
@@ -1679,13 +2376,15 @@
             "reviewAttempt": 1,
             "reviewCorrelationId": "review-correlation-001",
             "candidateRevision": 1,
-            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "reviewedTextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "pipelineId": "discord-source"
           },
-          "deliveryEnvelopeDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "deliveryEnvelopeDigest": "8c686298dcfac35e0bb81444682f93f29bf1c2db7b58071bad9c6dbd0288be75",
           "attemptedTarget": {
             "provider": "discord",
             "account": "default",
-            "channel": "001"
+            "channel": "001",
+            "threadId": "001"
           },
           "invocationIdempotencyKey": "invoke-001",
           "outcome": "SENT",
@@ -1737,7 +2436,8 @@
             "deliveryTarget": {
               "provider": "discord",
               "account": "default",
-              "channel": "003"
+              "channel": "003",
+              "threadId": "003"
             },
             "recordId": "record-003",
             "inboundId": "inbound-003",
@@ -1746,21 +2446,23 @@
             "reviewAttempt": 1,
             "reviewCorrelationId": "review-correlation-003",
             "candidateRevision": 1,
-            "reviewedTextHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            "reviewedTextHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "pipelineId": "discord-source"
           },
-          "deliveryEnvelopeDigest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "deliveryEnvelopeDigest": "d30d54f8eb219f9c03558ce8fc039b37b2ebbadb1eca7d9af29dca39450553b0",
           "attemptedTarget": {
             "provider": "discord",
             "account": "default",
-            "channel": "003"
+            "channel": "003",
+            "threadId": "003"
           },
           "invocationIdempotencyKey": "invoke-003",
           "outcome": "FAILED",
           "idempotencyKey": "complete-003",
           "providerAttemptId": "provider-attempt-003",
-          "providerFailureClass": "timeout",
+          "providerFailureClass": "rejection",
           "providerEvidence": {
-            "code": "provider_timeout"
+            "code": "provider_rejected"
           }
         }
       },
@@ -1775,29 +2477,23 @@
             "delivery": {
               "attempts": [
                 {
-                  "ordinal": 1,
                   "attemptId": "attempt-003",
-                  "candidateRevision": 1,
-                  "reviewedTextHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-                  "reservedRecordVersion": 7,
-                  "owner": "sender-001",
-                  "leaseExpiresAt": "2026-07-27T12:02:00Z",
+                  "ordinal": 1,
                   "completionOutcome": "FAILED",
                   "outcome": "FAILED",
                   "providerAttemptId": "provider-attempt-003",
                   "providerReceiptId": null,
                   "providerMessageId": null,
                   "proofReference": null,
-                  "reservedAt": "2026-07-27T12:01:00Z",
                   "completedAt": "2026-07-27T12:01:10Z",
-                  "reconciledAt": null,
                   "deliveryEnvelope": {
                     "schemaVersion": 1,
                     "sourceTarget": "v1:discord:default:003",
                     "deliveryTarget": {
                       "provider": "discord",
                       "account": "default",
-                      "channel": "003"
+                      "channel": "003",
+                      "threadId": "003"
                     },
                     "recordId": "record-003",
                     "inboundId": "inbound-003",
@@ -1806,26 +2502,150 @@
                     "reviewAttempt": 1,
                     "reviewCorrelationId": "review-correlation-003",
                     "candidateRevision": 1,
-                    "reviewedTextHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+                    "reviewedTextHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                    "pipelineId": "discord-source"
                   },
-                  "deliveryEnvelopeDigest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "deliveryEnvelopeDigest": "d30d54f8eb219f9c03558ce8fc039b37b2ebbadb1eca7d9af29dca39450553b0",
                   "reserveIdempotencyKey": "reserve-003",
-                  "invocationIdempotencyKey": "invoke-003",
-                  "completionIdempotencyKey": "complete-003",
-                  "invokedAt": "2026-07-27T12:01:05Z",
-                  "attemptedTarget": {
-                    "provider": "discord",
-                    "account": "default",
-                    "channel": "003"
-                  },
-                  "providerFailureClass": "timeout",
+                  "providerFailureClass": "rejection",
                   "providerEvidence": {
-                    "code": "provider_timeout"
-                  },
-                  "terminalReason": "delivery_failed"
+                    "code": "provider_rejected"
+                  }
                 }
               ]
-            }
+            },
+            "pipelineId": "discord-source",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "003",
+              "threadId": "003"
+            },
+            "sourceSequence": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "complete.timeout-ambiguous-rejected",
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/completions",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-003",
+          "attemptId": "attempt-003",
+          "owner": "sender-001",
+          "leaseToken": "lease-token-003",
+          "deliveryEnvelope": {
+            "schemaVersion": 1,
+            "sourceTarget": "v1:discord:default:003",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "003",
+              "threadId": "003"
+            },
+            "recordId": "record-003",
+            "inboundId": "inbound-003",
+            "draftAttempt": 1,
+            "draftCorrelationId": "draft-correlation-003",
+            "reviewAttempt": 1,
+            "reviewCorrelationId": "review-correlation-003",
+            "candidateRevision": 1,
+            "reviewedTextHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "pipelineId": "discord-source"
+          },
+          "deliveryEnvelopeDigest": "d30d54f8eb219f9c03558ce8fc039b37b2ebbadb1eca7d9af29dca39450553b0",
+          "attemptedTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "003",
+            "threadId": "003"
+          },
+          "invocationIdempotencyKey": "invoke-003",
+          "outcome": "FAILED",
+          "idempotencyKey": "complete-timeout-003",
+          "providerAttemptId": "provider-attempt-003",
+          "providerFailureClass": "timeout",
+          "providerEvidence": {"code": "provider_timeout"}
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "protocolVersion": 1,
+          "error": {
+            "code": "SCHEMA_INVALID",
+            "message": "provider failure class is unsupported"
+          }
+        }
+      }
+    },
+    {
+      "name": "complete.transport-ambiguous-rejected",
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/completions",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "recordId": "record-003",
+          "attemptId": "attempt-003",
+          "owner": "sender-001",
+          "leaseToken": "lease-token-003",
+          "deliveryEnvelope": {
+            "schemaVersion": 1,
+            "sourceTarget": "v1:discord:default:003",
+            "deliveryTarget": {
+              "provider": "discord",
+              "account": "default",
+              "channel": "003",
+              "threadId": "003"
+            },
+            "recordId": "record-003",
+            "inboundId": "inbound-003",
+            "draftAttempt": 1,
+            "draftCorrelationId": "draft-correlation-003",
+            "reviewAttempt": 1,
+            "reviewCorrelationId": "review-correlation-003",
+            "candidateRevision": 1,
+            "reviewedTextHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "pipelineId": "discord-source"
+          },
+          "deliveryEnvelopeDigest": "d30d54f8eb219f9c03558ce8fc039b37b2ebbadb1eca7d9af29dca39450553b0",
+          "attemptedTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "003",
+            "threadId": "003"
+          },
+          "invocationIdempotencyKey": "invoke-003",
+          "outcome": "FAILED",
+          "idempotencyKey": "complete-transport-003",
+          "providerAttemptId": "provider-attempt-003",
+          "providerFailureClass": "transport",
+          "providerEvidence": {"code": "provider_transport"}
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "protocolVersion": 1,
+          "error": {
+            "code": "SCHEMA_INVALID",
+            "message": "provider failure class is unsupported"
           }
         }
       }
@@ -1898,35 +2718,6 @@
         "recordId": "record-001",
         "active": false
       }
-    }
-  ],
-  "sourceThreadVectors": [
-    {
-      "name": "discord.root",
-      "provider": "discord",
-      "account": "account-a",
-      "channel": "shared-channel",
-      "providerEventId": "discord-event-001",
-      "sourceThreadId": "discord-event-001",
-      "sourceTarget": "v1:discord:account-a:shared-channel"
-    },
-    {
-      "name": "slack.root",
-      "provider": "slack",
-      "account": "workspace-a",
-      "channel": "C123",
-      "providerEventId": "1723640000.000100",
-      "sourceThreadId": "1723640000.000100",
-      "sourceTarget": "v1:slack:workspace-a:C123"
-    },
-    {
-      "name": "slack.reply",
-      "provider": "slack",
-      "account": "workspace-a",
-      "channel": "C123",
-      "providerEventId": "1723640000.000200",
-      "sourceThreadId": "1723640000.000100",
-      "sourceTarget": "v1:slack:workspace-a:C123"
     }
   ]
 }

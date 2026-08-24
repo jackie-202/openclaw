@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] [acceptance-fix] Route per-pipeline deliberation and deliver source-default replies: goal-001: Route pe"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-crag-4352-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "calm-crag-4352"
+}

@@ -1,0 +1,64 @@
+{
+  "findings": [
+    {
+      "claim": "One authenticated provider event must produce exactly one durable record, with thread peers used only as history.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task checkpoint states that execution stopped before RED creation and that no test, contract, production, or proof file was edited; the owner runtime still defines burst aggregation and record-level messages, so the supplied material contains no delivered singular durable-intake implementation.",
+      "rationale": "Without the owner contract, storage, and replay changes, distinct authenticated events can still be represented by one grouped durable record, so the required one-event/one-record behavior is absent.",
+      "required": "Implement the owner-approved singular durable intake path so each authenticated provider event creates one durable record, exact replay preserves that record, and thread peers remain history context only.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-wave-8905.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_cool-wave-8905_acceptance-fix-red-green-preserve-one-event-intake-and-safe.md"
+        }
+      ]
+    },
+    {
+      "claim": "This caller-declared TDD run requires authentic assertion-level RED and matching-command GREEN proof for the evaluated repair.",
+      "crossCutting": true,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true, no TDD proof was supplied, parent lineage contains no historical verification evidence, and the current checkpoint states that RED creation and GREEN verification were not completed.",
+      "rationale": "The required test-first sequence and matching-command GREEN evidence for the authoritative durable intake path cannot be established from the supplied artifacts.",
+      "required": "Supply authentic assertion-level RED evidence captured before implementation and matching-command GREEN evidence using the owner-backed durable integration command; setup or provenance failures must not be used as RED.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "TDD-proof/provenance:none-supplied"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-wave-8905.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-mist-6808.evidence.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] RED-GREEN: preserve one-event intake and safe uncertain-delivery semantics: goal-001:"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-wave-8905-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "cool-wave-8905"
+}

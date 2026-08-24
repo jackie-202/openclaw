@@ -1,0 +1,104 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required completion and receipt runtime repair is absent from the caller-supplied task-scoped implementation diff.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied diff contains changelog, documentation, README, SDK, and Deliberation contract changes, but no hunks for extensions/deliberation/src/final-adapter.ts, extensions/deliberation/index.ts, extensions/deliberation/src/km-client.ts, or the focused test files. Checkpoint and proof prose assert those behaviors but do not supply their implementation.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal-001 requires inspectable completion, receipt, duplicate-identity, replay/conflict, lifecycle-binding, and strict-projection behavior. Without the owning runtime and regression hunks, semantic review cannot establish that the repair was delivered.",
+      "required": "Supply the complete task-owned runtime and focused-test hunks implementing the required completion and receipt semantics.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-22_followup-quick-peak-6750-acceptance-fix-deliberation-repair-completion-and-receipt-se.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_quick-peak-6750_acceptance-fix-deliberation-repair-completion-and-receipt.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        }
+      ]
+    },
+    {
+      "claim": "The explicitly required bounded implementation-diff provenance artifact is absent from the supplied review material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The plan requires plans/checkpoints/calm-crag-0993.evidence.md to contain the complete task-owned source/test patch, exact path inventory, statistics, digest, forbidden-path and truncation checks, and forward/reverse apply validation. That artifact is not present in the task-scoped diff or the caller-supplied additional artifacts.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "This acceptance repair exists to make preserved implementation hunks inspectable and distinguish them from unrelated dirty-worktree changes. Checkpoint assertions, GREEN proof, and a learning about bounded diffs do not substitute for the explicitly required provenance artifact.",
+      "required": "Supply plans/checkpoints/calm-crag-0993.evidence.md with the complete bounded runtime/test patch and all provenance validations required by the plan.",
+      "sources": [
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_quick-peak-6750_acceptance-fix-deliberation-repair-completion-and-receipt.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-additional-task-artifacts"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-peak-6750.checkpoint.md"
+        }
+      ]
+    },
+    {
+      "claim": "The supplied task-scoped diff contains a material routing, configuration, SDK, documentation, and wire-contract redesign outside this acceptance repair's declared boundary.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "unknown",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "correctness",
+      "observed": "The diff changes inbound policy documentation, per-pipeline routing and source-default delivery documentation, SDK inbound/outbound semantics, the Deliberation README, and extensions/deliberation/contracts/cutover-controls-v1.json plus km-wire-v1.json. The plan explicitly prohibits contract, routing, config, SDK, docs, README, and changelog changes, and no concurrent assignment candidates were supplied.",
+      "policyRule": "catalog:unknown:blocking",
+      "rationale": "These are broad semantic changes rather than incidental churn. They materially prevent the task-scoped payload from representing the bounded completion/receipt repair and violate the plan's explicit exclusion boundary.",
+      "required": "Remove the unrelated redesign from this task-scoped payload and supply only the bounded completion/receipt implementation, tests, and required evidence.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_quick-peak-6750_acceptance-fix-deliberation-repair-completion-and-receipt.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-22_followup-quick-peak-6750-acceptance-fix-deliberation-repair-completion-and-receipt-se.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation: repair completion and receipt semantics: goal-001: Deliberation: repair"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-peak-6750-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "quick-peak-6750"
+}

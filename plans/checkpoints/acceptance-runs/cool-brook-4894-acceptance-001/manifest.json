@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-20T07:39:24+00:00",
+    "implementingStartedAt": "2026-08-20T07:29:50+00:00",
+    "taskFile": "plans/tasks/2026-08-20_followup-cool-brook-4894-acceptance-fix-fix-compaction-openai-oauth-bridge-provider-a.md",
+    "taskId": "cool-brook-4894",
+    "title": "[acceptance-fix] [acceptance-fix] Fix compaction OpenAI OAuth/bridge provider-auth validation: goal-006: Relevant focuse"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix compaction OpenAI OAuth/bridge provider-auth validation: goal-006: Relevant focuse"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-brook-4894-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-brook-4894",
+  "tddRequired": false
+}

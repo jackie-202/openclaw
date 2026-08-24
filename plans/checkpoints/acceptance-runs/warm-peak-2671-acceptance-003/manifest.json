@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T20:37:43+00:00",
+    "implementingStartedAt": "2026-08-21T20:17:47+00:00",
+    "taskFile": "plans/tasks/2026-08-21_deliberation-make-discord-child-thread-history-exact.md",
+    "taskId": "warm-peak-2671",
+    "title": "Deliberation: make Discord child-thread history exact"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation: make Discord child-thread history exact"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-peak-2671-acceptance-003",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-peak-2671",
+  "tddRequired": true
+}

@@ -126,6 +126,7 @@ observation-only.
 
 **Messages and delivery**
 
+- **`inbound_event_policy`** - synchronously disable channel debounce aggregation for an authenticated provider event before normalized message dispatch. Return `{ aggregation: "separate" }` when each provider event must remain distinct. Add `dispatch: "exclusive"` to claim exclusive ownership: the host attributes the decision to that plugin and invokes only its `inbound_claim` after channel authentication but before acknowledgement, typing, thread creation, or ordinary dispatch. Multiple exclusive owners are ambiguous and fail closed without invoking either owner. Declined, missing, timed-out, or failed exclusive claims also remain silent and terminal. Errors and Promise-returning policy handlers disable aggregation but do not establish exclusive ownership.
 - **`inbound_claim`** - claim an inbound message before agent routing (synthetic replies). Its event includes the host-authoritative `provider`, the fixed `eventType: "message"`, and `eventKind` (`user_request` or `room_event`) from the finalized inbound context.
 - `message_received` — observe inbound content, sender, thread, and metadata
 - **`message_sending`** — rewrite outbound content or cancel delivery

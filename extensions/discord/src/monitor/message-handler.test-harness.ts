@@ -51,6 +51,7 @@ export async function createBaseDiscordMessageContext(
     shouldRequireMention: true,
     canDetectMention: true,
     effectiveWasMentioned: true,
+    inboundEventKind: "user_request",
     shouldBypassMention: false,
     threadChannel: null,
     threadParentId: undefined,

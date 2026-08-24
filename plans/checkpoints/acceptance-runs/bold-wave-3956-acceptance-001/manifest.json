@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-22T15:48:07+00:00",
+    "implementingStartedAt": "2026-08-22T15:29:10+00:00",
+    "taskFile": "plans/tasks/2026-08-22_followup-bold-wave-3956-deliberation-validate-fixtures-bound-legacy-config-and-repai.md",
+    "taskId": "bold-wave-3956",
+    "title": "[acceptance-fix] Deliberation: validate fixtures, bound legacy config, and repair integration proof: goal-001: Deliberat"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation: validate fixtures, bound legacy config, and repair integration proof: goal-001: Deliberat"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-wave-3956-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-wave-3956",
+  "tddRequired": false
+}

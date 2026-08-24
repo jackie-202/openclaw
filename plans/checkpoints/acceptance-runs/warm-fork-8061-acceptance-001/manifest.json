@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T01:02:51+00:00",
+    "implementingStartedAt": "2026-08-23T00:53:28+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-warm-fork-8061-acceptance-fix-red-green-ship-and-verify-the-doctor-migratio.md",
+    "taskId": "warm-fork-8061",
+    "title": "[acceptance-fix] [acceptance-fix] RED-GREEN: ship and verify the doctor migration artifact: goal-008: Build, focused doc"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] RED-GREEN: ship and verify the doctor migration artifact: goal-008: Build, focused doc"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-fork-8061-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-fork-8061",
+  "tddRequired": false
+}

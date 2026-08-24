@@ -7,7 +7,7 @@ import {
 } from "./sent-thread-cache.js";
 
 installSlackBlockTestMocks();
-const { sendMessageSlack } = await import("./send.js");
+const { sendMessageSlack, sendMessageSlackAttempt } = await import("./send.js");
 const SLACK_TEST_CFG = { channels: { slack: { botToken: "xoxb-test" } } };
 const SLACK_TEXT_LIMIT = 8000;
 
@@ -174,6 +174,127 @@ describe("sendMessageSlack chunking", () => {
         .filter((text) => text.length === null || text.length > 8000),
     ).toStrictEqual([]);
     expect(postedTexts.join("")).toBe(message);
+  });
+});
+
+describe("sendMessageSlackAttempt", () => {
+  it("renders mrkdwn and creates exactly one native Slack message", async () => {
+    const client = createSlackSendTestClient();
+
+    const result = await sendMessageSlackAttempt("channel:C123", "**hello**", {
+      token: "xoxb-test",
+      cfg: SLACK_TEST_CFG,
+      client,
+      idempotencyKey: "provider:attempt-1",
+    });
+
+    expect(client.chat.postMessage).toHaveBeenCalledTimes(1);
+    expect(postedMessage(client)).toMatchObject({
+      channel: "C123",
+      text: "*hello*",
+      unfurl_links: false,
+    });
+    expect(result).toMatchObject({
+      outcome: "sent",
+      messageId: "171234.567",
+      idempotency: "unsupported",
+    });
+    if (result.outcome === "sent") {
+      expect(result.receipt.platformMessageIds).toEqual(["171234.567"]);
+    }
+  });
+
+  it("rejects before invocation when the effective account limit renders multiple chunks", async () => {
+    const client = createSlackSendTestClient();
+    const cfg = {
+      channels: {
+        slack: {
+          botToken: "xoxb-test",
+          accounts: { default: { textChunkLimit: 8 } },
+        },
+      },
+    };
+
+    const result = await sendMessageSlackAttempt("channel:C123", "longer than eight", {
+      token: "xoxb-test",
+      cfg,
+      accountId: "default",
+      client,
+      idempotencyKey: "provider:attempt-2",
+    });
+
+    expect(client.chat.postMessage).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      outcome: "rejected",
+      failureClass: "rejection",
+      error: "Slack send attempt must render to exactly one non-empty message",
+      idempotency: "unsupported",
+    });
+  });
+
+  it("returns unknown after one DNS-failed native invocation without retry", async () => {
+    const client = createSlackSendTestClient();
+    client.chat.postMessage.mockRejectedValueOnce(slackDnsRequestError());
+
+    const result = await sendMessageSlackAttempt("channel:C123", "hello", {
+      token: "xoxb-test",
+      cfg: SLACK_TEST_CFG,
+      client,
+      idempotencyKey: "provider:attempt-3",
+    });
+
+    expect(client.chat.postMessage).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({
+      outcome: "unknown",
+      failureClass: "transport",
+      idempotency: "unsupported",
+    });
+  });
+
+  it("does not retry without identity after a Slack platform rejection", async () => {
+    const client = createSlackSendTestClient();
+    const error = Object.assign(new Error("An API error occurred: missing_scope"), {
+      code: "slack_webapi_platform_error",
+      data: { error: "missing_scope", needed: "chat:write.customize" },
+    });
+    client.chat.postMessage.mockRejectedValueOnce(error);
+
+    const result = await sendMessageSlackAttempt("user:U123", "hello", {
+      token: "xoxb-test",
+      cfg: SLACK_TEST_CFG,
+      client,
+      identity: { username: "Bot" },
+      idempotencyKey: "provider:attempt-4",
+    });
+
+    expect(client.conversations.open).not.toHaveBeenCalled();
+    expect(client.chat.postMessage).toHaveBeenCalledTimes(1);
+    expect(postedMessage(client)).toMatchObject({ channel: "U123", username: "Bot" });
+    expect(result).toMatchObject({
+      outcome: "rejected",
+      failureClass: "permission",
+      idempotency: "unsupported",
+    });
+  });
+
+  it("returns unknown when Slack accepts the call without a message timestamp", async () => {
+    const client = createSlackSendTestClient();
+    client.chat.postMessage.mockResolvedValueOnce({ ok: true });
+
+    const result = await sendMessageSlackAttempt("channel:C123", "hello", {
+      token: "xoxb-test",
+      cfg: SLACK_TEST_CFG,
+      client,
+      idempotencyKey: "provider:attempt-5",
+    });
+
+    expect(client.chat.postMessage).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      outcome: "unknown",
+      failureClass: "unknown",
+      error: "Slack chat.postMessage returned no message timestamp",
+      idempotency: "unsupported",
+    });
   });
 });
 

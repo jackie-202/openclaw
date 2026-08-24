@@ -55,6 +55,13 @@ type DiscordSendOpts = {
   suppressEmbeds?: boolean;
 };
 
+type DiscordTextAttemptOpts = Pick<
+  DiscordSendOpts,
+  "cfg" | "token" | "accountId" | "rest" | "replyTo" | "silent"
+> & {
+  idempotencyKey: string;
+};
+
 type DiscordClientRequest = ReturnType<typeof createDiscordClient>["request"];
 
 const DEFAULT_DISCORD_MEDIA_MAX_MB = 100;
@@ -133,6 +140,71 @@ function toDiscordSendResult(
     resultParams.replyToId = params.replyToId;
   }
   return createDiscordSendResult(resultParams);
+}
+
+export function renderDiscordOutboundText(params: {
+  cfg: OpenClawConfig;
+  text: string;
+  accountId?: string;
+}): string {
+  const account = resolveDiscordAccount({ cfg: params.cfg, accountId: params.accountId });
+  const tableMode = resolveMarkdownTableMode({
+    cfg: params.cfg,
+    channel: "discord",
+    accountId: account.accountId,
+  });
+  const textWithTables = convertMarkdownTables(params.text, tableMode);
+  return rewriteDiscordKnownMentions(textWithTables, {
+    accountId: account.accountId,
+    mentionAliases: account.config.mentionAliases,
+  });
+}
+
+export async function sendTextAttemptDiscord(
+  to: string,
+  preparedText: string,
+  opts: DiscordTextAttemptOpts,
+): Promise<DiscordSendResult> {
+  const cfg = requireRuntimeConfig(opts.cfg, "Discord text attempt");
+  const account = resolveDiscordAccount({ cfg, accountId: opts.accountId });
+  const suppressEmbeds = resolveDiscordSuppressEmbeds({
+    configured: account.config.suppressEmbeds,
+  });
+  const { rest, request } = createDiscordClient({
+    ...opts,
+    cfg,
+    singleAttempt: true,
+  });
+  const recipient = await parseAndResolveChannelRecipient(to, cfg, opts.accountId);
+  const { channelId } = await resolveChannelId(rest, recipient, request);
+  const body = {
+    ...buildDiscordMessageRequest({
+      text: preparedText,
+      replyTo: opts.replyTo,
+      flags: resolveDiscordMessageFlags({
+        silent: opts.silent,
+        suppressEmbeds,
+      }),
+      nonce: opts.idempotencyKey,
+      enforceNonce: true,
+    }),
+  };
+  const result = (await request(
+    () =>
+      createChannelMessage<{ id: string; channel_id: string }>(rest, channelId, {
+        body,
+      }),
+    "text-attempt",
+  )) as { id: string; channel_id: string };
+  recordChannelActivity({
+    channel: "discord",
+    accountId: account.accountId,
+    direction: "outbound",
+  });
+  return toDiscordSendResult(result, channelId, {
+    kind: "text",
+    replyToId: opts.replyTo,
+  });
 }
 
 async function resolveDiscordSendTarget(

@@ -4,11 +4,18 @@
 import { vi, type Mock } from "vitest";
 import type { PluginMetadataSnapshot } from "../../plugins/plugin-metadata-snapshot.js";
 import { clearAgentHarnesses } from "../harness/registry.js";
+import { CUSTOM_LOCAL_AUTH_MARKER } from "../model-auth-markers.js";
 import type { AgentRuntimePlan, BuildAgentRuntimePlanParams } from "../runtime-plan/types.js";
 import type { CompactionTranscriptRotation } from "./compaction-successor-transcript.js";
 
 type MockResolvedModel = {
-  model: { provider: string; api: string; id: string; input: unknown[] };
+  model: {
+    provider: string;
+    api: string;
+    id: string;
+    input: unknown[];
+    baseUrl?: string;
+  };
   error: null;
   authStorage: { setRuntimeApiKey: Mock<(provider?: string, apiKey?: string) => void> };
   modelRegistry: Record<string, never>;
@@ -166,6 +173,24 @@ export const resolveEmbeddedAgentStreamFnMock: Mock<
 > = vi.fn((_params?: unknown) => vi.fn());
 export const registerProviderStreamForModelMock: Mock<(params?: unknown) => unknown> = vi.fn();
 export const applyExtraParamsToAgentMock = vi.fn(() => ({ effectiveExtraParams: {} }));
+export const getApiKeyForModelMock = vi.fn(async () => ({
+  apiKey: "test",
+  mode: "api-key" as const,
+  source: "test harness",
+}));
+export const applyLocalNoAuthHeaderOverrideMock = vi.fn(
+  (model: Record<string, unknown>, auth?: { apiKey?: string }) =>
+    auth?.apiKey === CUSTOM_LOCAL_AUTH_MARKER
+      ? {
+          ...model,
+          headers: {
+            ...(model.headers as Record<string, string> | undefined),
+            Authorization: null,
+          },
+        }
+      : model,
+);
+export const applyAuthHeaderOverrideMock = vi.fn((model: Record<string, unknown>) => model);
 export const resolveAgentTransportOverrideMock: Mock<(params?: unknown) => string | undefined> =
   vi.fn(() => undefined);
 export const resolveSandboxContextMock = vi.fn(async () => null);
@@ -325,6 +350,14 @@ export function resetCompactSessionStateMocks(): void {
   registerProviderStreamForModelMock.mockReturnValue(undefined);
   applyExtraParamsToAgentMock.mockReset();
   applyExtraParamsToAgentMock.mockReturnValue({ effectiveExtraParams: {} });
+  getApiKeyForModelMock.mockReset();
+  getApiKeyForModelMock.mockResolvedValue({
+    apiKey: "test",
+    mode: "api-key",
+    source: "test harness",
+  });
+  applyLocalNoAuthHeaderOverrideMock.mockClear();
+  applyAuthHeaderOverrideMock.mockClear();
   resolveAgentTransportOverrideMock.mockReset();
   resolveAgentTransportOverrideMock.mockReturnValue(undefined);
   resolveSandboxContextMock.mockReset();
@@ -536,18 +569,14 @@ export async function loadCompactHooksHarness(): Promise<{
   }));
 
   vi.doMock("../model-auth.js", () => ({
-    applyAuthHeaderOverride: vi.fn((model: unknown) => model),
-    applyLocalNoAuthHeaderOverride: vi.fn((model: unknown) => model),
+    applyAuthHeaderOverride: applyAuthHeaderOverrideMock,
+    applyLocalNoAuthHeaderOverride: applyLocalNoAuthHeaderOverrideMock,
     ensureAuthProfileStoreWithoutExternalProfiles: vi.fn(() => ({})),
     formatMissingAuthError: vi.fn(
       (auth: { mode: string; source: string }, provider: string) =>
         `No API key resolved for provider "${provider}" (auth mode: ${auth.mode}, checked: ${auth.source}).`,
     ),
-    getApiKeyForModel: vi.fn(async () => ({
-      apiKey: "test",
-      mode: "env",
-      source: "test harness",
-    })),
+    getApiKeyForModel: getApiKeyForModelMock,
     resolveModelAuthMode: vi.fn(() => "env"),
   }));
 

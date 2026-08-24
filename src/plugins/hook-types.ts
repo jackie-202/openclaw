@@ -87,6 +87,7 @@ export type PluginHookName =
   | "before_compaction"
   | "after_compaction"
   | "before_reset"
+  | "inbound_event_policy"
   | "inbound_claim"
   | "message_received"
   | "message_sending"
@@ -134,6 +135,7 @@ export const PLUGIN_HOOK_NAMES = [
   "before_compaction",
   "after_compaction",
   "before_reset",
+  "inbound_event_policy",
   "inbound_claim",
   "message_received",
   "message_sending",
@@ -413,6 +415,25 @@ export type PluginHookInboundClaimResult = {
   reply?: ReplyPayload;
 };
 
+export type PluginHookInboundEventPolicyEvent = {
+  provider: string;
+  accountId: string;
+  conversationId: string;
+  parentConversationId?: string;
+  providerEventId?: string;
+};
+
+export type PluginHookInboundEventPolicyResult = {
+  aggregation: "separate";
+  dispatch?: "exclusive";
+};
+
+export type PluginHookInboundEventPolicyDecision =
+  | { kind: "ordinary" }
+  | { kind: "separate" }
+  | { kind: "exclusive"; ownerPluginId: string }
+  | { kind: "ambiguous" };
+
 export type PluginHookBeforeDispatchEvent = {
   content: string;
   body?: string;
@@ -430,6 +451,7 @@ export type PluginHookBeforeDispatchContext = {
   channelId?: string;
   accountId?: string;
   conversationId?: string;
+  parentConversationId?: string;
   sessionKey?: string;
   senderId?: string;
   replyToId?: string;
@@ -1031,6 +1053,9 @@ export type PluginHookHandlerMap = {
     event: PluginHookBeforeResetEvent,
     ctx: PluginHookAgentContext,
   ) => Promise<void> | void;
+  inbound_event_policy: (
+    event: PluginHookInboundEventPolicyEvent,
+  ) => PluginHookInboundEventPolicyResult | void;
   inbound_claim: (
     event: PluginHookInboundClaimEvent,
     ctx: PluginHookInboundClaimContext,

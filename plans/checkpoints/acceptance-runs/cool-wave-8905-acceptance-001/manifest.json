@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-22T23:58:17+00:00",
+    "implementingStartedAt": "2026-08-22T23:52:58+00:00",
+    "taskFile": "plans/tasks/2026-08-22_followup-cool-wave-8905-acceptance-fix-red-green-preserve-one-event-intake-and-safe.md",
+    "taskId": "cool-wave-8905",
+    "title": "[acceptance-fix] [acceptance-fix] RED-GREEN: preserve one-event intake and safe uncertain-delivery semantics: goal-001: "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] RED-GREEN: preserve one-event intake and safe uncertain-delivery semantics: goal-001:"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-wave-8905-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-wave-8905",
+  "tddRequired": true
+}

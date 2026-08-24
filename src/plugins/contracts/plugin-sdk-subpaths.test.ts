@@ -1032,6 +1032,7 @@ describe("plugin-sdk subpath exports", () => {
       "resolveInboundMentionDecision",
       "normalizeMentionText",
       "resolveInboundDebounceMs",
+      "resolveChannelInboundEventPolicy",
       "resolveEnvelopeFormatOptions",
       "resolveInboundSessionEnvelopeContext",
       "resolveMentionGating",

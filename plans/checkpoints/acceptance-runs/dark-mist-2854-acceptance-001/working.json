@@ -1,0 +1,101 @@
+{
+  "findings": [
+    {
+      "claim": "The required OpenClaw owner-contract and owner-runtime convergence was not delivered.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task checkpoint states that the mandatory authority gate remained blocked, steps 3 through 5 are incomplete, and no production or test file was edited; the supplied task diff therefore does not establish task-owned reconciliation of the contract mirrors, producer, KM client, final adapter, or named OR-07 through OR-21 harness.",
+      "rationale": "Goal goal-001 requires concrete OpenClaw convergence with the canonical KM owner and a cross-repository gate; preserving earlier work while stopping before the required reconciliation leaves that implementation goal unmet.",
+      "required": "Supply the coherent immutable KM authority bundle, then implement the demonstrated OpenClaw contract, producer, client, adapter, provenance, and named owner-runtime convergence without modifying KM.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-mist-2854.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-mist-2854.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_followup-dark-mist-2854-converge-openclaw-deliberation-with-canonical-km-owner-and-c.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED-GREEN TDD proof is incomplete.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied proof links a genuine historical RED but explicitly records no GREEN phase because no caller-approved owner checkout was available; the repository-local 111-test result is labeled supporting verification and not owner-backed GREEN.",
+      "rationale": "The manifest declares tddRequired true, so historical RED without fresh post-implementation GREEN for the required owner-backed behavior does not satisfy the mandatory TDD evidence contract.",
+      "required": "After the immutable owner authority is supplied and the reconciliation is implemented, capture fresh GREEN for the owner-backed command in the task-scoped proof while preserving the historical RED provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-mist-2854.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_dark-mist-2854_converge-openclaw-deliberation-with-canonical-km-owner-and.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/dark-mist-2854-acceptance-001/manifest.json"
+        }
+      ]
+    },
+    {
+      "claim": "The explicitly required owner provenance, named cross-repository gate, pinned KM E2E, and focused completion evidence is absent.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The checkpoint leaves owner-backed, pinned-KM, focused OpenClaw, and quality gates incomplete; the proof lacks approved revision and runtime hashes, complete OR-07 through OR-21 assignment and results, exact composed E2E selectors, and owner-backed GREEN. The canonical Test Gate status is not run and supplies no evidence.",
+      "rationale": "The task contract requires exact immutable owner provenance and completed named cross-repository verification to establish convergence; repository-local supporting tests cannot substitute for those explicit completion artifacts.",
+      "required": "Provide caller-owned completion evidence containing the approved full KM revision and hashes, each assigned OR-07 through OR-21 result exactly once, exact pinned KM E2E selector outcomes, focused OpenClaw checks, and the canonical Test Gate reference when available.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-mist-2854.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-mist-2854.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-crag-3236.evidence.md"
+        },
+        {
+          "kind": "test-gate",
+          "reference": "not run; no Test Gate evidence exists"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Converge OpenClaw Deliberation with canonical KM owner and cross-repository gate: goal-001: Converge Op"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-2854-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "dark-mist-2854"
+}

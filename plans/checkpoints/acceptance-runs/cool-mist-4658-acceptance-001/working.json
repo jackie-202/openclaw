@@ -1,0 +1,62 @@
+{
+  "findings": [
+    {
+      "claim": "The required OpenClaw/KM Deliberation convergence was not implemented.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint states that the immutable-authority revision check failed before any production or test edit; implementation, reconciliation, and verification steps remain incomplete.",
+      "rationale": "The task's sole goal requires concrete contract, producer, client, adapter, and harness convergence, but the supplied task artifact confirms work stopped at the setup gate and delivered none of those required behaviors.",
+      "required": "Restore the approved KM checkout revision, then implement the specified OpenClaw convergence within the allowed workspace and supply the resulting task-scoped changes for review.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-mist-4658.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_converge-openclaw-with-supplied-immutable-km-deliberation-ow.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD RED/GREEN proof is missing.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true, the supplied material explicitly says no TDD proof was supplied, and the checkpoint says RED and GREEN proof steps were not performed.",
+      "rationale": "The catalog makes absent TDD proof blocking when tddRequired is true; no genuine historical RED linkage or fresh GREEN evidence for the same owner-backed boundary was supplied.",
+      "required": "Provide the required task-scoped TDD proof containing the genuine RED and post-change GREEN evidence for the specified owner-backed boundary.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-mist-4658.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_cool-mist-4658_converge-openclaw-with-supplied-immutable-km-deliberation.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Converge OpenClaw with supplied immutable KM Deliberation owner bundle"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-mist-4658-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "cool-mist-4658"
+}

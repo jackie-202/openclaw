@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Deliberation: enforce one native provider attempt and one-message delivery"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-brook-3323-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-brook-3323"
+}

@@ -99,25 +99,36 @@ function directOpenAIPlatformModelRequiresApiKey(params: {
   );
 }
 
-function isAuthModeAllowedForModel(params: {
+function resolveModelCompatibleAuth(params: {
+  cfg: OpenClawConfig | undefined;
   provider: string;
   modelApi?: string;
-  mode: ResolvedProviderAuth["mode"];
-}): boolean {
-  return !directOpenAIPlatformModelRequiresApiKey(params) || params.mode === "api-key";
+  auth: ResolvedProviderAuth;
+}): ResolvedProviderAuth | null {
+  if (!directOpenAIPlatformModelRequiresApiKey(params) || params.auth.mode === "api-key") {
+    return params.auth;
+  }
+  // The local marker is safe only where the request boundary explicitly clears
+  // the OpenAI SDK's generated Authorization header.
+  if (normalizeLowercaseStringOrEmpty(params.modelApi) !== "openai-completions") {
+    return null;
+  }
+  return resolveConfiguredSyntheticLocalProviderAuth(params);
 }
 
-function assertAuthModeAllowedForModel(params: {
+function requireModelCompatibleAuth(params: {
+  cfg: OpenClawConfig | undefined;
   provider: string;
   modelApi?: string;
   profileId: string;
-  mode: ResolvedProviderAuth["mode"];
-}): void {
-  if (isAuthModeAllowedForModel(params)) {
-    return;
+  auth: ResolvedProviderAuth;
+}): ResolvedProviderAuth {
+  const compatibleAuth = resolveModelCompatibleAuth(params);
+  if (compatibleAuth) {
+    return compatibleAuth;
   }
   throw new Error(
-    `Auth profile "${params.profileId}" uses ${params.mode} auth, but ${params.provider}/${params.modelApi} requires an OpenAI API key profile.`,
+    `Auth profile "${params.profileId}" uses ${params.auth.mode} auth, but ${params.provider}/${params.modelApi} requires an OpenAI API key profile.`,
   );
 }
 
@@ -745,10 +756,15 @@ export function hasRuntimeAvailableProviderAuth(params: {
   });
   if (
     envAuth &&
-    isAuthModeAllowedForModel({
+    resolveModelCompatibleAuth({
+      cfg: params.cfg,
       provider,
       modelApi: params.modelApi,
-      mode: envAuth.source.includes("OAUTH_TOKEN") ? "oauth" : "api-key",
+      auth: {
+        apiKey: envAuth.apiKey,
+        source: envAuth.source,
+        mode: envAuth.source.includes("OAUTH_TOKEN") ? "oauth" : "api-key",
+      },
     })
   ) {
     return true;
@@ -837,23 +853,24 @@ function resolveSyntheticLocalProviderAuth(params: {
     return null;
   }
 
-  const providerConfig = resolveProviderConfig(params.cfg, params.provider);
-  if (!providerConfig) {
-    return null;
-  }
-
   // Custom providers pointing at a local server (e.g. llama.cpp, vLLM, LocalAI)
   // typically don't require auth. Synthesize a local key so the auth resolver
   // doesn't reject them when the user left the API key blank during setup.
-  if (hasSyntheticLocalProviderAuthConfig(params)) {
-    return {
-      apiKey: CUSTOM_LOCAL_AUTH_MARKER,
-      source: `models.providers.${params.provider} (synthetic local key)`,
-      mode: "api-key",
-    };
-  }
+  return resolveConfiguredSyntheticLocalProviderAuth(params);
+}
 
-  return null;
+function resolveConfiguredSyntheticLocalProviderAuth(params: {
+  cfg: OpenClawConfig | undefined;
+  provider: string;
+}): ResolvedProviderAuth | null {
+  if (!hasSyntheticLocalProviderAuthConfig(params)) {
+    return null;
+  }
+  return {
+    apiKey: CUSTOM_LOCAL_AUTH_MARKER,
+    source: `models.providers.${params.provider} (synthetic local key)`,
+    mode: "api-key",
+  };
 }
 
 function resolveEnvSourceLabel(params: {
@@ -987,11 +1004,12 @@ export async function resolveApiKeyForProvider(params: {
       source: `profile:${resolvedProfileId}`,
       mode: mode ? profileTypeToAuthMode(mode) : "api-key",
     };
-    assertAuthModeAllowedForModel({
+    const compatibleResult = requireModelCompatibleAuth({
+      cfg,
       provider,
       modelApi: params.modelApi,
       profileId: resolvedProfileId,
-      mode: result.mode,
+      auth: result,
     });
     // When the resolved key is a provider-owned synthetic profile marker and
     // the caller has not locked this profile, fall through to env/config
@@ -1013,9 +1031,9 @@ export async function resolveApiKeyForProvider(params: {
         profileId: undefined,
         lockedProfile: true,
       }) //
-        .catch(() => result);
+        .catch(() => compatibleResult);
     }
-    return result;
+    return compatibleResult;
   }
 
   if (cfg?.auth?.profiles || cfg?.auth?.order) {
@@ -1057,20 +1075,20 @@ export async function resolveApiKeyForProvider(params: {
       const resolvedMode: ResolvedProviderAuth["mode"] = envResolved.source.includes("OAUTH_TOKEN")
         ? "oauth"
         : "api-key";
-      if (
-        !isAuthModeAllowedForModel({
-          provider,
-          modelApi: params.modelApi,
+      const compatibleAuth = resolveModelCompatibleAuth({
+        cfg,
+        provider,
+        modelApi: params.modelApi,
+        auth: {
+          apiKey: envResolved.apiKey,
+          source: envResolved.source,
           mode: resolvedMode,
-        })
-      ) {
+        },
+      });
+      if (!compatibleAuth) {
         return resolveApiKeyForProvider({ ...params, credentialPrecedence: "profile-first" });
       }
-      return {
-        apiKey: envResolved.apiKey,
-        source: envResolved.source,
-        mode: resolvedMode,
-      };
+      return compatibleAuth;
     }
   }
 
@@ -1090,13 +1108,13 @@ export async function resolveApiKeyForProvider(params: {
     agentDir,
   });
   if (providerEntryBinding.kind === "profile-resolved") {
-    assertAuthModeAllowedForModel({
+    return requireModelCompatibleAuth({
+      cfg,
       provider,
       modelApi: params.modelApi,
       profileId: providerEntryBinding.auth.profileId ?? provider,
-      mode: providerEntryBinding.auth.mode,
+      auth: providerEntryBinding.auth,
     });
-    return providerEntryBinding.auth;
   }
   if (providerEntryBinding.kind === "profile-incompatible") {
     const reason =
@@ -1191,13 +1209,13 @@ export async function resolveApiKeyForProvider(params: {
           source: `profile:${resolvedProfileId}`,
           mode: resolvedMode,
         };
-        if (
-          !isAuthModeAllowedForModel({
-            provider,
-            modelApi: params.modelApi,
-            mode: result.mode,
-          })
-        ) {
+        const compatibleResult = resolveModelCompatibleAuth({
+          cfg,
+          provider,
+          modelApi: params.modelApi,
+          auth: result,
+        });
+        if (!compatibleResult) {
           continue;
         }
         if (
@@ -1211,7 +1229,7 @@ export async function resolveApiKeyForProvider(params: {
           deferredAuthProfileResult ??= result;
           continue;
         }
-        return result;
+        return compatibleResult;
       }
     } catch (err) {
       log.debug?.(`auth profile "${candidate}" failed for provider "${provider}": ${String(err)}`);
@@ -1223,19 +1241,18 @@ export async function resolveApiKeyForProvider(params: {
     const resolvedMode: ResolvedProviderAuth["mode"] = envResolved.source.includes("OAUTH_TOKEN")
       ? "oauth"
       : "api-key";
-    if (
-      isAuthModeAllowedForModel({
-        provider,
-        modelApi: params.modelApi,
-        mode: resolvedMode,
-      })
-    ) {
-      const result: ResolvedProviderAuth = {
+    const compatibleResult = resolveModelCompatibleAuth({
+      cfg,
+      provider,
+      modelApi: params.modelApi,
+      auth: {
         apiKey: envResolved.apiKey,
         source: envResolved.source,
         mode: resolvedMode,
-      };
-      return result;
+      },
+    });
+    if (compatibleResult) {
+      return compatibleResult;
     }
   }
 
@@ -1386,10 +1403,15 @@ export async function hasAvailableAuthForProvider(params: {
   const envAuth = resolveConfigAwareEnvApiKey(cfg, provider, params.workspaceDir);
   if (
     envAuth &&
-    isAuthModeAllowedForModel({
+    resolveModelCompatibleAuth({
+      cfg: params.cfg,
       provider,
       modelApi: params.modelApi,
-      mode: envAuth.source.includes("OAUTH_TOKEN") ? "oauth" : "api-key",
+      auth: {
+        apiKey: envAuth.apiKey,
+        source: envAuth.source,
+        mode: envAuth.source.includes("OAUTH_TOKEN") ? "oauth" : "api-key",
+      },
     })
   ) {
     return true;
@@ -1428,10 +1450,15 @@ export async function hasAvailableAuthForProvider(params: {
       const mode = resolved?.profileType ?? store.profiles[candidate]?.type;
       if (
         resolved &&
-        isAuthModeAllowedForModel({
+        resolveModelCompatibleAuth({
+          cfg,
           provider,
           modelApi: params.modelApi,
-          mode: mode ? profileTypeToAuthMode(mode) : "api-key",
+          auth: {
+            apiKey: resolved.apiKey,
+            source: `profile:${resolved.profileId ?? candidate}`,
+            mode: mode ? profileTypeToAuthMode(mode) : "api-key",
+          },
         })
       ) {
         return true;

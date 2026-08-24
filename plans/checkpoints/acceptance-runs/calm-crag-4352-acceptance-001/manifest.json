@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T14:08:56+00:00",
+    "implementingStartedAt": "2026-08-21T14:01:24+00:00",
+    "taskFile": "plans/tasks/2026-08-21_followup-calm-crag-4352-acceptance-fix-route-per-pipeline-deliberation-and-deliver-s.md",
+    "taskId": "calm-crag-4352",
+    "title": "[acceptance-fix] [acceptance-fix] Route per-pipeline deliberation and deliver source-default replies: goal-001: Route pe"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Route per-pipeline deliberation and deliver source-default replies: goal-001: Route pe"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-crag-4352-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-crag-4352",
+  "tddRequired": true
+}

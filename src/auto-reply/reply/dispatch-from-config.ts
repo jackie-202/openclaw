@@ -1778,7 +1778,51 @@ export async function dispatchReplyFromConfig(
     | "plugin-bound-fallback-no-handler"
     | undefined;
 
-  if (pluginOwnedBinding) {
+  const inboundEventPolicy =
+    inboundClaimEvent.provider && inboundClaimEvent.accountId && inboundClaimEvent.conversationId
+      ? hookRunner?.runInboundEventPolicy({
+          provider: inboundClaimEvent.provider,
+          accountId: inboundClaimEvent.accountId,
+          conversationId: inboundClaimEvent.conversationId,
+          parentConversationId: inboundClaimEvent.parentConversationId,
+          providerEventId: inboundClaimEvent.messageId,
+        })
+      : undefined;
+  const hasExclusiveInboundOwner = inboundEventPolicy?.kind === "exclusive";
+
+  if (inboundEventPolicy?.kind === "ambiguous") {
+    logVerbose("exclusive inbound source stopped: reason=ambiguous_owner");
+    markIdle("plugin_exclusive_claim");
+    recordProcessed("completed", { reason: "plugin-exclusive-ambiguous" });
+    commitInboundDedupeIfClaimed();
+    return attachSourceReplyDeliveryMode({
+      queuedFinal: false,
+      counts: dispatcher.getQueuedCounts(),
+    });
+  }
+
+  if (inboundEventPolicy?.kind === "exclusive") {
+    const ownerPluginId = inboundEventPolicy.ownerPluginId;
+    const targetedClaimOutcome = hookRunner?.runInboundClaimForPluginOutcome
+      ? await hookRunner.runInboundClaimForPluginOutcome(
+          ownerPluginId,
+          inboundClaimEvent,
+          inboundClaimContext,
+        )
+      : ({ status: "missing_plugin" } as const);
+    logVerbose(
+      `exclusive inbound source stopped: owner=${ownerPluginId} reason=${targetedClaimOutcome.status}`,
+    );
+    markIdle("plugin_exclusive_claim");
+    recordProcessed("completed", { reason: `plugin-exclusive-${targetedClaimOutcome.status}` });
+    commitInboundDedupeIfClaimed();
+    return attachSourceReplyDeliveryMode({
+      queuedFinal: false,
+      counts: dispatcher.getQueuedCounts(),
+    });
+  }
+
+  if (pluginOwnedBinding && !hasExclusiveInboundOwner) {
     if (isPreDispatchOperationAborted()) {
       return finishReplyOperationAbortedDispatch();
     }
@@ -1959,41 +2003,6 @@ export async function dispatchReplyFromConfig(
       throw new Error("abort runtime unavailable");
     }
     const fastAbort = await fastAbortResolver({ ctx, cfg });
-    if (fastAbort.handled) {
-      let queuedFinal = false;
-      let routedFinalCount = 0;
-      if (!suppressDelivery) {
-        const payload = {
-          text: formatAbortReplyTextResolver(fastAbort.stoppedSubagents),
-        } satisfies ReplyPayload;
-        const result = await routeReplyToOriginating(payload);
-        if (result) {
-          queuedFinal = result.ok;
-          if (isRoutedReplyDelivered(result)) {
-            routedFinalCount += 1;
-          }
-          if (!result.ok) {
-            logVerbose(
-              `dispatch-from-config: route-reply (abort) failed: ${result.error ?? "unknown error"}`,
-            );
-          }
-        } else {
-          markInboundDedupeReplayUnsafe();
-          queuedFinal = dispatcher.sendFinalReply(payload);
-        }
-      } else {
-        logVerbose(
-          `dispatch-from-config: fast_abort reply suppressed by ${deliverySuppressionReason} (session=${sessionKey ?? "unknown"})`,
-        );
-      }
-      const counts = dispatcher.getQueuedCounts();
-      counts.final += routedFinalCount;
-      recordProcessed("completed", { reason: "fast_abort" });
-      markIdle("message_completed");
-      commitInboundDedupeIfClaimed();
-      completeDispatchReplyOperation();
-      return attachSourceReplyDeliveryMode({ queuedFinal, counts });
-    }
     // Register the dispatch-owned operation before any plugin hook or model work
     // so /stop can abort pre-run and in-run stalls through the same session lane.
     if ((await ensureDispatchReplyOperation("pre_dispatch")).status === "busy") {
@@ -2160,6 +2169,7 @@ export async function dispatchReplyFromConfig(
               channelId: hookContext.channelId,
               accountId: hookContext.accountId,
               conversationId: inboundClaimContext.conversationId,
+              parentConversationId: inboundClaimContext.parentConversationId,
               sessionKey: sessionStoreEntry.sessionKey ?? sessionKey,
               senderId: hookContext.senderId,
               replyToId: hookContext.replyToId,
@@ -2189,6 +2199,42 @@ export async function dispatchReplyFromConfig(
         completeDispatchReplyOperation();
         return attachSourceReplyDeliveryMode({ queuedFinal, counts });
       }
+    }
+
+    if (fastAbort.handled) {
+      let queuedFinal = false;
+      let routedFinalCount = 0;
+      if (!suppressDelivery) {
+        const payload = {
+          text: formatAbortReplyTextResolver(fastAbort.stoppedSubagents),
+        } satisfies ReplyPayload;
+        const result = await routeReplyToOriginating(payload);
+        if (result) {
+          queuedFinal = result.ok;
+          if (isRoutedReplyDelivered(result)) {
+            routedFinalCount += 1;
+          }
+          if (!result.ok) {
+            logVerbose(
+              `dispatch-from-config: route-reply (abort) failed: ${result.error ?? "unknown error"}`,
+            );
+          }
+        } else {
+          markInboundDedupeReplayUnsafe();
+          queuedFinal = dispatcher.sendFinalReply(payload);
+        }
+      } else {
+        logVerbose(
+          `dispatch-from-config: fast_abort reply suppressed by ${deliverySuppressionReason} (session=${sessionKey ?? "unknown"})`,
+        );
+      }
+      const counts = dispatcher.getQueuedCounts();
+      counts.final += routedFinalCount;
+      recordProcessed("completed", { reason: "fast_abort" });
+      markIdle("message_completed");
+      commitInboundDedupeIfClaimed();
+      completeDispatchReplyOperation();
+      return attachSourceReplyDeliveryMode({ queuedFinal, counts });
     }
 
     if (hookRunner?.hasHooks("reply_dispatch")) {

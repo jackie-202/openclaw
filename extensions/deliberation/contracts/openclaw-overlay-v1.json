@@ -1,22 +1,100 @@
 {
   "name": "openclaw-deliberation-adapter-overlay",
   "protocolVersion": 1,
+  "producerIntakeExtension": {
+    "proposal": "proposal-20260820-203458-161e2c",
+    "owner": "openclaw-fork",
+    "kmAdoption": "adopted in the synchronized repository-local owner mirror: pipelineId and deliveryTarget persist through every delivery lifecycle projection",
+    "requiredFields": ["pipelineId", "deliveryTarget"],
+    "authority": "pipelineId and deliveryTarget come only from the selected configured pipeline and authenticated inbound source context; message content and model output have no routing authority",
+    "targetEquality": "exact deep equality from intake through lifecycle evidence",
+    "derivationVectors": {
+      "omittedDiscordRoot": {
+        "pipelineId": "discord-source",
+        "providerEventId": "discord-message-1",
+        "deliveryTarget": {
+          "provider": "discord",
+          "account": "account-a",
+          "channel": "source-channel",
+          "mode": "source_anchor",
+          "threadId": "discord-message-1"
+        }
+      },
+      "omittedDiscordChild": {
+        "pipelineId": "discord-source",
+        "providerEventId": "discord-message-2",
+        "sourceThreadId": "discord-thread-1",
+        "deliveryTarget": {
+          "provider": "discord",
+          "account": "account-a",
+          "channel": "source-channel",
+          "mode": "thread",
+          "threadId": "discord-thread-1"
+        }
+      },
+      "omittedSlackRoot": {
+        "pipelineId": "slack-source",
+        "providerEventId": "1723640000.000100",
+        "deliveryTarget": {
+          "provider": "slack",
+          "account": "workspace-a",
+          "channel": "C123",
+          "mode": "thread",
+          "threadId": "1723640000.000100"
+        }
+      },
+      "omittedSlackChild": {
+        "pipelineId": "slack-source",
+        "providerEventId": "1723640000.000200",
+        "sourceThreadId": "1723640000.000100",
+        "deliveryTarget": {
+          "provider": "slack",
+          "account": "workspace-a",
+          "channel": "C123",
+          "mode": "thread",
+          "threadId": "1723640000.000100"
+        }
+      },
+      "explicitRoot": {
+        "pipelineId": "cross-provider-root",
+        "deliveryTarget": {
+          "provider": "discord",
+          "account": "delivery-account",
+          "channel": "delivery-channel",
+          "mode": "root"
+        }
+      },
+      "explicitThread": {
+        "pipelineId": "cross-provider-thread",
+        "deliveryTarget": {
+          "provider": "discord",
+          "account": "delivery-account",
+          "channel": "delivery-channel",
+          "mode": "thread",
+          "threadId": "delivery-thread"
+        }
+      }
+    }
+  },
   "structuredDestinationVectors": {
     "threadedDiscord": {
       "provider": "discord",
       "account": "delivery-account",
       "channel": "delivery-channel",
+      "mode": "thread",
       "threadId": "delivery-thread"
     },
     "nonThreadedDiscord": {
       "provider": "discord",
       "account": "delivery-account",
-      "channel": "delivery-channel"
+      "channel": "delivery-channel",
+      "mode": "root"
     },
     "threadedSlack": {
       "provider": "slack",
       "account": "workspace-a",
       "channel": "C123",
+      "mode": "thread",
       "threadId": "1712345678.123456"
     },
     "lifecycle": [
@@ -39,7 +117,7 @@
     "slack": {
       "account": "OpenClaw workspace/account identifier",
       "channel": "OpenClaw channel identifier",
-      "threadId": "required Slack thread timestamp",
+      "threadId": "Slack thread timestamp, required only when mode is thread",
       "threadIdPattern": "^\\d+\\.\\d+$"
     }
   },

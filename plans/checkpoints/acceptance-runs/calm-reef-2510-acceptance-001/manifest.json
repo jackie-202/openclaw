@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T13:52:58+00:00",
+    "implementingStartedAt": "2026-08-21T13:15:04+00:00",
+    "taskFile": "plans/tasks/2026-08-21_followup-calm-reef-2510-route-per-pipeline-deliberation-and-deliver-source-default-r.md",
+    "taskId": "calm-reef-2510",
+    "title": "[acceptance-fix] Route per-pipeline deliberation and deliver source-default replies: goal-001: Route per-pipeline delibe"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Route per-pipeline deliberation and deliver source-default replies: goal-001: Route per-pipeline delibe"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-reef-2510-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-reef-2510",
+  "tddRequired": true
+}

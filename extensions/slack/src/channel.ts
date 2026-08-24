@@ -5,6 +5,7 @@ import {
   createFlatAllowlistOverrideResolver,
 } from "openclaw/plugin-sdk/allowlist-config-edit";
 import { adaptScopedAccountAccessor } from "openclaw/plugin-sdk/channel-config-helpers";
+import type { ChannelOutboundContext } from "openclaw/plugin-sdk/channel-contract";
 import {
   buildThreadAwareOutboundSessionRoute,
   createChatChannelPlugin,
@@ -169,6 +170,17 @@ function getTokenForOperation(
     return botToken;
   }
   return botToken ?? userToken;
+}
+
+function resolveSlackAttemptIdentity(identity?: ChannelOutboundContext["identity"]) {
+  if (!identity) {
+    return undefined;
+  }
+  const username = normalizeOptionalString(identity.name);
+  const iconUrl = normalizeOptionalString(identity.avatarUrl);
+  const rawEmoji = normalizeOptionalString(identity.emoji);
+  const iconEmoji = !iconUrl && rawEmoji && /^:[^:\s]+:$/.test(rawEmoji) ? rawEmoji : undefined;
+  return username || iconUrl || iconEmoji ? { username, iconUrl, iconEmoji } : undefined;
 }
 
 type SlackSendFn = typeof import("./send.runtime.js").sendMessageSlack;
@@ -418,7 +430,7 @@ const resolveSlackAllowlistNames = createAccountScopedAllowlistNameResolver({
     (await loadSlackResolveUsersModule()).resolveSlackUserAllowlist({ token, entries }),
 });
 
-const slackChannelOutbound: ChannelOutboundAdapter = {
+const slackChannelOutbound = {
   deliveryMode: "direct",
   chunker: null,
   textChunkLimit: SLACK_TEXT_LIMIT,
@@ -443,6 +455,33 @@ const slackChannelOutbound: ChannelOutboundAdapter = {
       accountId,
       payload,
     }),
+  sendTextAttempt: async ({
+    cfg,
+    to,
+    text,
+    accountId,
+    replyToId,
+    threadId,
+    identity,
+    idempotencyKey,
+    sourceMessageId,
+  }) => {
+    const account = resolveSlackAccount({ cfg, accountId });
+    const token = getTokenForOperation(account, "write");
+    const threadTs = resolveSlackThreadTsValue({ replyToId, threadId });
+    const slackIdentity = resolveSlackAttemptIdentity(identity);
+    return await (
+      await loadSlackSendRuntime()
+    ).sendMessageSlackAttempt(to, text, {
+      cfg,
+      idempotencyKey,
+      accountId: accountId ?? undefined,
+      ...(sourceMessageId ? { sourceMessageId } : {}),
+      ...(slackIdentity ? { identity: slackIdentity } : {}),
+      ...(token ? { token } : {}),
+      ...(threadTs ? { threadTs } : {}),
+    });
+  },
   sendPayload: async (ctx) => {
     const { send, threadTsValue, tokenOverride } = await resolveSlackSendContext({
       cfg: ctx.cfg,
@@ -515,7 +554,7 @@ const slackChannelOutbound: ChannelOutboundAdapter = {
       });
     },
   }),
-};
+} satisfies ChannelOutboundAdapter;
 
 const slackMessageAdapter = createChannelMessageAdapterFromOutbound({
   id: "slack",

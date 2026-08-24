@@ -1,5 +1,8 @@
 // Discord type declarations define plugin contracts.
-import type { InboundEventKind } from "openclaw/plugin-sdk/channel-inbound";
+import type {
+  ChannelInboundEventPolicyDecision,
+  InboundEventKind,
+} from "openclaw/plugin-sdk/channel-inbound";
 import type { ChannelBotLoopProtectionFacts } from "openclaw/plugin-sdk/channel-inbound";
 import type { OpenClawConfig, ReplyToMode } from "openclaw/plugin-sdk/config-contracts";
 import type { SessionBindingRecord } from "openclaw/plugin-sdk/conversation-runtime";
@@ -59,6 +62,7 @@ export type DiscordMessagePreflightContext = DiscordMessagePreflightSharedFields
   commandAuthorized: boolean;
   baseText: string;
   messageText: string;
+  systemEventText?: string;
   preflightAudioTranscript?: string;
   wasMentioned: boolean;
 
@@ -93,6 +97,7 @@ export type DiscordMessagePreflightContext = DiscordMessagePreflightSharedFields
   shouldBypassMention: boolean;
   effectiveWasMentioned: boolean;
   inboundEventKind: InboundEventKind;
+  inboundEventPolicy: ChannelInboundEventPolicyDecision;
   canDetectMention: boolean;
 
   historyEntry?: HistoryEntry;

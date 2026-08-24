@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T17:22:17+00:00",
+    "implementingStartedAt": "2026-08-23T17:15:27+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-dark-mist-2854-converge-openclaw-deliberation-with-canonical-km-owner-and-c.md",
+    "taskId": "dark-mist-2854",
+    "title": "[acceptance-fix] Converge OpenClaw Deliberation with canonical KM owner and cross-repository gate: goal-001: Converge Op"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Converge OpenClaw Deliberation with canonical KM owner and cross-repository gate: goal-001: Converge Op"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-2854-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-mist-2854",
+  "tddRequired": true
+}

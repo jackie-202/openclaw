@@ -1,0 +1,49 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T00:30:48+00:00",
+    "implementingStartedAt": "2026-08-23T00:10:50+00:00",
+    "taskFile": "plans/tasks/2026-08-22_deliberation-track-and-verify-doctor-migration-artifact.md",
+    "taskId": "cool-reef-8673",
+    "title": "RED-GREEN: ship and verify the doctor migration artifact"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A temporary legacy config migrates deterministically to canonical `pipelines[]`."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Mixed legacy/new authority is rejected rather than guessed."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Re-running `doctor --fix` is idempotent."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Canonical startup/config validation succeeds on the migrated temporary config."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Invalid duplicate routes and impossible thread inheritance remain rejected."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Tests execute through the built/package CLI, not only imported source helpers."
+    },
+    {
+      "id": "goal-007",
+      "summary": "No live config is read or modified by tests."
+    },
+    {
+      "id": "goal-008",
+      "summary": "Build, focused doctor/config suites, packaging check, lint, and canonical Test Gate pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-reef-8673-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-reef-8673",
+  "tddRequired": true
+}

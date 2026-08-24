@@ -1,0 +1,50 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required canonical OR-01 through OR-23 full-gate JSON artifact is absent from the caller-supplied review material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied final note, checkpoint, and rollout-readiness document assert that plans/checkpoints/bright-fork-2292.full-gate.json exists and has a particular hash, but the artifact itself was not supplied; therefore its exact ordered unique 23 Green rows, immutable revision and authority bindings, candidate digest integrity, support results, and final schema cannot be inspected.",
+      "policyRule": "catalog:required_artifact_missing:blocking",
+      "rationale": "Goal-001 specifically requires the canonical full-gate JSON as a deliverable produced by one successful canonical run. Assertions and derived documents cannot substitute for reviewing that required artifact under the caller's review-only-supplied-material constraint.",
+      "required": "Supply plans/checkpoints/bright-fork-2292.full-gate.json as acceptance material, preserving the generator-produced bytes, so its ordered OR-01 through OR-23 Green results and required integrity bindings can be assessed.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-fork-2292.final-note.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-vale-0083.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.rollout-readiness.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-24_followup-calm-vale-0083-acceptance-fix-establish-canonical-deliberation-or-01-throug.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Establish canonical Deliberation OR-01 through OR-23 gate: goal-001: Establish canonic"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-vale-0083-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "calm-vale-0083"
+}

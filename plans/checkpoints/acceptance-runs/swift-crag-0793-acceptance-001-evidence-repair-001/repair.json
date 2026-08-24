@@ -1,0 +1,51 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/swift-crag-0793.evidence.md",
+      "provenance": "evidence_repair:swift-crag-0793-acceptance-001-evidence-repair-001",
+      "size": 1451
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/swift-crag-0793.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/swift-crag-0793-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "90eeb86db1e74fc6048a641a5095cdd4b665d72c",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-19T17:31:10.684289+00:00",
+  "gaps": [
+    "command_lines_truncated",
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "pnpm vitest run extensions/deliberation",
+      "outcome": "Test Files  12 passed (12)"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/save-learning/add-frontmatter.py\" --title \"Acceptance: run the exact requested suite afresh\" --category \"tooling\" --component \"ci-cd\" --tags \"acceptance,",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/recall-knowledge/scripts/search.py\" \"deliberation Discord optional sourceThreadId stale test Vitest\" --project-root .",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/save-learning/add-frontmatter.py\" --title \"Discord intake fixtures separate message and thread identities\" --category \"test-failures\" --component \"toolin",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "pnpm vitest run extensions/deliberation",
+      "outcome": "Test Files  12 passed (12)"
+    }
+  ],
+  "repairRunId": "swift-crag-0793-acceptance-001-evidence-repair-001",
+  "sourceRunId": "swift-crag-0793-acceptance-001",
+  "startedAt": "2026-08-19T17:31:02.634577+00:00",
+  "status": "escalated"
+}

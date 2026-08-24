@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The required canonical Test Gate pass is not evidenced.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller-supplied canonical Test Gate status is 'not run' with no Test Gate evidence, and the supplied warm-fork-8061 gate artifact is BLOCKED before runner allocation and states that npm test did not execute.",
+      "rationale": "This evidence-only acceptance-fix goal exists specifically to provide the missing caller-owned canonical npm test pass. Historical focused suites, build, package checks, and RED/GREEN proof do not substitute for the absent canonical run reference and passing result.",
+      "required": "Run npm test through the caller-owned canonical Test Gate infrastructure against the preserved implementation and supply a durable provider/run reference with a passing result.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical Test Gate reference: not run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-fork-8061.test-gate.md:1-53"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-fork-8061.checkpoint.md:1-10"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] RED-GREEN: ship and verify the doctor migration artifact: goal-008: Build, focused doc"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-fork-8061-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-fork-8061"
+}

@@ -9,9 +9,11 @@ import {
   shouldAckReaction as shouldAckReactionGate,
 } from "openclaw/plugin-sdk/channel-feedback";
 import {
+  claimChannelInboundEvent,
   dispatchChannelInboundReply,
   hasFinalInboundReplyDispatch,
   recordChannelBotPairLoopAndCheckSuppression,
+  resolveChannelInboundEventPolicy,
 } from "openclaw/plugin-sdk/channel-inbound";
 import {
   createChannelMessageReplyPipeline,
@@ -47,6 +49,7 @@ import {
   resolveSessionStoreEntry,
   resolveStorePath,
 } from "openclaw/plugin-sdk/session-store-runtime";
+import { enqueueSystemEvent } from "openclaw/plugin-sdk/system-event-runtime";
 import { resolveDiscordAccount, resolveDiscordMaxLinesPerMessage } from "../accounts.js";
 import { createDiscordRestClient } from "../client.js";
 import { beginDiscordInboundEventDeliveryCorrelation } from "../inbound-event-delivery.js";
@@ -64,6 +67,7 @@ import {
   createDiscordAckReactionContext,
   queueInitialDiscordAckReaction,
 } from "./ack-reactions.js";
+import { resolveTimestampMs } from "./format.js";
 import { buildDiscordMessageProcessContext } from "./message-handler.context.js";
 import { createDiscordDraftPreviewController } from "./message-handler.draft-preview.js";
 import type { DiscordMessagePreflightContext } from "./message-handler.preflight.js";
@@ -199,6 +203,61 @@ async function processDiscordMessageInner(
   if (isProcessAborted(abortSignal)) {
     return;
   }
+  const inboundEventPolicy =
+    ctx.inboundEventPolicy ??
+    resolveChannelInboundEventPolicy({
+      provider: "discord",
+      accountId,
+      conversationId: messageChannelId,
+      parentConversationId: ctx.threadParentId,
+      providerEventId: message.id,
+    });
+  const claimResult = await claimChannelInboundEvent({
+    policy: inboundEventPolicy,
+    event: {
+      content: ctx.systemEventText ?? ctx.preflightAudioTranscript ?? ctx.baseText ?? messageText,
+      body: ctx.baseText,
+      bodyForAgent: messageText,
+      transcript: ctx.preflightAudioTranscript,
+      timestamp: resolveTimestampMs(message.timestamp),
+      channel: "discord",
+      provider: "discord",
+      eventType: "message",
+      eventKind: ctx.inboundEventKind,
+      accountId,
+      conversationId: messageChannelId,
+      parentConversationId: ctx.threadParentId,
+      senderId: ctx.sender.id ?? ctx.author.id,
+      senderName: ctx.sender.label,
+      senderUsername: ctx.author.username,
+      threadId: ctx.threadChannel?.id,
+      messageId: message.id,
+      sessionKey: route.sessionKey,
+      isGroup: isGuildMessage || isGroupDm,
+      commandAuthorized: ctx.commandAuthorized,
+      wasMentioned: ctx.effectiveWasMentioned,
+    },
+    context: {
+      channelId: "discord",
+      accountId,
+      conversationId: messageChannelId,
+      parentConversationId: ctx.threadParentId,
+      sessionKey: route.sessionKey,
+      senderId: ctx.sender.id ?? ctx.author.id,
+      messageId: message.id,
+    },
+    log: logVerbose,
+  });
+  if (claimResult.kind === "terminal") {
+    return;
+  }
+  if (ctx.systemEventText) {
+    enqueueSystemEvent(ctx.systemEventText, {
+      sessionKey: route.sessionKey,
+      contextKey: `discord:system:${messageChannelId}:${message.id}`,
+    });
+    return;
+  }
   if (botLoopProtection) {
     const botLoopResult = recordChannelBotPairLoopAndCheckSuppression(botLoopProtection);
     if (botLoopResult.suppressed) {
@@ -208,7 +267,6 @@ async function processDiscordMessageInner(
       return;
     }
   }
-
   const ssrfPolicy = cfg.browser?.ssrfPolicy;
   const mediaResolveOptions = {
     fetchImpl: discordRestFetch,

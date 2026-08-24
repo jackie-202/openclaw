@@ -8,7 +8,12 @@ import { createKmClient, type KmReadyItem, type KmReservation } from "./km-clien
 const rawConfig = {
   enabled: true,
   failClosed: true,
-  sources: [{ channel: "discord", accountId: "1", target: "2" }],
+  pipelines: [
+    {
+      id: "discord-source",
+      source: { channel: "discord", accountId: "1", target: "2" },
+    },
+  ],
   processingSource: { channel: "discord", accountId: "1", target: "3" },
   km: {
     endpoint: "https://km.invalid",
@@ -20,36 +25,73 @@ const rawConfig = {
 
 const config = parseDeliberationConfig(rawConfig);
 
+const producerAuthority = {
+  pipelineId: "discord-source",
+  deliveryTarget: {
+    provider: "discord",
+    account: "1",
+    channel: "2",
+    threadId: "message-1",
+  },
+} as const;
+
 const deliveryTarget = {
   provider: "discord" as const,
   accountId: "account-1",
   channelId: "channel-1",
+  mode: "root" as const,
 };
 
 const slackDeliveryTarget = {
   provider: "slack" as const,
   accountId: "workspace-delivery",
   channelId: "C456",
+  mode: "thread" as const,
   threadId: "1770000000.000001",
 };
 
 const configWithDeliveryTarget = parseDeliberationConfig({
   ...rawConfig,
-  deliveryTarget: {
-    provider: "discord",
-    accountId: "account-2",
-    channelId: "channel-2",
-    threadId: "thread-2",
-  },
+  pipelines: [
+    {
+      ...rawConfig.pipelines[0],
+      target: {
+        channel: "discord",
+        accountId: "account-2",
+        target: "channel-2",
+        threadId: "thread-2",
+      },
+    },
+  ],
 });
 
 function createClient(response: unknown) {
+  const normalized =
+    response && typeof response === "object" && "record" in response
+      ? {
+          ...response,
+          record: {
+            pipelineId: "discord-source",
+            deliveryTarget: {
+              provider: "discord",
+              account: "account-1",
+              channel: "channel-1",
+            },
+            sourceSequence: 1,
+            ...(response.record as Record<string, unknown>),
+          },
+        }
+      : response;
   return createKmClient({
     config,
     openclawConfig: {} as never,
-    fetchImpl: vi.fn().mockResolvedValue(new Response(JSON.stringify(response), { status: 200 })),
+    fetchImpl: vi.fn().mockResolvedValue(new Response(JSON.stringify(normalized), { status: 200 })),
     env: { KM_TOKEN: "test-only" },
   });
+}
+
+function requestUrl(input: string | URL | Request): URL {
+  return new URL(input instanceof Request ? input.url : input);
 }
 
 function validHealthResponse() {
@@ -99,6 +141,7 @@ function validDeliveryEnvelope(
 ) {
   return {
     schemaVersion: 1,
+    pipelineId: "discord-source",
     sourceTarget,
     deliveryTarget: {
       provider: target.provider,
@@ -123,6 +166,8 @@ function validReadyItem(
 ): KmReadyItem {
   return {
     recordId: "record-1",
+    pipelineId: "discord-source",
+    deliveryTarget: validDeliveryEnvelope(target, sourceTarget).deliveryTarget,
     version: 7,
     text: "reviewed reply",
     candidateRevision: 1,
@@ -160,6 +205,14 @@ function validReservation(
 function validWireReservation(): Omit<KmReservation, "reserveIdempotencyKey"> {
   const { reserveIdempotencyKey: _, ...reservation } = validReservation();
   return reservation;
+}
+
+function validRecordAuthority(target: KmDeliveryTarget = deliveryTarget) {
+  return {
+    pipelineId: "discord-source",
+    deliveryTarget: validDeliveryEnvelope(target).deliveryTarget,
+    sourceSequence: 1,
+  };
 }
 
 function validTerminalAttempt(
@@ -227,6 +280,7 @@ describe("KM contract parsing", () => {
     });
 
     await client.intake({
+      ...producerAuthority,
       provider: "discord",
       providerEventId: "message-1",
       sourceTarget: "v1:discord:account-1:channel-1",
@@ -239,6 +293,8 @@ describe("KM contract parsing", () => {
 
     const body = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body)) as Record<string, unknown>;
     expect(body.sourceThreadId).toBe("message-1");
+    expect(body.pipelineId).toBe("discord-source");
+    expect(body.deliveryTarget).toStrictEqual(producerAuthority.deliveryTarget);
     expect(body).not.toHaveProperty("source_thread_id");
   });
 
@@ -305,6 +361,7 @@ describe("KM contract parsing", () => {
 
     await expect(
       client.intake({
+        ...producerAuthority,
         provider: "discord",
         providerEventId: "message-1",
         sourceTarget: "discord:channel:source",
@@ -328,6 +385,7 @@ describe("KM contract parsing", () => {
 
     await expect(
       client.intake({
+        ...producerAuthority,
         provider: "discord",
         providerEventId: "message-1",
         sourceTarget: "v1:discord:account-1:channel-1",
@@ -338,90 +396,72 @@ describe("KM contract parsing", () => {
         content: "message",
         debounceSeconds: 17,
       } as never),
-    ).rejects.toThrow("debounceSeconds");
+    ).rejects.toThrow("unsupported fields");
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it.each([
-    [config, undefined],
-    [
-      configWithDeliveryTarget,
-      {
-        provider: "discord",
-        account: "account-2",
-        channel: "channel-2",
-        threadId: "thread-2",
-      },
-    ],
-  ] as const)(
-    "injects only the configured delivery target at the durable reservation boundary",
-    async (clientConfig, expected) => {
-      const fetchImpl = vi.fn().mockImplementation((input: string | URL | Request) => {
-        const reservation = new URL(String(input)).pathname.endsWith("/reservations");
-        return Promise.resolve(
-          new Response(
-            JSON.stringify(
-              reservation
-                ? {
-                    protocolVersion: 1,
-                    reservation: {
-                      ...validWireReservation(),
-                      deliveryEnvelope: {
-                        ...validWireReservation().deliveryEnvelope,
-                        deliveryTarget:
-                          expected ?? validWireReservation().deliveryEnvelope.deliveryTarget,
-                      },
-                    },
-                  }
-                : {
-                    protocolVersion: 1,
-                    recordId: "record-1",
-                    inboundId: "inbound-1",
-                    duplicate: false,
+  it("serializes producer authority at intake without a reservation-time target override", async () => {
+    const fetchImpl = vi.fn().mockImplementation((input: string | URL | Request) => {
+      const reservation = requestUrl(input).pathname.endsWith("/reservations");
+      return Promise.resolve(
+        new Response(
+          JSON.stringify(
+            reservation
+              ? {
+                  protocolVersion: 1,
+                  reservation: {
+                    ...validWireReservation(),
                   },
-            ),
-            { status: reservation ? 201 : 200 },
+                }
+              : {
+                  protocolVersion: 1,
+                  recordId: "record-1",
+                  inboundId: "inbound-1",
+                  duplicate: false,
+                },
           ),
-        );
-      });
-      const client = createKmClient({
-        config: clientConfig,
-        openclawConfig: {} as never,
-        fetchImpl,
-        env: { KM_TOKEN: "test-only" },
-      });
+          { status: reservation ? 201 : 200 },
+        ),
+      );
+    });
+    const client = createKmClient({
+      config: configWithDeliveryTarget,
+      openclawConfig: {} as never,
+      fetchImpl,
+      env: { KM_TOKEN: "test-only" },
+    });
 
-      await client.intake({
-        provider: "discord",
-        providerEventId: "message-1",
-        sourceTarget: "v1:discord:account-1:channel-1",
-        sourceThreadId: "message-1",
-        senderId: "sender-1",
-        occurredAt: "2026-08-04T12:50:19.483Z",
-        receivedAt: "2026-08-04T12:50:21.838Z",
-        content: "message",
-      });
-      await client.reserve(validReadyItem(), "sender-1");
+    await client.intake({
+      ...producerAuthority,
+      provider: "discord",
+      providerEventId: "message-1",
+      sourceTarget: "v1:discord:account-1:channel-1",
+      sourceThreadId: "message-1",
+      senderId: "sender-1",
+      occurredAt: "2026-08-04T12:50:19.483Z",
+      receivedAt: "2026-08-04T12:50:21.838Z",
+      content: "message",
+    });
+    await client.reserve(validReadyItem(), "sender-1");
 
-      const intakeBody = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body)) as Record<
-        string,
-        unknown
-      >;
-      const reservationBody = JSON.parse(String(fetchImpl.mock.calls[1]?.[1]?.body)) as Record<
-        string,
-        unknown
-      >;
-      expect(intakeBody).not.toHaveProperty("deliveryTarget");
-      expect(reservationBody.deliveryTarget).toStrictEqual(expected);
-    },
-  );
+    const intakeBody = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body)) as Record<
+      string,
+      unknown
+    >;
+    const reservationBody = JSON.parse(String(fetchImpl.mock.calls[1]?.[1]?.body)) as Record<
+      string,
+      unknown
+    >;
+    expect(intakeBody).toMatchObject(producerAuthority);
+    expect(reservationBody).not.toHaveProperty("deliveryTarget");
+  });
 
   it("binds an exact Slack target and provider receipt through the KM lifecycle", async () => {
     const sourceTarget = "v1:discord:account-1:channel-1";
     const item = validReadyItem(slackDeliveryTarget, sourceTarget);
     const reservation = validReservation(slackDeliveryTarget, sourceTarget);
     const fetchImpl = vi.fn(async (input: string | URL | Request, _init?: RequestInit) => {
-      const path = new URL(String(input)).pathname;
+      const path = requestUrl(input).pathname;
       const body = path.endsWith("/ready")
         ? {
             protocolVersion: 1,
@@ -457,6 +497,7 @@ describe("KM contract parsing", () => {
             : {
                 protocolVersion: 1,
                 record: {
+                  ...validRecordAuthority(slackDeliveryTarget),
                   recordId: reservation.recordId,
                   state: "SENT",
                   version: 9,
@@ -481,14 +522,9 @@ describe("KM contract parsing", () => {
     if (reserved.outcome !== "reserved") {
       throw new Error("expected successful Slack reservation fixture");
     }
-    await client.invoke(
-      reserved.reservation,
-      reservation.deliveryEnvelope.deliveryTarget,
-      "provider-1",
-    );
+    await client.invoke(reserved.reservation, "provider-1");
     await client.completeDelivery({
       reservation: reserved.reservation,
-      attemptedTarget: reservation.deliveryEnvelope.deliveryTarget,
       providerAttemptId: "provider-1",
       outcome: "SENT",
       providerReceiptId: "receipt-1",
@@ -532,6 +568,7 @@ describe("KM contract parsing", () => {
         JSON.stringify({
           protocolVersion: 1,
           record: {
+            ...validRecordAuthority(slackDeliveryTarget),
             recordId: reservation.recordId,
             state: "FAILED",
             version: 9,
@@ -550,7 +587,6 @@ describe("KM contract parsing", () => {
 
     await client.completeDelivery({
       reservation,
-      attemptedTarget: reservation.deliveryEnvelope.deliveryTarget,
       providerAttemptId: "provider-1",
       outcome: "FAILED",
       providerFailureClass: "rate_limit",
@@ -580,7 +616,6 @@ describe("KM contract parsing", () => {
     await expect(
       client.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "SENT",
         providerReceiptId: "receipt-1",
@@ -589,7 +624,7 @@ describe("KM contract parsing", () => {
     ).rejects.toThrow("terminal reason that contradicts the delivery outcome");
   });
 
-  it("rejects caller-selected delivery targets before transport", async () => {
+  it("rejects unrelated caller-controlled intake fields before transport", async () => {
     const fetchImpl = vi.fn();
     const client = createKmClient({
       config: configWithDeliveryTarget,
@@ -600,6 +635,7 @@ describe("KM contract parsing", () => {
 
     await expect(
       client.intake({
+        ...producerAuthority,
         provider: "discord",
         providerEventId: "message-1",
         sourceTarget: "v1:discord:account-1:channel-1",
@@ -608,13 +644,9 @@ describe("KM contract parsing", () => {
         occurredAt: "2026-08-04T12:50:19.483Z",
         receivedAt: "2026-08-04T12:50:21.838Z",
         content: "message",
-        deliveryTarget: {
-          provider: "discord",
-          accountId: "attacker",
-          channelId: "channel",
-        },
+        modelSelectedPipelineId: "attacker",
       } as never),
-    ).rejects.toThrow("deliveryTarget");
+    ).rejects.toThrow("unsupported fields");
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -767,7 +799,7 @@ describe("KM contract parsing", () => {
 
   it("uses only the six canonical endpoint paths", async () => {
     const fetchImpl = vi.fn(async (input: string | URL | Request) => {
-      const path = new URL(String(input)).pathname;
+      const path = requestUrl(input).pathname;
       const body =
         path === "/deliberation/v1/health"
           ? validHealthResponse()
@@ -801,6 +833,7 @@ describe("KM contract parsing", () => {
                   : {
                       protocolVersion: 1,
                       record: {
+                        ...validRecordAuthority(),
                         recordId: "record-1",
                         state: "FAILED",
                         version: 9,
@@ -822,6 +855,7 @@ describe("KM contract parsing", () => {
     await client.health();
     await client.ready();
     await client.intake({
+      ...producerAuthority,
       provider: "discord",
       providerEventId: "message-1",
       sourceTarget: "acct:target",
@@ -835,21 +869,16 @@ describe("KM contract parsing", () => {
     if (reservation.outcome !== "reserved") {
       throw new Error("expected successful reservation fixture");
     }
-    await client.invoke(
-      reservation.reservation,
-      reservation.reservation.deliveryEnvelope.deliveryTarget,
-      "provider-1",
-    );
+    await client.invoke(reservation.reservation, "provider-1");
     await client.completeDelivery({
       reservation: reservation.reservation,
-      attemptedTarget: reservation.reservation.deliveryEnvelope.deliveryTarget,
       providerAttemptId: "provider-1",
       outcome: "FAILED",
       providerFailureClass: "rejection",
       providerEvidence: { code: "rejected" },
     });
 
-    expect(fetchImpl.mock.calls.map(([input]) => new URL(String(input)).pathname)).toEqual([
+    expect(fetchImpl.mock.calls.map(([input]) => requestUrl(input).pathname)).toEqual([
       "/deliberation/v1/health",
       "/deliberation/v1/ready",
       "/deliberation/v1/intake",
@@ -864,16 +893,12 @@ describe("KM contract parsing", () => {
   it("rejects a successful response without closed durable invocation evidence", async () => {
     const client = createClient({ protocolVersion: 1, invocation: {} });
 
-    await expect(
-      client.invoke(
-        validReservation(),
-        validReservation().deliveryEnvelope.deliveryTarget,
-        "provider-1",
-      ),
-    ).rejects.toThrow("invalid invocation response");
+    await expect(client.invoke(validReservation(), "provider-1")).rejects.toThrow(
+      "invalid invocation response",
+    );
   });
 
-  it("rejects invocation evidence whose envelope differs from the reservation", async () => {
+  it("rejects invocation evidence whose immutable pipeline differs from the reservation", async () => {
     const reservation = validReservation();
     const client = createClient({
       protocolVersion: 1,
@@ -882,7 +907,7 @@ describe("KM contract parsing", () => {
         attemptId: reservation.attemptId,
         deliveryEnvelope: {
           ...reservation.deliveryEnvelope,
-          sourceTarget: "v1:discord:other:source",
+          pipelineId: "other-pipeline",
         },
         attemptedTarget: reservation.deliveryEnvelope.deliveryTarget,
         invocationIdempotencyKey: `invoke:${reservation.attemptId}`,
@@ -891,9 +916,9 @@ describe("KM contract parsing", () => {
       },
     });
 
-    await expect(
-      client.invoke(reservation, reservation.deliveryEnvelope.deliveryTarget, "provider-1"),
-    ).rejects.toThrow("mismatched invocation evidence");
+    await expect(client.invoke(reservation, "provider-1")).rejects.toThrow(
+      "mismatched invocation evidence",
+    );
   });
 
   it("rejects invocation evidence whose attempted target drifts", async () => {
@@ -914,9 +939,9 @@ describe("KM contract parsing", () => {
       },
     });
 
-    await expect(
-      client.invoke(reservation, reservation.deliveryEnvelope.deliveryTarget, "provider-1"),
-    ).rejects.toThrow("mismatched invocation evidence");
+    await expect(client.invoke(reservation, "provider-1")).rejects.toThrow(
+      "mismatched invocation evidence",
+    );
   });
 
   it("rejects completion evidence that does not belong to the reservation", async () => {
@@ -933,7 +958,6 @@ describe("KM contract parsing", () => {
     await expect(
       client.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "SENT",
         providerReceiptId: "receipt-1",
@@ -957,13 +981,272 @@ describe("KM contract parsing", () => {
     await expect(
       client.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "SENT",
         providerReceiptId: "receipt-1",
         providerMessageId: "message-1",
       }),
-    ).rejects.toThrow("mismatched completion evidence");
+    ).rejects.toThrow(/mismatched completion evidence|strict ordinal order/);
+  });
+
+  it.each([
+    { field: "ordinal", value: 2 },
+    { field: "reservedRecordVersion", value: 8 },
+  ] as const)("rejects completion evidence with another $field", async ({ field, value }) => {
+    const client = createClient({
+      protocolVersion: 1,
+      record: {
+        recordId: "record-1",
+        state: "SENT",
+        version: 9,
+        delivery: { attempts: [{ ...validTerminalAttempt(), [field]: value }] },
+      },
+    });
+
+    await expect(
+      client.completeDelivery({
+        reservation: validReservation(),
+        providerAttemptId: "provider-1",
+        outcome: "SENT",
+        providerReceiptId: "receipt-1",
+        providerMessageId: "message-1",
+      }),
+    ).rejects.toThrow(/mismatched completion evidence|strict ordinal order/);
+  });
+
+  it("accepts an exact completion replay", async () => {
+    const client = createClient({
+      protocolVersion: 1,
+      record: {
+        recordId: "record-1",
+        state: "SENT",
+        version: 9,
+        delivery: { attempts: [validTerminalAttempt()] },
+      },
+    });
+
+    await expect(
+      client.completeDelivery({
+        reservation: validReservation(),
+        providerAttemptId: "provider-1",
+        outcome: "SENT",
+        providerReceiptId: "receipt-1",
+        providerMessageId: "message-1",
+      }),
+    ).resolves.toMatchObject({ state: "SENT" });
+  });
+
+  it.each([
+    {
+      name: "attempt ID",
+      attempts: [validTerminalAttempt(), { ...validTerminalAttempt(), ordinal: 2 }],
+    },
+    {
+      name: "provider-attempt ID",
+      attempts: [
+        { ...validTerminalAttempt(), attemptId: "historical-attempt" },
+        { ...validTerminalAttempt(), ordinal: 2 },
+      ],
+    },
+  ])("rejects duplicate $name completion evidence", async ({ attempts }) => {
+    const client = createClient({
+      protocolVersion: 1,
+      record: {
+        recordId: "record-1",
+        state: "SENT",
+        version: 9,
+        delivery: { attempts },
+      },
+    });
+
+    await expect(
+      client.completeDelivery({
+        reservation: validReservation(),
+        providerAttemptId: "provider-1",
+        outcome: "SENT",
+        providerReceiptId: "receipt-1",
+        providerMessageId: "message-1",
+      }),
+    ).rejects.toThrow(/duplicate delivery attempt identity|unauthorized delivery retry/);
+  });
+
+  it("preserves a completion CAS conflict as an HTTP error", async () => {
+    const client = createKmClient({
+      config,
+      openclawConfig: {} as never,
+      fetchImpl: vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            protocolVersion: 1,
+            error: { code: "CAS_CONFLICT", message: "completion evidence differs" },
+          }),
+          { status: 409 },
+        ),
+      ),
+      env: { KM_TOKEN: "test-only" },
+    });
+
+    await expect(
+      client.completeDelivery({
+        reservation: validReservation(),
+        providerAttemptId: "provider-1",
+        outcome: "SENT",
+        providerReceiptId: "receipt-1",
+        providerMessageId: "message-1",
+      }),
+    ).rejects.toMatchObject({ stage: "http", status: 409, code: "CAS_CONFLICT" });
+  });
+
+  it("rejects receipt evidence that differs from the submitted message pair", async () => {
+    const client = createClient({
+      protocolVersion: 1,
+      record: {
+        recordId: "record-1",
+        state: "SENT",
+        version: 9,
+        delivery: {
+          attempts: [{ ...validTerminalAttempt(), providerReceiptId: "other-receipt" }],
+        },
+      },
+    });
+
+    await expect(
+      client.completeDelivery({
+        reservation: validReservation(),
+        providerAttemptId: "provider-1",
+        outcome: "SENT",
+        providerReceiptId: "receipt-1",
+        providerMessageId: "message-1",
+      }),
+    ).rejects.toThrow("mismatched provider receipt evidence");
+  });
+
+  it.each(["providerReceiptId", "providerMessageId"] as const)(
+    "rejects FAILED completion carrying a non-null %s",
+    async (field) => {
+      const client = createClient({
+        protocolVersion: 1,
+        record: {
+          recordId: "record-1",
+          state: "FAILED",
+          version: 9,
+          delivery: { attempts: [{ ...validFailedAttempt(), [field]: "message-1" }] },
+        },
+      });
+
+      await expect(
+        client.completeDelivery({
+          reservation: validReservation(),
+          providerAttemptId: "provider-1",
+          outcome: "FAILED",
+          providerFailureClass: "rejection",
+          providerEvidence: { code: "rejected" },
+        }),
+      ).rejects.toThrow(/mismatched provider failure evidence|contradictory receipt evidence/);
+    },
+  );
+
+  it("accepts all schema-permitted record projection fields", async () => {
+    const client = createClient({
+      protocolVersion: 1,
+      record: {
+        recordId: "record-1",
+        state: "SENT",
+        version: 9,
+        readyAt: "2026-08-01T12:00:10Z",
+        processingSessionKey: "agent:reviewer",
+        processing: {
+          phase: "review",
+          attempt: 1,
+          purpose: "review",
+          candidateRevision: 1,
+          correlationId: "correlation-1",
+          processingSessionKey: "agent:reviewer",
+          dispatchStartedAt: "2026-08-01T12:00:11Z",
+          acknowledgedAt: "2026-08-01T12:00:12Z",
+          resultDeadline: "2026-08-01T12:01:12Z",
+          expiredAt: null,
+          releasedAt: "2026-08-01T12:00:20Z",
+          releaseReason: "result_finalized",
+          lateResult: {
+            event: "LATE_RESULT_AFTER_EXPIRY",
+            classification: "valid",
+            digest: "1".repeat(64),
+            auditedAt: "2026-08-01T12:00:21Z",
+          },
+        },
+        sourceContext: {
+          schemaVersion: 1,
+          sourceTarget: "v1:discord:account-1:channel-1",
+          provenance: { provider: "discord", account: "account-1", channel: "channel-1" },
+          cutoffProviderEventId: "event-1",
+          capturedAt: "2026-08-01T12:00:00Z",
+          snapshotHash: "c".repeat(64),
+          messages: [],
+        },
+        review: {
+          candidateRevision: 1,
+          rewriteCount: 0,
+          attempts: [
+            {
+              attempt: 1,
+              technicalAttempt: 1,
+              candidateRevision: 1,
+              correlationId: "review-1",
+              startedAt: "2026-08-01T12:00:00Z",
+              completedAt: "2026-08-01T12:00:10Z",
+              sessionId: "session-1",
+              provider: "openai",
+              model: "gpt-5.5",
+              freshnessCount: 1,
+              freshnessHash: "d".repeat(64),
+              freshnessCutoff: "event-1",
+              freshnessComplete: true,
+              freshnessArtifactPath: "freshness.json",
+              freshnessArtifactDigest: "e".repeat(64),
+              reviewContractVersion: 1,
+              reviewInputVersion: 1,
+              qualityRubricVersion: 1,
+              canonicalInputDigest: "f".repeat(64),
+              candidateDigest: "0".repeat(64),
+              verdict: "approved",
+              reason: "complete",
+              outcome: "approved",
+            },
+          ],
+          freshnessArtifacts: [
+            {
+              schemaVersion: 1,
+              candidateRevision: 1,
+              sourceTarget: "v1:discord:account-1:channel-1",
+              provenance: {
+                provider: "discord",
+                account: "account-1",
+                channel: "channel-1",
+              },
+              exclusiveCutoffProviderEventId: "event-0",
+              inclusiveWatermarkProviderEventId: "event-1",
+              capturedAt: "2026-08-01T12:00:00Z",
+              messageCount: 1,
+              complete: true,
+              path: "freshness.json",
+              digest: "2".repeat(64),
+            },
+          ],
+        },
+        delivery: { attempts: [validTerminalAttempt()] },
+      },
+    });
+
+    await expect(
+      client.completeDelivery({
+        reservation: validReservation(),
+        providerAttemptId: "provider-1",
+        outcome: "SENT",
+        providerReceiptId: "receipt-1",
+        providerMessageId: "message-1",
+      }),
+    ).resolves.toMatchObject({ state: "SENT" });
   });
 
   it("rejects completion evidence whose attempted target drifts", async () => {
@@ -987,7 +1270,6 @@ describe("KM contract parsing", () => {
     await expect(
       client.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "SENT",
         providerReceiptId: "receipt-1",
@@ -1015,7 +1297,6 @@ describe("KM contract parsing", () => {
     await expect(
       client.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "SENT",
         providerReceiptId: "receipt-1",
@@ -1050,7 +1331,6 @@ describe("KM contract parsing", () => {
     await expect(
       client.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "FAILED",
         providerFailureClass: "rejection",
@@ -1095,7 +1375,6 @@ describe("KM contract parsing", () => {
     await expect(
       malformedRecord.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "FAILED",
         providerFailureClass: "rejection",
@@ -1126,7 +1405,6 @@ describe("KM contract parsing", () => {
     await expect(
       malformedOptionalRecord.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "FAILED",
         providerFailureClass: "rejection",
@@ -1153,7 +1431,6 @@ describe("KM contract parsing", () => {
     await expect(
       malformedAttempt.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "FAILED",
         providerFailureClass: "rejection",
@@ -1180,7 +1457,6 @@ describe("KM contract parsing", () => {
       await expect(
         client.completeDelivery({
           reservation: validReservation(),
-          attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
           providerAttemptId: "provider-1",
           outcome: "SENT",
           providerReceiptId: "receipt-1",
@@ -1207,7 +1483,6 @@ describe("KM contract parsing", () => {
       await expect(
         client.completeDelivery({
           reservation: validReservation(),
-          attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
           providerAttemptId: "provider-1",
           outcome: "SENT",
           providerReceiptId: "receipt-1",
@@ -1251,7 +1526,6 @@ describe("KM contract parsing", () => {
     await expect(
       client.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "SENT",
         providerReceiptId: "receipt-1",
@@ -1260,11 +1534,9 @@ describe("KM contract parsing", () => {
     ).rejects.toThrow("active delivery attempt without durable envelope evidence");
   });
 
-  it.each([
-    { outcome: "RESERVATION_ABANDONED", terminalReason: "reservation_abandoned" },
-    { outcome: "NOT_SENT", terminalReason: null },
-    { outcome: "DELIVERY_UNKNOWN", terminalReason: "delivery_outcome_unknown" },
-  ])("accepts retained $outcome audit attempts", async ({ outcome, terminalReason }) => {
+  it("accepts a proven never-invoked abandonment before a fresh attempt", async () => {
+    const outcome = "RESERVATION_ABANDONED";
+    const terminalReason = "reservation_abandoned";
     const retainedAttempt = {
       ordinal: 1,
       attemptId: `retained-${outcome}`,
@@ -1281,6 +1553,7 @@ describe("KM contract parsing", () => {
       terminalReason,
     };
     const currentAttempt = { ...validTerminalAttempt(), ordinal: 2 };
+    const currentReservation = { ...validReservation(), ordinal: 2 };
     const client = createClient({
       protocolVersion: 1,
       record: {
@@ -1293,14 +1566,99 @@ describe("KM contract parsing", () => {
 
     await expect(
       client.completeDelivery({
-        reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
+        reservation: currentReservation,
         providerAttemptId: "provider-1",
         outcome: "SENT",
         providerReceiptId: "receipt-1",
         providerMessageId: "message-1",
       }),
     ).resolves.toMatchObject({ state: "SENT" });
+  });
+
+  it.each(["NOT_SENT", "DELIVERY_UNKNOWN"] as const)(
+    "OR-19 legacy-not-sent-unknown-never-authorize-retry: %s",
+    async (outcome) => {
+      const legacy = {
+        ordinal: 1,
+        attemptId: "legacy-unknown",
+        completionOutcome: outcome,
+        outcome,
+        providerAttemptId: "provider-legacy",
+        providerReceiptId: null,
+        providerMessageId: null,
+        proofReference: null,
+        completedAt: null,
+        deliveryEnvelope: null,
+        deliveryEnvelopeDigest: null,
+        reserveIdempotencyKey: "reserve:legacy",
+        terminalReason: outcome === "DELIVERY_UNKNOWN" ? "delivery_outcome_unknown" : null,
+      };
+      const current = { ...validTerminalAttempt(), ordinal: 2 };
+      const reservation = { ...validReservation(), ordinal: 2 };
+      const client = createClient({
+        protocolVersion: 1,
+        record: {
+          recordId: "record-1",
+          state: "SENT",
+          version: 9,
+          delivery: { attempts: [legacy, current] },
+        },
+      });
+
+      await expect(
+        client.completeDelivery({
+          reservation,
+          providerAttemptId: "provider-1",
+          outcome: "SENT",
+          providerReceiptId: "receipt-1",
+          providerMessageId: "message-1",
+        }),
+      ).rejects.toThrow("unauthorized delivery retry");
+    },
+  );
+
+  it("OR-20 historical-attempt-drift-and-tamper-fail-closed", async () => {
+    const driftedTarget = {
+      ...validDeliveryEnvelope().deliveryTarget,
+      channel: "other-channel",
+    };
+    const historical = {
+      ...validTerminalAttempt(),
+      attemptId: "historical-attempt",
+      providerAttemptId: "provider-historical",
+      providerReceiptId: "receipt-historical",
+      providerMessageId: "message-historical",
+      deliveryEnvelope: {
+        ...validDeliveryEnvelope(),
+        pipelineId: "other-pipeline",
+        sourceTarget: "v1:discord:account-1:other-channel",
+        deliveryTarget: driftedTarget,
+      },
+      attemptedTarget: driftedTarget,
+      invocationIdempotencyKey: "invoke:historical-attempt",
+      completionIdempotencyKey: "complete:historical-attempt",
+    };
+    const current = { ...validTerminalAttempt(), ordinal: 2 };
+    const reservation = { ...validReservation(), ordinal: 2 };
+    const client = createClient({
+      protocolVersion: 1,
+      record: {
+        recordId: "record-1",
+        state: "SENT",
+        version: 9,
+        delivery: { attempts: [historical, current] },
+      },
+    });
+
+    await expect(
+      client.completeDelivery({
+        reservation,
+        providerAttemptId: "provider-1",
+        outcome: "SENT",
+        providerReceiptId: "receipt-1",
+        providerMessageId: "message-1",
+      }),
+    ).rejects.toThrow(/historical delivery attempt drift|record delivery authority drift/);
   });
 
   it.each([
@@ -1344,7 +1702,6 @@ describe("KM contract parsing", () => {
       await expect(
         client.completeDelivery({
           reservation: validReservation(),
-          attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
           providerAttemptId: "provider-1",
           outcome: "FAILED",
           providerFailureClass: "rejection",
@@ -1373,7 +1730,6 @@ describe("KM contract parsing", () => {
     await expect(
       client.completeDelivery({
         reservation: validReservation(),
-        attemptedTarget: validReservation().deliveryEnvelope.deliveryTarget,
         providerAttemptId: "provider-1",
         outcome: "SENT",
         providerReceiptId: "receipt-1",
@@ -1410,6 +1766,7 @@ describe("KM contract parsing", () => {
       items: [
         {
           ...item,
+          deliveryTarget: target,
           deliveryEnvelope: { ...item.deliveryEnvelope, deliveryTarget: target },
         },
       ],

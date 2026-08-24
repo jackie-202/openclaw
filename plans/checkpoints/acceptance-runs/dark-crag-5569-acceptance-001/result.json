@@ -1,0 +1,79 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required OpenClaw convergence with the supplied immutable KM Deliberation owner bundle was not delivered.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task checkpoint and TDD proof state that the immutable authority gate blocked all production and test edits. The supplied task-scoped diff contains documentation, changelog, and architecture-review material but does not deliver the required contract mirrors, KM client retry and historical-attempt fencing, singular spool probe, or exact OR-07 through OR-21 harness convergence.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal goal-001 requires concrete OpenClaw behavior and boundary artifacts aligned to the immutable KM owner bundle; blocker documentation and unrelated or descriptive changes do not implement those requirements.",
+      "required": "Restore and verify the approved immutable KM checkout, then implement the task-scoped contract mirrors and provenance, KM client validation and retry fencing, singular public-API probe, and exact OR-07 through OR-21 harness convergence without modifying KM.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-5569.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-5569.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_dark-crag-5569_acceptance-fix-converge-openclaw-with-supplied-immutable-km.md"
+        },
+        {
+          "kind": "file",
+          "reference": "task-scoped-diff"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED-GREEN TDD proof is incomplete.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true. The supplied task proof links a genuine historical owner-boundary RED but explicitly records no GREEN phase because implementation was blocked at the immutable authority gate; it contains no fresh post-implementation passing evidence for the same owner-backed boundary.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "Historical RED provenance alone does not satisfy the mandatory TDD proof contract. Credible fresh GREEN evidence must demonstrate the completed implementation against the same owner-backed boundary.",
+      "required": "After completing the convergence, append fresh GREEN evidence for the owner-backed boundary to the dark-crag-5569 proof while preserving the linked genuine historical RED provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-5569.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-crag-5569.checkpoint.md"
+        },
+        {
+          "kind": "test-gate",
+          "reference": "not run; no Test Gate evidence"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Converge OpenClaw with supplied immutable KM Deliberation owner bundle: goal-001: Conv"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-crag-5569-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-crag-5569"
+}

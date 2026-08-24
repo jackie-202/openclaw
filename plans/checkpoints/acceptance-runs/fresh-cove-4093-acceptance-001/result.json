@@ -1,0 +1,46 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The required canonical deliberation Test Gate result is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller declares Test Gate status not run and no Test Gate evidence exists. The supplied fresh-cove-4093.test-gate.md records a local implementation-session summary, not a caller-owned canonical gate result.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The task explicitly carries the unmet full deliberation suite evidence requirement. Acceptance may assess that artifact only through the supplied canonical Test Gate reference; a local checkpoint cannot replace an unrun gate.",
+      "required": "Provide a caller-owned canonical Test Gate result for pnpm vitest run extensions/deliberation with a non-not-run reference, successful outcome, and complete suite summary.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-cove-4093.test-gate.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-19_followup-fresh-cove-4093-acceptance-fix-update-stale-deliberation-intake-producer-tes.md:11-16"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Update stale deliberation intake-producer test to optional Discord sourceThreadId sema"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-cove-4093-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "fresh-cove-4093"
+}

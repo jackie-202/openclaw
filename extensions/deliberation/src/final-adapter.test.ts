@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { createFinalDeliveryAdapter } from "./final-adapter.js";
+import {
+  createFinalDeliveryAdapter,
+  deriveProviderAttemptId,
+  FinalDeliveryOutcomeUnknownError,
+  FinalDeliveryRejectedError,
+} from "./final-adapter.js";
 
 const deliveryTarget = {
   provider: "discord" as const,
@@ -27,6 +32,7 @@ const reservation = {
   owner: "owner",
   leaseToken: "lease",
   deliveryEnvelope: {
+    pipelineId: "pipeline-1",
     sourceTarget: "v1:discord:account-1:channel-1",
     deliveryTarget,
   },
@@ -34,6 +40,13 @@ const reservation = {
 };
 
 describe("public final delivery adapter", () => {
+  it("derives the owner-bound provider attempt identity", () => {
+    const providerAttemptId = deriveProviderAttemptId("attempt-1");
+
+    expect(providerAttemptId).toBe("provider:attempt-1");
+    expect(providerAttemptId).not.toBe(deriveProviderAttemptId("attempt-2"));
+  });
+
   it.each([
     {
       name: "Slack -> Discord",
@@ -124,11 +137,10 @@ describe("public final delivery adapter", () => {
       expect(selected.send).toHaveBeenCalledWith({
         ...asProviderTarget(target),
         text: "reply",
-        idempotencyKey: "provider:attempt-1",
+        idempotencyKey: deriveProviderAttemptId("attempt-1"),
       });
       expect(km.completeDelivery).toHaveBeenCalledWith(
         expect.objectContaining({
-          attemptedTarget: target,
           providerReceiptId: "receipt-1",
           providerMessageId:
             target.provider === "discord" ? "discord-message-1" : "slack-message-1",
@@ -141,6 +153,7 @@ describe("public final delivery adapter", () => {
     const durableReservation = {
       ...reservation,
       deliveryEnvelope: {
+        pipelineId: "pipeline-1",
         sourceTarget: "v1:discord:account-a:channel-a",
         deliveryTarget: {
           provider: "discord" as const,
@@ -178,12 +191,11 @@ describe("public final delivery adapter", () => {
     );
     expect(km.invoke).toHaveBeenCalledWith(
       durableReservation,
-      durableReservation.deliveryEnvelope.deliveryTarget,
-      "provider:attempt-1",
+      deriveProviderAttemptId("attempt-1"),
     );
     expect(km.completeDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
-        attemptedTarget: durableReservation.deliveryEnvelope.deliveryTarget,
+        reservation: durableReservation,
       }),
     );
   });
@@ -319,8 +331,37 @@ describe("public final delivery adapter", () => {
     );
   });
 
-  it("terminalizes a provider failure without retrying it", async () => {
-    const provider = { send: vi.fn().mockRejectedValue(new Error("permission denied")) };
+  it.each([
+    Object.assign(new Error("connection reset"), { code: "ECONNRESET" }),
+    Object.assign(new Error("request timed out"), { name: "TimeoutError" }),
+  ])("leaves a post-invocation transport outcome unresolved", async (error) => {
+    const provider = { send: vi.fn().mockRejectedValue(error) };
+    const km = {
+      ready: vi.fn().mockResolvedValue({
+        items: [{ recordId: "record-1", text: "reply", effectiveDeliveryTarget: deliveryTarget }],
+      }),
+      reserve: vi.fn().mockResolvedValue({ outcome: "reserved", reservation }),
+      invoke: vi.fn().mockResolvedValue({}),
+      completeDelivery: vi.fn(),
+    };
+
+    await expect(
+      createFinalDeliveryAdapter({
+        km,
+        providers: { discord: provider },
+        owner: "owner",
+      } as never).runOnce(),
+    ).rejects.toThrow(FinalDeliveryOutcomeUnknownError);
+    expect(provider.send).toHaveBeenCalledTimes(1);
+    expect(km.completeDelivery).not.toHaveBeenCalled();
+  });
+
+  it("terminalizes a definitive adapter rejection without retrying it", async () => {
+    const provider = {
+      send: vi
+        .fn()
+        .mockRejectedValue(new FinalDeliveryRejectedError("missing scope", "permission")),
+    };
     const km = {
       ready: vi.fn().mockResolvedValue({
         items: [{ recordId: "record-1", text: "reply", effectiveDeliveryTarget: deliveryTarget }],
@@ -335,10 +376,36 @@ describe("public final delivery adapter", () => {
       providers: { discord: provider },
       owner: "owner",
     } as never).runOnce();
+
     expect(provider.send).toHaveBeenCalledTimes(1);
     expect(km.completeDelivery).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: "FAILED", providerFailureClass: "rejection" }),
+      expect.objectContaining({ outcome: "FAILED", providerFailureClass: "permission" }),
     );
+  });
+
+  it("leaves an ambiguous adapter outcome unresolved without retrying it", async () => {
+    const provider = {
+      send: vi.fn().mockRejectedValue(new FinalDeliveryOutcomeUnknownError("request timed out")),
+    };
+    const km = {
+      ready: vi.fn().mockResolvedValue({
+        items: [{ recordId: "record-1", text: "reply", effectiveDeliveryTarget: deliveryTarget }],
+      }),
+      reserve: vi.fn().mockResolvedValue({ outcome: "reserved", reservation }),
+      invoke: vi.fn().mockResolvedValue({}),
+      completeDelivery: vi.fn(),
+    };
+
+    await expect(
+      createFinalDeliveryAdapter({
+        km,
+        providers: { discord: provider },
+        owner: "owner",
+      } as never).runOnce(),
+    ).rejects.toThrow(FinalDeliveryOutcomeUnknownError);
+
+    expect(provider.send).toHaveBeenCalledTimes(1);
+    expect(km.completeDelivery).not.toHaveBeenCalled();
   });
 
   it("leaves an invoked attempt unresolved when provider receipt evidence is invalid", async () => {
@@ -408,114 +475,6 @@ describe("public final delivery adapter", () => {
   });
 
   it.each([
-    {
-      name: "permission",
-      error: Object.assign(new Error("missing permissions"), {
-        kind: "missing-permissions",
-        status: 403,
-      }),
-      expected: "permission",
-    },
-    {
-      name: "rate limit",
-      error: Object.assign(new Error("rate limited"), { status: 429, retryAfter: 1.2 }),
-      expected: "rate_limit",
-    },
-    {
-      name: "transport",
-      error: Object.assign(new Error("upstream unavailable"), { statusCode: 503 }),
-      expected: "transport",
-    },
-    {
-      name: "timeout",
-      error: Object.assign(new Error("timed out"), { name: "TimeoutError" }),
-      expected: "timeout",
-    },
-    {
-      name: "Slack missing scope",
-      error: Object.assign(new Error("request contained xoxb-secret"), {
-        code: "slack_webapi_platform_error",
-        data: { error: "missing_scope", needed: "chat:write", provided: "channels:read" },
-      }),
-      expected: "permission",
-    },
-    {
-      name: "Slack not in channel",
-      error: Object.assign(new Error("not in channel"), {
-        code: "slack_webapi_platform_error",
-        data: { error: "not_in_channel" },
-      }),
-      expected: "permission",
-    },
-    {
-      name: "Slack inaccessible target",
-      error: Object.assign(new Error("channel deleted"), {
-        code: "slack_webapi_platform_error",
-        data: { error: "channel_not_found" },
-      }),
-      expected: "rejection",
-    },
-    {
-      name: "Slack authentication",
-      error: Object.assign(new Error("bad token"), {
-        code: "slack_webapi_platform_error",
-        data: { error: "invalid_auth" },
-      }),
-      expected: "permission",
-    },
-    {
-      name: "Slack rate limit",
-      error: Object.assign(new Error("rate limited"), {
-        code: "slack_webapi_rate_limited_error",
-        retryAfter: 2,
-      }),
-      expected: "rate_limit",
-    },
-    {
-      name: "Slack exhausted rate limit",
-      error: new Error(
-        "A rate limit was exceeded (url: https://slack.com/api/chat.postMessage, retry-after: 7)",
-      ),
-      expected: "rate_limit",
-    },
-    {
-      name: "Slack nested transport",
-      error: Object.assign(new Error("request failed"), {
-        code: "slack_webapi_request_error",
-        original: { code: "ECONNRESET" },
-      }),
-      expected: "transport",
-    },
-  ])("classifies structured provider $name failures", async ({ error, expected }) => {
-    const provider = { send: vi.fn().mockRejectedValue(error) };
-    const km = {
-      ready: vi.fn().mockResolvedValue({
-        items: [{ recordId: "record-1", text: "reply", effectiveDeliveryTarget: deliveryTarget }],
-      }),
-      reserve: vi.fn().mockResolvedValue({ outcome: "reserved", reservation }),
-      invoke: vi.fn().mockResolvedValue({}),
-      completeDelivery: vi.fn().mockResolvedValue({ state: "FAILED" }),
-    };
-
-    await createFinalDeliveryAdapter({
-      km,
-      providers: { discord: provider },
-      owner: "owner",
-    } as never).runOnce();
-
-    expect(km.completeDelivery).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: "FAILED", providerFailureClass: expected }),
-    );
-    expect(km.completeDelivery).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        providerEvidence: expect.objectContaining({
-          detail: expect.stringContaining("xoxb-secret"),
-        }),
-      }),
-    );
-  });
-
-  it.each([
     "v1:discord:account-1:channel-1",
     { provider: "discord", accountId: "account-1", channelId: "channel 1" },
     { provider: "teams", account: "account-1", channel: "channel-1" },
@@ -545,7 +504,7 @@ describe("public final delivery adapter", () => {
         providers: { discord: provider },
         owner: "owner",
       } as never).runOnce(),
-    ).rejects.toThrow(/invalid deliveryTarget|differs from ready target/);
+    ).rejects.toThrow(/invalid deliveryTarget|differs from ready target|unsupported destination/);
 
     expect(provider.send).not.toHaveBeenCalled();
     expect(km.reserve).not.toHaveBeenCalled();

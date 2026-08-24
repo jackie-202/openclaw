@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-24T02:49:03+00:00",
+    "implementingStartedAt": "2026-08-24T02:34:59+00:00",
+    "taskFile": "plans/tasks/2026-08-24_followup-calm-vale-0083-acceptance-fix-establish-canonical-deliberation-or-01-throug.md",
+    "taskId": "calm-vale-0083",
+    "title": "[acceptance-fix] [acceptance-fix] Establish canonical Deliberation OR-01 through OR-23 gate: goal-001: Establish canonic"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Establish canonical Deliberation OR-01 through OR-23 gate: goal-001: Establish canonic"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-vale-0083-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-vale-0083",
+  "tddRequired": true
+}

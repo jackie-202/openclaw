@@ -85,6 +85,41 @@ export const messageAdapter = createChannelMessageAdapterFromOutbound({
 });
 ```
 
+An outbound adapter can also expose `sendTextToSourceThread(ctx)` when the
+channel can attach a thread to an existing source message. The context extends a
+normal text send with `sourceMessageId`. The adapter owns create-or-reuse
+behavior and must return the receipt for the one text message sent inside the
+resolved thread. Do not emulate this operation by passing the source message ID
+as an exact `threadId`; those are different destination semantics.
+
+### Single-attempt text delivery
+
+Use the optional `sendTextAttempt(ctx)` capability only when a caller needs one
+provider-specific text representation and at most one native message-create
+request. The context includes a durable `idempotencyKey` and may include
+`sourceMessageId` for source-anchor delivery.
+
+The adapter must render mentions, tables, and platform markup before checking
+the native single-message limit. If the final representation would be empty or
+split, return `rejected` without calling the provider. The operation must not
+retry, switch from a webhook to a bot, remove identity and retry, or send a
+second chunk.
+
+The result is a closed outcome:
+
+- `sent`: exactly one platform message was confirmed. `messageId`, the receipt's
+  primary ID, its only platform ID, and its only receipt part must agree.
+- `rejected`: no native acceptance is possible, such as local preflight or an
+  authoritative platform validation rejection.
+- `unknown`: the request may have reached the provider, including timeout,
+  connection loss, or malformed success evidence. Callers must not retry this
+  outcome automatically.
+
+Every result reports `idempotency: "native" | "unsupported"`. Pass the durable
+key unchanged when the native API supports it. Report `unsupported` rather than
+silently discarding the key when it does not. This capability does not change
+ordinary `sendText` retry, fallback, or chunking behavior.
+
 ## Durable Sends
 
 Runtime send helpers also live on `channel-outbound`:

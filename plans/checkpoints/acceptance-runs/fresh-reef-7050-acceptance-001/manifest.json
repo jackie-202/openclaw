@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-20T07:21:25+00:00",
+    "implementingStartedAt": "2026-08-20T07:09:56+00:00",
+    "taskFile": "plans/tasks/2026-08-20_followup-fresh-reef-7050-fix-compaction-openai-oauth-bridge-provider-auth-validation.md",
+    "taskId": "fresh-reef-7050",
+    "title": "[acceptance-fix] Fix compaction OpenAI OAuth/bridge provider-auth validation: goal-006: Relevant focused tests and the s"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix compaction OpenAI OAuth/bridge provider-auth validation: goal-006: Relevant focused tests and the s"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-reef-7050-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-reef-7050",
+  "tddRequired": false
+}

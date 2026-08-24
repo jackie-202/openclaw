@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T23:16:27+00:00",
+    "implementingStartedAt": "2026-08-23T23:04:51+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-swift-vale-0374-complete-openclaw-convergence-against-verified-km-owner-arti.md",
+    "taskId": "swift-vale-0374",
+    "title": "[acceptance-fix] Complete OpenClaw convergence against verified KM owner artifacts: goal-001: Complete OpenClaw converge"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Complete OpenClaw convergence against verified KM owner artifacts: goal-001: Complete OpenClaw converge"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-vale-0374-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-vale-0374",
+  "tddRequired": true
+}

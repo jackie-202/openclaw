@@ -21,6 +21,7 @@ import type {
   AcpRuntimeTurnInput,
 } from "../../plugin-sdk/acp-runtime.js";
 import { clearPluginCommands, registerPluginCommand } from "../../plugins/commands.js";
+import type { PluginHookInboundEventPolicyDecision } from "../../plugins/hook-types.js";
 import type {
   PluginHookBeforeDispatchResult,
   PluginHookReplyDispatchResult,
@@ -74,6 +75,9 @@ const hookMocks = vi.hoisted(() => ({
   },
   runner: {
     hasHooks: vi.fn<(hookName?: string) => boolean>(() => false),
+    runInboundEventPolicy: vi.fn<() => PluginHookInboundEventPolicyDecision>(() => ({
+      kind: "ordinary",
+    })),
     runInboundClaim: vi.fn(async () => undefined),
     runInboundClaimForPlugin: vi.fn(async () => undefined),
     runInboundClaimForPluginOutcome: vi.fn<() => Promise<PluginTargetedInboundClaimOutcome>>(
@@ -958,6 +962,8 @@ describe("dispatchReplyFromConfig", () => {
     );
     hookMocks.runner.runInboundClaim.mockClear();
     hookMocks.runner.runInboundClaim.mockResolvedValue(undefined);
+    hookMocks.runner.runInboundEventPolicy.mockClear();
+    hookMocks.runner.runInboundEventPolicy.mockReturnValue({ kind: "ordinary" });
     hookMocks.runner.runInboundClaimForPlugin.mockClear();
     hookMocks.runner.runInboundClaimForPlugin.mockResolvedValue(undefined);
     hookMocks.runner.runInboundClaimForPluginOutcome.mockClear();
@@ -5419,6 +5425,74 @@ describe("dispatchReplyFromConfig", () => {
     expect(replyResolver).not.toHaveBeenCalled();
   });
 
+  it("lets an exclusive inbound source owner claim before plugin-bound output", async () => {
+    setNoAbort();
+    hookMocks.runner.runInboundEventPolicy.mockReturnValue({
+      kind: "exclusive",
+      ownerPluginId: "deliberation",
+    });
+    hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
+      status: "handled",
+      result: { handled: true },
+    });
+    sessionBindingMocks.resolveByConversation.mockReturnValue({
+      bindingId: "binding-exclusive-source",
+      targetSessionKey: "plugin-binding:codex:exclusive",
+      targetKind: "session",
+      conversation: {
+        channel: "discord",
+        accountId: "default",
+        conversationId: "channel:source",
+      },
+      status: "active",
+      boundAt: 1710000000000,
+      metadata: {
+        pluginBindingOwner: "plugin",
+        pluginId: "openclaw-codex-app-server",
+        pluginRoot: "/tmp/plugin",
+      },
+    } satisfies SessionBindingRecord);
+    const dispatcher = createDispatcher();
+    const replyResolver = vi.fn(async () => ({ text: "ordinary reply" }) satisfies ReplyPayload);
+
+    const result = await dispatchReplyFromConfig({
+      ctx: buildTestCtx({
+        Provider: "discord",
+        Surface: "discord",
+        OriginatingChannel: "discord",
+        OriginatingTo: "discord:channel:source",
+        To: "discord:channel:source",
+        AccountId: "default",
+        SenderId: "user-9",
+        Body: "owned event",
+        RawBody: "owned event",
+        MessageSid: "source-event-1",
+        SessionKey: "agent:main:discord:channel:source",
+      }),
+      cfg: emptyConfig,
+      dispatcher,
+      replyResolver,
+    });
+
+    expect(hookMocks.runner.runInboundEventPolicy).toHaveBeenCalledWith({
+      provider: "discord",
+      accountId: "default",
+      conversationId: "channel:source",
+      parentConversationId: undefined,
+      providerEventId: "source-event-1",
+    });
+    expect(hookMocks.runner.runInboundClaim).not.toHaveBeenCalled();
+    expect(hookMocks.runner.runInboundClaimForPluginOutcome).toHaveBeenCalledWith(
+      "deliberation",
+      expect.objectContaining({ messageId: "source-event-1" }),
+      expect.objectContaining({ conversationId: "channel:source" }),
+    );
+    expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
+    expect(mocks.routeReply).not.toHaveBeenCalled();
+    expect(replyResolver).not.toHaveBeenCalled();
+    expect(result.queuedFinal).toBe(false);
+  });
+
   it("routes Discord thread plugin-owned bindings by raw thread id", async () => {
     setNoAbort();
     setActivePluginRegistry(
@@ -6938,6 +7012,26 @@ describe("before_dispatch hook", () => {
     expect(result.queuedFinal).toBe(false);
   });
 
+  it("runs source suppression before emitting a fast-abort confirmation", async () => {
+    mocks.tryFastAbortFromMessage.mockResolvedValue({ handled: true, aborted: true });
+    hookMocks.runner.runBeforeDispatch.mockResolvedValue({ handled: true });
+    const dispatcher = createDispatcher();
+    const replyResolver = vi.fn(async () => ({ text: "should not run" }) satisfies ReplyPayload);
+
+    const result = await dispatchReplyFromConfig({
+      ctx: createHookCtx({ Body: "/stop", BodyForCommands: "/stop" }),
+      cfg: emptyConfig,
+      dispatcher,
+      replyResolver,
+    });
+
+    expect(hookMocks.runner.runBeforeDispatch).toHaveBeenCalledTimes(1);
+    expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
+    expect(mocks.routeReply).not.toHaveBeenCalled();
+    expect(replyResolver).not.toHaveBeenCalled();
+    expect(result.queuedFinal).toBe(false);
+  });
+
   it("uses canonical hook metadata and shared routed final delivery", async () => {
     ttsMocks.state.synthesizeFinalAudio = true;
     hookMocks.runner.runBeforeDispatch.mockResolvedValue({ handled: true, text: "Blocked" });
@@ -7032,6 +7126,57 @@ describe("before_dispatch hook", () => {
       replyToId: "discord-reply-123",
       replyToBody: "the quoted parent message",
       replyToSender: "Ada",
+    });
+  });
+
+  it("passes the canonical parent conversation to before_dispatch", async () => {
+    hookMocks.runner.runBeforeDispatch.mockResolvedValue({ handled: true });
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "discord",
+          source: "test",
+          plugin: {
+            ...createChannelTestPluginBase({ id: "discord" }),
+            messaging: {
+              resolveInboundConversation: ({
+                conversationId,
+                threadId,
+                threadParentId,
+              }: {
+                conversationId?: string;
+                threadId?: string;
+                threadParentId?: string;
+              }) => ({
+                conversationId: threadId ?? conversationId ?? "",
+                parentConversationId: threadParentId,
+              }),
+            },
+          },
+        },
+      ]),
+    );
+
+    await dispatchReplyFromConfig({
+      ctx: createHookCtx({
+        Provider: "discord",
+        Surface: "discord",
+        OriginatingChannel: "discord",
+        To: "channel:discord-thread-1",
+        OriginatingTo: "channel:discord-thread-1",
+        MessageThreadId: "discord-thread-1",
+        ThreadParentId: "discord-parent-1",
+      }),
+      cfg: emptyConfig,
+      dispatcher: createDispatcher(),
+    });
+
+    const beforeDispatchCall = firstMockCall(
+      hookMocks.runner.runBeforeDispatch,
+      "before dispatch hook",
+    );
+    expect(beforeDispatchCall?.[1]).toMatchObject({
+      parentConversationId: "discord-parent-1",
     });
   });
 

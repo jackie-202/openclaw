@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T10:27:38+00:00",
+    "implementingStartedAt": "2026-08-21T09:58:41+00:00",
+    "taskFile": "plans/tasks/2026-08-21_carry-deliberation-pipeline-identity-and-effective-target-fr.md",
+    "taskId": "swift-peak-3523",
+    "title": "Carry deliberation pipeline identity and effective target from intake"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Carry deliberation pipeline identity and effective target from intake"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-peak-3523-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-peak-3523",
+  "tddRequired": true
+}

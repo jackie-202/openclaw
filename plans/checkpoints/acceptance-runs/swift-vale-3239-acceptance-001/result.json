@@ -1,0 +1,77 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required full deliberation suite result has no canonical Test Gate evidence.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-002"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied material states Test Gate status is not run and no Test Gate evidence exists; the checkpoint is not canonical Test Gate evidence.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal-002 explicitly requires the suite green, while Acceptance may assess that goal only from supplied Test Gate evidence and must not execute or interpret suites.",
+      "required": "Provide canonical Test Gate evidence for pnpm vitest run extensions/deliberation.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "not-run"
+        }
+      ]
+    },
+    {
+      "claim": "The task-scoped diff modifies production source despite the no-production-code goal.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "unknown",
+      "goalIds": [
+        "goal-003"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The supplied diff changes extensions/deliberation/src/intake.ts, extensions/deliberation/src/km-client.ts, and extensions/deliberation/src/route-match.ts, in addition to their tests.",
+      "policyRule": "catalog:unknown:blocking",
+      "rationale": "These are material runtime TypeScript changes, not incidental churn. No concurrent-context assignment was supplied that could establish other-task ownership, and the catalog has no more specific entry for this scope-contract violation.",
+      "required": "Remove production-source changes from this task's scoped change set or supply a high-confidence concurrent assignment that attributes each exact production path.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/intake.ts:99"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/km-client.ts:56"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/route-match.ts:107"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "The single stale assertion is aligned with optional-by-absence Discord sourceThreadId semantics."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "Full deliberation extension suite green."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "No production code modified."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-vale-3239-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "swift-vale-3239"
+}

@@ -1,0 +1,93 @@
+{
+  "findings": [
+    {
+      "claim": "The required completion and receipt semantic repairs are not delivered in the supplied task-scoped implementation diff.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied diff changes changelog, documentation, README, and wire/control contracts, but does not show changes to final-adapter.ts, index.ts, km-client.ts, or their focused tests that implement unknown post-invocation outcomes, canonical single-message evidence, duplicate attempt rejection, and exact replay/conflict handling.",
+      "rationale": "The canonical task requires concrete runtime behavior changes, and the plan identifies those Deliberation source files as the implementation boundary. Learning and checkpoint prose describe intended or claimed behavior but are not delivered implementation evidence.",
+      "required": "Deliver the required runtime and focused test changes for all completion, receipt, duplicate identity, replay/conflict, and strict projection behaviors.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-21_deliberation-repair-completion-and-receipt-semantics.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_bold-brook-4380_deliberation-repair-completion-and-receipt-semantics.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED/GREEN TDD proof is incomplete in the supplied artifact.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied bold-brook-4380.red-green-proof.md content contains RED phase metadata and failing-run output only; it contains no GREEN phase command, successful outcome, or GREEN evidence. The checkpoint's statement that both phases were verified is prose rather than the required proof data.",
+      "rationale": "The manifest declares tddRequired true, and the task plan explicitly requires recorded RED/GREEN evidence. RED-only material does not establish the mandatory GREEN phase.",
+      "required": "Provide a valid task-scoped TDD proof containing both RED and GREEN phases with their command and outcome evidence.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-brook-4380.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_bold-brook-4380_deliberation-repair-completion-and-receipt-semantics.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/bold-brook-4380-acceptance-001/manifest.json:20"
+        }
+      ]
+    },
+    {
+      "claim": "The task-scoped diff includes a material pipeline-routing and wire-contract redesign outside this repair's declared boundary.",
+      "crossCutting": false,
+      "findingType": "unknown",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "correctness",
+      "observed": "The supplied diff changes inbound policy documentation, pipeline configuration and legacy normalization, source-default routing, delivery target modes, intake and envelope contract requirements, and associated lifecycle vectors across docs and Deliberation contracts.",
+      "rationale": "The plan says to keep the existing single-attempt contract unchanged, retain km-wire-v1.json as authority, and not regenerate or change contracts. These broad semantic changes materially increase acceptance risk and cannot be classified as minor incidental churn; no concurrent assignment candidates were supplied to establish alternate ownership.",
+      "required": "Remove the unrelated pipeline/config/contract changes from this task-scoped change set or supply a bounded ownership attribution that excludes their exact paths from this run.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_bold-brook-4380_deliberation-repair-completion-and-receipt-semantics.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Deliberation: repair completion and receipt semantics"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-brook-4380-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bold-brook-4380"
+}

@@ -13,7 +13,10 @@ import {
 } from "./auth-profiles/store.js";
 import type { OAuthCredential } from "./auth-profiles/types.js";
 import type { ClaudeCliCredential } from "./cli-credentials.js";
+import { CUSTOM_LOCAL_AUTH_MARKER } from "./model-auth-markers.js";
 import {
+  applyAuthHeaderOverride,
+  applyLocalNoAuthHeaderOverride,
   createRuntimeProviderAuthLookup,
   getApiKeyForModel,
   hasAvailableAuthForProvider,
@@ -509,6 +512,81 @@ describe("getApiKeyForModel", () => {
         profileId: "openai:chatgpt",
         lockedProfile: true,
         store,
+      }),
+    ).rejects.toThrow(/requires an OpenAI API key profile/);
+  });
+
+  it("uses synthetic local auth for an OpenAI bridge despite a carried OAuth profile", async () => {
+    const cfg = {
+      models: {
+        providers: {
+          openai: {
+            baseUrl: "http://127.0.0.1:18800/v1",
+            api: "openai-completions",
+            models: [{ id: "gpt-5.5" }],
+          },
+        },
+      },
+    } as unknown as OpenClawConfig;
+    const model = {
+      id: "gpt-5.5",
+      provider: "openai",
+      api: "openai-completions",
+      baseUrl: "http://127.0.0.1:18800/v1",
+    } as Model;
+    const auth = await getApiKeyForModel({
+      model,
+      cfg,
+      profileId: "openai:default",
+      lockedProfile: true,
+      store: {
+        version: 1,
+        profiles: {
+          "openai:default": { type: "oauth", provider: "openai", ...oauthFixture },
+        },
+      },
+    });
+
+    expect(auth).toMatchObject({ apiKey: CUSTOM_LOCAL_AUTH_MARKER, mode: "api-key" });
+    expect(auth.apiKey).not.toBe(oauthFixture.access);
+    const requestModel = applyAuthHeaderOverride(
+      applyLocalNoAuthHeaderOverride(model, auth),
+      auth,
+      cfg,
+    );
+    expect(requestModel.headers?.Authorization).toBeNull();
+  });
+
+  it("rejects an OAuth profile for a local OpenAI Responses endpoint", async () => {
+    const cfg = {
+      models: {
+        providers: {
+          openai: {
+            baseUrl: "http://127.0.0.1:18800/v1",
+            api: "openai-responses",
+            models: [{ id: "gpt-5.5" }],
+          },
+        },
+      },
+    } as unknown as OpenClawConfig;
+
+    await expect(
+      getApiKeyForModel({
+        model: {
+          id: "gpt-5.5",
+          provider: "openai",
+          api: "openai-responses",
+          baseUrl: "http://127.0.0.1:18800/v1",
+        } as Model,
+        cfg,
+        profileId: "openai:default",
+        lockedProfile: true,
+        store: {
+          version: 1,
+          profiles: {
+            "openai:default": { type: "oauth", provider: "openai", ...oauthFixture },
+          },
+        },
       }),
     ).rejects.toThrow(/requires an OpenAI API key profile/);
   });

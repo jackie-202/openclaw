@@ -1,0 +1,93 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The mandatory RED proof must demonstrate through the real inbound/channel owner path that an authenticated deliberation source reaches a pre-claim ordinary channel side effect before production changes.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-004"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied RED phase fails only in src/plugin-sdk/channel-inbound.test.ts because resolveChannelInboundEventPolicy returned { allowDebounce: true } instead of { kind: separate }; it does not show acknowledgement, typing, auto-thread, abort, dispatch, or fallback occurring through Discord or Slack.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The task explicitly rejects non-side-effect RED failures and requires the complete real channel-path matrix before production edits. The supplied proof therefore does not establish the caller-required RED state despite later GREEN output.",
+      "required": "Provide authentic RED/GREEN proof using the same focused command, with RED containing an assertion-level Discord or Slack owner-path failure caused by a real pre-claim ordinary side effect and GREEN showing that same assertion passing.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-wave-6899.red-green-proof.md:RED-Phase"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-22_deliberation-exclusive-ownership-before-channel-side-effects.md:RED-GREEN-requirement"
+        }
+      ]
+    },
+    {
+      "claim": "The explicitly required caller-owned canonical Test Gate must pass and provide canonical evidence.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-006"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied Test Gate status is not run and states that no Test Gate evidence exists; the checkpoint likewise says the caller-owned canonical Test Gate supplied no run reference.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Local focused, integration, build, lint, or checkpoint claims cannot substitute for the explicitly required canonical Test Gate reference, and acceptance does not execute that gate.",
+      "required": "Run the caller-owned canonical Test Gate and supply its passing canonical run reference for acceptance.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-wave-6899.checkpoint.md:Context-for-resume"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "A configured source causes zero ordinary acknowledgement, typing, auto-thread, assistant-dispatch, or fallback side effects before/after claim."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "Failure and disabled paths remain silent in the source while producing bounded diagnostics."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Exactly one authenticated pipeline owns the event; duplicate/ambiguous routes fail closed."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "Discord and Slack owner-path integration tests cover positive and negative cases."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "Existing non-deliberation channel behavior remains unchanged."
+    },
+    {
+      "id": "goal-006",
+      "status": "UNMET",
+      "summary": "Focused tests, relevant channel/plugin integration tests, build, lint, and canonical Test Gate pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-wave-6899-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-wave-6899"
+}

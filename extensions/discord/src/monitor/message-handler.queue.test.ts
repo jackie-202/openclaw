@@ -1,6 +1,8 @@
+import type { ChannelInboundEventPolicyDecision } from "openclaw/plugin-sdk/channel-inbound";
 // Discord tests cover message handler.queue plugin behavior.
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ChannelType } from "../internal/discord.js";
 import { DiscordRetryableInboundError } from "./inbound-dedupe.js";
 import {
   createDiscordMessageHandler,
@@ -11,6 +13,20 @@ import {
   createDiscordHandlerParams,
   createDiscordPreflightContext,
 } from "./message-handler.test-helpers.js";
+
+const { resolveInboundEventPolicyMock } = vi.hoisted(() => ({
+  resolveInboundEventPolicyMock: vi.fn(
+    (_event: {
+      parentConversationId?: string;
+      providerEventId?: string;
+    }): ChannelInboundEventPolicyDecision => ({ kind: "ordinary" }),
+  ),
+}));
+
+vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>()),
+  resolveChannelInboundEventPolicy: resolveInboundEventPolicyMock,
+}));
 
 type SetStatusFn = (patch: Record<string, unknown>) => void;
 type MockCallSource = { mock: { calls: Array<Array<unknown>> } };
@@ -61,7 +77,7 @@ async function flushQueueWork(): Promise<void> {
   }
 }
 
-function createMessageData(messageId: string, channelId = "ch-1") {
+function createMessageData(messageId: string, channelId = "ch-1", hasAttachment = true) {
   return {
     channel_id: channelId,
     author: { id: "user-1" },
@@ -70,7 +86,7 @@ function createMessageData(messageId: string, channelId = "ch-1") {
       author: { id: "user-1", bot: false },
       content: "hello",
       channel_id: channelId,
-      attachments: [{ id: `att-${messageId}` }],
+      attachments: hasAttachment ? [{ id: `att-${messageId}` }] : [],
     },
   };
 }
@@ -189,6 +205,148 @@ async function createLifecycleStopScenario(params: {
 describe("createDiscordMessageHandler queue behavior", () => {
   beforeEach(() => {
     vi.useRealTimers();
+    resolveInboundEventPolicyMock.mockReset().mockReturnValue({ kind: "ordinary" });
+  });
+
+  it("dispatches configured source events separately inside one debounce window", async () => {
+    vi.useFakeTimers();
+    resolveInboundEventPolicyMock.mockReturnValue({
+      kind: "exclusive",
+      ownerPluginId: "deliberation",
+    });
+    const params = createDiscordHandlerParams();
+    params.cfg.messages = { inbound: { debounceMs: 50 } };
+    const messageIds: string[] = [];
+    const intakeIds: string[] = [];
+    preflightDiscordMessageMock.mockImplementation(
+      async (preflightParams: { data: { channel_id: string; message?: { id?: string } } }) => {
+        const messageId = preflightParams.data.message?.id ?? "unknown";
+        messageIds.push(messageId);
+        return { ...createPreflightContext(preflightParams.data.channel_id), messageId };
+      },
+    );
+    processDiscordMessageMock.mockImplementation(async (ctx: { messageId?: string }) => {
+      intakeIds.push(ctx.messageId ?? "unknown");
+    });
+    const client = {
+      fetchChannel: vi.fn(async () => ({ id: "source", type: ChannelType.GuildText })),
+    };
+    const handler = createDiscordMessageHandler(params);
+
+    await handler(createMessageData("m-source-1", "source", false) as never, client as never);
+    await handler(createMessageData("m-source-2", "source", false) as never, client as never);
+
+    expect(messageIds).toEqual(["m-source-1", "m-source-2"]);
+    expect(
+      resolveInboundEventPolicyMock.mock.calls.map(([event]) => event.providerEventId),
+    ).toEqual(["m-source-1", "m-source-2"]);
+    await flushQueueWork();
+    expect(intakeIds).toEqual(["m-source-1", "m-source-2"]);
+  });
+
+  it("dispatches configured child-thread events separately using the authenticated parent", async () => {
+    vi.useFakeTimers();
+    resolveInboundEventPolicyMock.mockImplementation((event) =>
+      event.parentConversationId === "source-parent"
+        ? { kind: "exclusive", ownerPluginId: "deliberation" }
+        : { kind: "ordinary" },
+    );
+    const params = createDiscordHandlerParams();
+    params.cfg.messages = { inbound: { debounceMs: 50 } };
+    const intakeIds: string[] = [];
+    preflightDiscordMessageMock.mockImplementation(
+      async (preflightParams: { data: { channel_id: string; message?: { id?: string } } }) => ({
+        ...createPreflightContext(preflightParams.data.channel_id),
+        messageId: preflightParams.data.message?.id,
+      }),
+    );
+    processDiscordMessageMock.mockImplementation(async (ctx: { messageId?: string }) => {
+      intakeIds.push(ctx.messageId ?? "unknown");
+    });
+    const client = {
+      fetchChannel: vi.fn(async () => ({
+        id: "child-thread",
+        type: ChannelType.PublicThread,
+        parent_id: "source-parent",
+      })),
+    };
+    const handler = createDiscordMessageHandler(params);
+
+    await handler(createMessageData("m-child-1", "child-thread", false) as never, client as never);
+    await handler(createMessageData("m-child-2", "child-thread", false) as never, client as never);
+    await flushQueueWork();
+
+    expect(resolveInboundEventPolicyMock.mock.calls.map(([event]) => event)).toEqual([
+      expect.objectContaining({
+        conversationId: "child-thread",
+        parentConversationId: "source-parent",
+        providerEventId: "m-child-1",
+      }),
+      expect.objectContaining({
+        conversationId: "child-thread",
+        parentConversationId: "source-parent",
+        providerEventId: "m-child-2",
+      }),
+    ]);
+    expect(intakeIds).toEqual(["m-child-1", "m-child-2"]);
+  });
+
+  it("keeps provider events separate when Discord channel identity cannot be resolved", async () => {
+    vi.useFakeTimers();
+    const params = createDiscordHandlerParams();
+    params.cfg.messages = { inbound: { debounceMs: 50 } };
+    const intakeIds: string[] = [];
+    preflightDiscordMessageMock.mockImplementation(
+      async (preflightParams: { data: { channel_id: string; message?: { id?: string } } }) => ({
+        ...createPreflightContext(preflightParams.data.channel_id),
+        messageId: preflightParams.data.message?.id,
+      }),
+    );
+    processDiscordMessageMock.mockImplementation(async (ctx: { messageId?: string }) => {
+      intakeIds.push(ctx.messageId ?? "unknown");
+    });
+    const client = {
+      fetchChannel: vi.fn(async () => {
+        throw new Error("unavailable");
+      }),
+    };
+    const handler = createDiscordMessageHandler(params);
+
+    await handler(
+      createMessageData("m-unknown-1", "unknown-channel", false) as never,
+      client as never,
+    );
+    await handler(
+      createMessageData("m-unknown-2", "unknown-channel", false) as never,
+      client as never,
+    );
+    await flushQueueWork();
+
+    expect(resolveInboundEventPolicyMock).not.toHaveBeenCalled();
+    expect(intakeIds).toEqual(["m-unknown-1", "m-unknown-2"]);
+  });
+
+  it("preserves ordinary Discord debounce aggregation", async () => {
+    vi.useFakeTimers();
+    preflightDiscordMessageMock.mockReset();
+    processDiscordMessageMock.mockReset();
+    const params = createDiscordHandlerParams();
+    params.cfg.messages = { inbound: { debounceMs: 50 } };
+    preflightDiscordMessageMock.mockImplementation(
+      async (preflightParams: { data: { channel_id: string } }) =>
+        createPreflightContext(preflightParams.data.channel_id),
+    );
+    const client = {
+      fetchChannel: vi.fn(async () => ({ id: "ordinary", type: ChannelType.GuildText })),
+    };
+    const handler = createDiscordMessageHandler(params);
+
+    await handler(createMessageData("m-ordinary-1", "ordinary", false) as never, client as never);
+    await handler(createMessageData("m-ordinary-2", "ordinary", false) as never, client as never);
+    expect(preflightDiscordMessageMock).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(50);
+    expect(preflightDiscordMessageMock).toHaveBeenCalledTimes(1);
   });
 
   it("starts accepted DM typing feedback before queued processing starts", async () => {
@@ -220,6 +378,27 @@ describe("createDiscordMessageHandler queue behavior", () => {
     expect(replyTypingFeedback.onReplyStart.mock.invocationCallOrder[0]).toBeLessThan(
       processDiscordMessageMock.mock.invocationCallOrder[0],
     );
+  });
+
+  it("does not start accepted typing for an exclusively owned source", async () => {
+    preflightDiscordMessageMock.mockReset();
+    processDiscordMessageMock.mockReset();
+    preflightDiscordMessageMock.mockImplementation(async () => ({
+      ...createAcceptedDmPreflightContext(),
+      inboundEventPolicy: { kind: "exclusive", ownerPluginId: "deliberation" },
+    }));
+    processDiscordMessageMock.mockResolvedValue(undefined);
+    const createReplyTypingFeedback = vi.fn(() => createReplyTypingFeedbackMock("dm-1"));
+
+    const handler = createDiscordMessageHandler({
+      ...createDiscordHandlerParams(),
+      testing: { createReplyTypingFeedback },
+    });
+    await handler(createMessageData("m-owned", "dm-1") as never, {} as never);
+    await flushQueueWork();
+
+    expect(createReplyTypingFeedback).not.toHaveBeenCalled();
+    expect(processDiscordMessageMock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps accepted DM dispatch running when accepted typing feedback fails", async () => {

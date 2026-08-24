@@ -1,0 +1,50 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The required current cross-repository GREEN proof for the repaired Deliberation harness is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied task proof records a genuine current-harness RED with exit code 1, 12 passing and 11 failing scenarios, and explicitly states that GREEN is blocked because the hash-matched approved KM runtime rejects the required pipelineId and mode-bearing deliveryTarget contract with 400 SCHEMA_INVALID. The checkpoint leaves resolution, GREEN capture, and completion verification unfinished, and the caller-owned Test Gate was not run.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal-001 is an acceptance evidence repair whose required outcome is successful owner-backed runtime completion of the named scenarios. A runtime RED establishes the contract divergence but does not provide the requested passing integration proof, so the goal remains unverified.",
+      "required": "Supply caller-owned evidence from an approved, contract-converged KM revision showing the canonical cross-repository integration command exits successfully and completes the required runtime scenarios while external/live convergence remains explicitly unknown.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-wave-3956.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-wave-3956.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-22_followup-bold-wave-3956-deliberation-validate-fixtures-bound-legacy-config-and-repai.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_bold-wave-3956_deliberation-validate-fixtures-bound-legacy-config-and.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation: validate fixtures, bound legacy config, and repair integration proof: goal-001: Deliberat"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-wave-3956-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-wave-3956"
+}

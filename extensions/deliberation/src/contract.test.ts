@@ -2,11 +2,185 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  validateJsonSchemaValue,
+  type JsonSchemaObject,
+} from "openclaw/plugin-sdk/json-schema-runtime";
 import { describe, expect, it } from "vitest";
 
 const contractDir = join(dirname(fileURLToPath(import.meta.url)), "../contracts");
 
+type SchemaReference = { $ref: string };
+type ContractEndpoint = {
+  method: string;
+  path: string;
+  request: Record<"headers" | "query" | "body", SchemaReference>;
+  responses: Record<string, SchemaReference>;
+};
+type ContractFixture = {
+  name: string;
+  request: {
+    method: string;
+    path: string;
+    headers: unknown;
+    query: unknown;
+    body: unknown;
+  };
+  response: { status: number; body: unknown };
+};
+
+const expectedRequestSchemaErrors: Record<string, { location: "headers" | "body"; field: string }> =
+  {
+    "auth.missing": { location: "headers", field: "Authorization" },
+    "version.unsupported": {
+      location: "headers",
+      field: "X-Deliberation-Protocol-Version",
+    },
+    "schema.unknown-field": { location: "body", field: "unknown" },
+    "intake.debounce-override-rejected": { location: "body", field: "debounceSeconds" },
+    "intake.account-missing": { location: "body", field: "sourceTarget" },
+    "intake.historical-reopen-rejected": { location: "body", field: "sourceTarget" },
+  };
+
+function normalizeNullableObjectsForRuntime(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(normalizeNullableObjectsForRuntime);
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  const normalized: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    normalized[key] = normalizeNullableObjectsForRuntime(child);
+  }
+  if (Array.isArray(normalized.type) && normalized.type.includes("null")) {
+    const { type: _type, ...objectSchema } = normalized;
+    const anyOf: Array<Record<string, unknown>> = [];
+    for (const type of normalized.type) {
+      if (type !== "null") {
+        anyOf.push({ ...objectSchema, type });
+      }
+    }
+    anyOf.push({ type: "null" });
+    return { anyOf };
+  }
+  return normalized;
+}
+
 describe("accepted Deliberation contracts", () => {
+  it("validates every fixture request and status-specific response", async () => {
+    const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
+      schemas: Record<string, JsonSchemaObject>;
+      endpoints: ContractEndpoint[];
+    };
+    const fixtures = JSON.parse(
+      await readFile(join(contractDir, "cutover-controls-v1.json"), "utf8"),
+    ) as { cases: ContractFixture[] };
+    // TypeBox emits unsafe property probes for the contract's draft-style nullable objects.
+    // This equivalent form keeps the referenced closed schema executable for null values.
+    const runtimeSchemas = normalizeNullableObjectsForRuntime(contract.schemas) as Record<
+      string,
+      JsonSchemaObject
+    >;
+
+    for (const fixture of fixtures.cases) {
+      const endpoint = contract.endpoints.find(
+        (candidate) =>
+          candidate.method === fixture.request.method && candidate.path === fixture.request.path,
+      );
+      expect(endpoint, `${fixture.name}: unknown endpoint`).toBeDefined();
+      if (!endpoint) {
+        continue;
+      }
+
+      const requestErrors: Array<{ location: string; field: string; detail: string }> = [];
+      for (const location of ["headers", "query", "body"] as const) {
+        let result: ReturnType<typeof validateJsonSchemaValue>;
+        try {
+          result = validateJsonSchemaValue({
+            schema: {
+              ...endpoint.request[location],
+              schemas: runtimeSchemas,
+            } as JsonSchemaObject,
+            cacheKey: `deliberation-fixture:${fixture.name}:request:${location}`,
+            value: fixture.request[location],
+          });
+        } catch (error) {
+          throw new Error(`${fixture.name}: request ${location}: ${String(error)}`, {
+            cause: error,
+          });
+        }
+        if (!result.ok) {
+          requestErrors.push(
+            ...result.errors.map((error) => ({
+              location,
+              field: error.additionalProperty ?? error.path,
+              detail: error.text,
+            })),
+          );
+        }
+      }
+
+      const expectedError = expectedRequestSchemaErrors[fixture.name];
+      if (expectedError) {
+        expect(requestErrors, fixture.name).toHaveLength(1);
+        expect(requestErrors[0]?.location, fixture.name).toBe(expectedError.location);
+        expect(requestErrors[0]?.detail, fixture.name).toContain(expectedError.field);
+      } else if (requestErrors.length > 0) {
+        expect(fixture.response, fixture.name).toMatchObject({
+          status: 400,
+          body: { error: { code: "SCHEMA_INVALID" } },
+        });
+      }
+
+      const responseSchema = endpoint.responses[String(fixture.response.status)];
+      expect(responseSchema, `${fixture.name}: unknown response status`).toBeDefined();
+      if (!responseSchema) {
+        continue;
+      }
+      let responseResult: ReturnType<typeof validateJsonSchemaValue>;
+      try {
+        responseResult = validateJsonSchemaValue({
+          schema: { ...responseSchema, schemas: runtimeSchemas } as JsonSchemaObject,
+          cacheKey: `deliberation-fixture:${fixture.name}:response:${fixture.response.status}`,
+          value: fixture.response.body,
+        });
+      } catch (error) {
+        throw new Error(`${fixture.name}: response ${fixture.response.status}: ${String(error)}`, {
+          cause: error,
+        });
+      }
+      expect(responseResult, `${fixture.name}: invalid response`).toMatchObject({ ok: true });
+    }
+  });
+
+  it("requires the KM owner to adopt immutable pipeline and target evidence", async () => {
+    const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
+      schemas: {
+        intakeBody: { properties: Record<string, unknown>; required: string[] };
+        deliveryTarget: { properties: Record<string, unknown> };
+        deliveryEnvelope: { properties: Record<string, unknown>; required: string[] };
+      };
+    };
+    const provenance = JSON.parse(await readFile(join(contractDir, "provenance.json"), "utf8")) as {
+      openclawProducerExtension: { status: string; kmOwnerBaselineChanged: boolean };
+    };
+
+    expect(contract.schemas.intakeBody.required).toEqual(
+      expect.arrayContaining(["pipelineId", "deliveryTarget"]),
+    );
+    expect(contract.schemas.deliveryEnvelope.required).toContain("pipelineId");
+
+    expect(Object.keys(contract.schemas.deliveryTarget.properties)).toEqual([
+      "provider",
+      "account",
+      "channel",
+      "threadId",
+    ]);
+    expect(provenance.openclawProducerExtension.status).not.toMatch(/pending/i);
+    expect(provenance.openclawProducerExtension.kmOwnerBaselineChanged).toBe(true);
+  });
+
   it("matches the accepted provenance hashes", async () => {
     const provenance = JSON.parse(await readFile(join(contractDir, "provenance.json"), "utf8")) as {
       files: Record<string, string>;
@@ -133,8 +307,11 @@ describe("accepted Deliberation contracts", () => {
     };
     const targetRef = { $ref: "#/schemas/deliveryTarget" };
 
-    expect(contract.schemas.intakeBody.properties).not.toHaveProperty("deliveryTarget");
-    expect(contract.schemas.intakeBody.required).toContain("sourceThreadId");
+    expect(contract.schemas.intakeBody.properties.deliveryTarget).toEqual(targetRef);
+    expect(contract.schemas.intakeBody.required).toEqual(
+      expect.arrayContaining(["pipelineId", "deliveryTarget"]),
+    );
+    expect(contract.schemas.intakeBody.required).not.toContain("sourceThreadId");
     expect(contract.schemas.intakeBody.properties.sourceThreadId).toEqual({
       type: "string",
       minLength: 1,
@@ -166,7 +343,7 @@ describe("accepted Deliberation contracts", () => {
     expect(contract.schemas.nullableDeliveryTarget).toEqual({
       oneOf: [targetRef, { type: "null" }],
     });
-    expect(contract.schemas.reservationBody.properties.deliveryTarget).toEqual(targetRef);
+    expect(contract.schemas.reservationBody.properties).not.toHaveProperty("deliveryTarget");
     expect(contract.schemas.reservationBody.required).not.toContain("deliveryTarget");
     expect(contract.schemas.deliveryEnvelope.properties.deliveryTarget).toEqual(targetRef);
     expect(contract.schemas.deliveryEnvelope.required).toContain("deliveryTarget");
@@ -192,6 +369,15 @@ describe("accepted Deliberation contracts", () => {
     const fixtures = JSON.parse(
       await readFile(join(contractDir, "openclaw-overlay-v1.json"), "utf8"),
     ) as {
+      producerIntakeExtension: {
+        proposal: string;
+        owner: string;
+        kmAdoption: string;
+        requiredFields: string[];
+        authority: string;
+        targetEquality: string;
+        derivationVectors: Record<string, Record<string, unknown>>;
+      };
       structuredDestinationVectors: {
         threadedDiscord: Record<string, string>;
         nonThreadedDiscord: Record<string, string>;
@@ -207,22 +393,68 @@ describe("accepted Deliberation contracts", () => {
       };
     };
 
+    expect(fixtures.producerIntakeExtension).toMatchObject({
+      proposal: "proposal-20260820-203458-161e2c",
+      owner: "openclaw-fork",
+      requiredFields: ["pipelineId", "deliveryTarget"],
+      targetEquality: "exact deep equality from intake through lifecycle evidence",
+    });
+    expect(fixtures.producerIntakeExtension.kmAdoption).toContain("adopted");
+    expect(fixtures.producerIntakeExtension.authority).toContain(
+      "message content and model output have no routing authority",
+    );
+    expect(fixtures.producerIntakeExtension.derivationVectors).toMatchObject({
+      omittedDiscordRoot: {
+        pipelineId: "discord-source",
+        deliveryTarget: { mode: "source_anchor", threadId: "discord-message-1" },
+      },
+      omittedDiscordChild: {
+        providerEventId: "discord-message-2",
+        sourceThreadId: "discord-thread-1",
+        deliveryTarget: { mode: "thread", threadId: "discord-thread-1" },
+      },
+      omittedSlackRoot: {
+        providerEventId: "1723640000.000100",
+        deliveryTarget: { mode: "thread", threadId: "1723640000.000100" },
+      },
+      omittedSlackChild: {
+        providerEventId: "1723640000.000200",
+        sourceThreadId: "1723640000.000100",
+        deliveryTarget: { mode: "thread", threadId: "1723640000.000100" },
+      },
+      explicitRoot: {
+        deliveryTarget: {
+          provider: "discord",
+          account: "delivery-account",
+          channel: "delivery-channel",
+          mode: "root",
+        },
+      },
+      explicitThread: { deliveryTarget: { mode: "thread", threadId: "delivery-thread" } },
+    });
+    expect(
+      fixtures.producerIntakeExtension.derivationVectors.explicitRoot?.deliveryTarget,
+    ).not.toHaveProperty("threadId");
+
     expect(fixtures.structuredDestinationVectors).toMatchObject({
       threadedDiscord: {
         provider: "discord",
         account: "delivery-account",
         channel: "delivery-channel",
+        mode: "thread",
         threadId: "delivery-thread",
       },
       nonThreadedDiscord: {
         provider: "discord",
         account: "delivery-account",
         channel: "delivery-channel",
+        mode: "root",
       },
       threadedSlack: {
         provider: "slack",
         account: "workspace-a",
         channel: "C123",
+        mode: "thread",
         threadId: "1712345678.123456",
       },
       lifecycle: [
@@ -245,7 +477,7 @@ describe("accepted Deliberation contracts", () => {
       slack: {
         account: "OpenClaw workspace/account identifier",
         channel: "OpenClaw channel identifier",
-        threadId: "required Slack thread timestamp",
+        threadId: "Slack thread timestamp, required only when mode is thread",
         threadIdPattern: "^\\d+\\.\\d+$",
       },
     });
@@ -255,7 +487,8 @@ describe("accepted Deliberation contracts", () => {
     const fixtures = JSON.parse(
       await readFile(join(contractDir, "cutover-controls-v1.json"), "utf8"),
     ) as {
-      sourceThreadVectors: Array<Record<string, string>>;
+      pipelineVectors: { live: string[]; historical: string; targets: unknown[] };
+      identityVectors: { positive: Array<Record<string, string>> };
       cases: Array<{
         name: string;
         request: { body: Record<string, unknown> | null };
@@ -263,44 +496,23 @@ describe("accepted Deliberation contracts", () => {
       }>;
     };
 
-    expect(fixtures.sourceThreadVectors).toEqual([
-      {
-        name: "discord.root",
-        provider: "discord",
-        account: "account-a",
-        channel: "shared-channel",
-        providerEventId: "discord-event-001",
-        sourceThreadId: "discord-event-001",
-        sourceTarget: "v1:discord:account-a:shared-channel",
-      },
-      {
-        name: "slack.root",
-        provider: "slack",
-        account: "workspace-a",
-        channel: "C123",
-        providerEventId: "1723640000.000100",
-        sourceThreadId: "1723640000.000100",
-        sourceTarget: "v1:slack:workspace-a:C123",
-      },
-      {
-        name: "slack.reply",
-        provider: "slack",
-        account: "workspace-a",
-        channel: "C123",
-        providerEventId: "1723640000.000200",
-        sourceThreadId: "1723640000.000100",
-        sourceTarget: "v1:slack:workspace-a:C123",
-      },
-    ]);
+    expect(fixtures.pipelineVectors).toMatchObject({
+      live: ["discord-source", "slack-source", "synthetic-diagnostic"],
+      historical: "__historical_v1__",
+    });
+    expect(fixtures.identityVectors.positive).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "discord.producer.default",
+          sourceTarget: "v1:discord:default:1494265174389948538",
+        }),
+      ]),
+    );
     const reservation = fixtures.cases.find((item) => item.name === "reserve.success");
     if (!reservation) {
       throw new Error("missing reserve.success fixture");
     }
-    expect(reservation.request.body?.deliveryTarget).toEqual({
-      provider: "discord",
-      account: "default",
-      channel: "001",
-    });
+    expect(reservation.request.body).not.toHaveProperty("deliveryTarget");
     expect(
       (reservation.response.body.reservation as Record<string, unknown>).deliveryEnvelope,
     ).toMatchObject({
@@ -309,6 +521,7 @@ describe("accepted Deliberation contracts", () => {
         account: "default",
         channel: "001",
       },
+      pipelineId: "discord-source",
     });
     expect(JSON.stringify(fixtures.cases.map((item) => item.response))).not.toMatch(
       /"(?:deliveryTarget|attemptedTarget)":"/,
@@ -323,7 +536,6 @@ describe("accepted Deliberation contracts", () => {
         }),
         deliveryEnvelopeDigest: expect.stringMatching(/^[0-9a-f]{64}$/),
         reserveIdempotencyKey: expect.any(String),
-        attemptedTarget: expect.objectContaining({ provider: "discord" }),
       });
     }
     const failedCompletion = fixtures.cases.find((item) => item.name === "complete.failed");
@@ -334,23 +546,59 @@ describe("accepted Deliberation contracts", () => {
       delivery: { attempts: Array<Record<string, unknown>> };
     };
     expect(failedRecord.delivery.attempts[0].providerEvidence).toEqual({
-      code: "provider_timeout",
+      code: "provider_rejected",
     });
   });
 
   it("pins the accepted KM owner revision and owner files", async () => {
     const provenance = JSON.parse(await readFile(join(contractDir, "provenance.json"), "utf8")) as {
-      acceptedRevision: string;
+      runtimeRevision: { head: string; scope: string; blocking: boolean };
+      semanticAuthority: string;
       ownerFiles: Record<string, string>;
+      openclawProducerExtension: Record<string, unknown>;
+      repositoryLocalEvidence: Record<string, unknown>;
+      configuredKmCheckoutEvidence: Record<string, unknown>;
+      externalLiveDeployment: Record<string, unknown>;
     };
-    expect(provenance.acceptedRevision).toBe("872436aad992826b5d501597e265e8c2b94e6f78");
+    expect(provenance.runtimeRevision).toEqual({
+      head: "printed by the owner-backed gate at execution time",
+      scope: "runtime provenance only",
+      blocking: false,
+    });
+    expect(provenance.semanticAuthority).toContain("SHA-256");
     expect(provenance.ownerFiles).toEqual({
       "km-system/contracts/deliberation-v2/v1/contract.json":
-        "d3c0771d5c1d63fecc18cb93e381136fa8af3054c96cbcdebb95b7785a46dc5f",
+        "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
       "km-system/contracts/deliberation-v2/v1/fixtures.json":
-        "a399132355c792e3861a3e8e2d8e2542e0ccb517231e817acf8afe3c54cca4b7",
+        "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
+      "km-system/lib/deliberation_wire.py":
+        "a0e42e4fe54eedab6f9955e77f439a4e69c9614a60560ca46532ce0de9dbb528",
+      "km-system/lib/deliberation_spool_contracts.py":
+        "47587e405d3e6b7f433eb7d450bd02969546860ff0d6822ad7bea9ff2478a0ca",
     });
     expect(provenance).not.toHaveProperty("ownerPin");
+    expect(provenance.openclawProducerExtension).toEqual({
+      proposal: "proposal-20260820-203458-161e2c",
+      owner: "openclaw-fork",
+      status:
+        "repository-local closed schemas and lifecycle fixtures are semantically consistent; external deployment is unknown",
+      kmOwnerBaselineChanged: true,
+    });
+    expect(provenance).toMatchObject({
+      repositoryLocalEvidence: {
+        schemaValidation: "all request and status-specific response fixtures pass",
+        scope: "OpenClaw repository only",
+      },
+      configuredKmCheckoutEvidence: {
+        status: "accepted artifact authority",
+        contractSha256: "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
+        fixturesSha256: "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
+        wireSha256: "a0e42e4fe54eedab6f9955e77f439a4e69c9614a60560ca46532ce0de9dbb528",
+        spoolContractsSha256: "47587e405d3e6b7f433eb7d450bd02969546860ff0d6822ad7bea9ff2478a0ca",
+        result: expect.stringContaining("runtime HEAD is non-blocking"),
+      },
+      externalLiveDeployment: { status: "unknown" },
+    });
     const identity = JSON.parse(
       await readFile(join(contractDir, "source-identity-v1.json"), "utf8"),
     ) as { version: string; grammar: string; providerAgreement: string };

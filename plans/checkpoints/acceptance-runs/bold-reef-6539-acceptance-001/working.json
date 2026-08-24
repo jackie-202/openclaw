@@ -1,0 +1,70 @@
+{
+  "findings": [
+    {
+      "claim": "Passing named owner-runtime evidence for all 23 required scenarios is absent.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The task checkpoint states owner-runtime GREEN remains blocked by a semantically divergent owner contract, and the supplied behavioral run reports 23 tests with 12 passing and 11 failing rather than 23 passing named OR-01 through OR-23 results.",
+      "rationale": "Goal goal-001 requires passing named automated evidence for every owner-runtime scenario; a blocked/failing owner-backed run and separate supporting local totals do not establish that acceptance gate.",
+      "required": "Provide a reviewable mapping of OR-01 through OR-23 to passing automated results at the required owner-listener and isolated-SQLite boundaries using an approved converged immutable owner checkout.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-reef-6539.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-reef-6539.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_bold-reef-6539_close-deliberation-owner-runtime-convergence-gates-before.md"
+        }
+      ]
+    },
+    {
+      "claim": "The mandatory owner-runtime TDD proof is incomplete because it has no matching-command GREEN result.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied proof records a genuine owner-backed RED with exit code 1 and 11 failing scenarios, while the checkpoint explicitly says the proof helper refused to record false GREEN and owner GREEN remains blocked.",
+      "rationale": "The manifest declares TDD required, so a RED-only artifact cannot demonstrate the required failing-then-passing behavioral cycle for the owner-runtime goal.",
+      "required": "After converging against an approved immutable owner checkout, capture a passing GREEN execution of the identical recorded behavioral command and retain both phases with owner revision provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-reef-6539.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-reef-6539.checkpoint.md"
+        },
+        {
+          "kind": "manifest",
+          "reference": "plans/checkpoints/acceptance-runs/bold-reef-6539-acceptance-001/manifest.json"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Close deliberation owner-runtime convergence gates before rollout: goal-001: All 23 owner-runtime scena"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-reef-6539-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bold-reef-6539"
+}

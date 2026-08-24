@@ -7,6 +7,7 @@ import {
 import {
   buildChannelInboundEventContext,
   buildMentionRegexes,
+  claimChannelInboundEvent,
   classifyChannelInboundEvent,
   formatInboundEnvelope,
   implicitMentionKindWhen,
@@ -14,6 +15,7 @@ import {
   matchesMentionWithExplicit,
   recordDroppedChannelInboundHistory,
   resolveEnvelopeFormatOptions,
+  resolveChannelInboundEventPolicy,
   resolveUnmentionedGroupInboundPolicy,
   toInboundMediaFacts,
 } from "openclaw/plugin-sdk/channel-inbound";
@@ -1065,6 +1067,47 @@ export async function prepareSlackMessage(params: {
     hasControlCommand: hasControlCommandInMessage,
     hasAbortRequest,
   });
+  const providerEventId = message.ts ?? message.event_ts;
+  const inboundEventPolicy = resolveChannelInboundEventPolicy({
+    provider: "slack",
+    accountId: account.accountId,
+    conversationId: message.channel,
+    providerEventId,
+  });
+  const claimResult = await claimChannelInboundEvent({
+    policy: inboundEventPolicy,
+    event: {
+      content: rawBody,
+      body: rawBody,
+      bodyForAgent: rawBody,
+      timestamp: resolveSlackTimestampMs(providerEventId),
+      channel: "slack",
+      provider: "slack",
+      eventType: "message",
+      eventKind: inboundEventKind,
+      accountId: account.accountId,
+      conversationId: message.channel,
+      senderId,
+      threadId: isThreadReply ? threadTs : undefined,
+      messageId: providerEventId,
+      sessionKey,
+      isGroup: isRoomish,
+      commandAuthorized,
+      wasMentioned: effectiveWasMentioned,
+    },
+    context: {
+      channelId: "slack",
+      accountId: account.accountId,
+      conversationId: message.channel,
+      sessionKey,
+      senderId,
+      messageId: providerEventId,
+    },
+    log: logVerbose,
+  });
+  if (claimResult.kind === "terminal") {
+    return null;
+  }
 
   const ackReaction = resolveAckReaction(cfg, route.agentId, {
     channel: "slack",
@@ -1255,8 +1298,6 @@ export async function prepareSlackMessage(params: {
     directThreadRoutedToDmSession && !threadHistoryBody ? threadStarterBody : threadHistoryBody;
   const effectiveMessageThreadId =
     assistantThreadContext?.threadTs ?? threadContext.messageThreadId;
-  const providerEventId = message.ts ?? message.event_ts;
-
   const ctxPayload = buildChannelInboundEventContext({
     channel: "slack",
     accountId: route.accountId,

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T17:44:24+00:00",
+    "implementingStartedAt": "2026-08-23T17:33:06+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-bold-wave-0608-acceptance-fix-converge-openclaw-deliberation-with-canonical.md",
+    "taskId": "bold-wave-0608",
+    "title": "[acceptance-fix] [acceptance-fix] Converge OpenClaw Deliberation with canonical KM owner and cross-repository gate: goal"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Converge OpenClaw Deliberation with canonical KM owner and cross-repository gate: goal"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-wave-0608-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-wave-0608",
+  "tddRequired": true
+}

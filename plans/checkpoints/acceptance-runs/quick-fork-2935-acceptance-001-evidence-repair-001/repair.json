@@ -1,0 +1,51 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/quick-fork-2935.evidence.md",
+      "provenance": "evidence_repair:quick-fork-2935-acceptance-001-evidence-repair-001",
+      "size": 1891
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/quick-fork-2935.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/quick-fork-2935-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "19f39b5e17df4aef1e9e422d59252368b3a4a8cf",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-23T21:04:52.994586+00:00",
+  "gaps": [
+    "command_lines_truncated",
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "env PYTHONPATH=/Users/michal/.openclaw/workspace/km-system/scripts:/Users/michal/.openclaw/workspace/km-system/lib OPENCLAW_FORK_ROOT=/Users/michal/Projects/openclaw-fork /Users/michal/.openclaw/works",
+      "outcome": "============================== 1 failed in 1.11s ==============================="
+    },
+    {
+      "command": "node scripts/run-vitest.mjs run --config test/vitest/vitest.extension-discord.config.ts extensions/discord/src/monitor/message-handler.deliberation.test.ts --reporter=json --outputFile.json=/Users/mic",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/save-learning/add-frontmatter.py\" --title \"Cross-repository gates require coherent authority and testcase status\" --category \"tooling\" --component \"ci-cd",
+      "outcome": "- Gate validator: 16 passed, 1 conditional skip."
+    },
+    {
+      "command": "TASK_ID=quick-brook-1900 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- env OPENCLAW_VITEST_MAX_WORKERS=1 pnpm test test/scripts/deliberation-full-gate.test.ts -t ",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=quick-brook-1900 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- env OPENCLAW_VITEST_MAX_WORKERS=1 pnpm test test/scripts/deliberation-full-gate.test.ts -",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "quick-fork-2935-acceptance-001-evidence-repair-001",
+  "sourceRunId": "quick-fork-2935-acceptance-001",
+  "startedAt": "2026-08-23T21:04:50.989519+00:00",
+  "status": "escalated"
+}

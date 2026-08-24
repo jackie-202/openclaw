@@ -1,4 +1,10 @@
-import { routeKey, type DeliberationConfig, type DeliberationRoute } from "./config.js";
+import {
+  routeKey,
+  type DeliberationConfig,
+  type DeliberationPipeline,
+  type DeliberationRoute,
+} from "./config.js";
+import type { KmWireDeliveryTarget } from "./km-client.js";
 import { compareSlackTimestamps, isSlackTimestamp } from "./slack-timestamp.js";
 import { encodeSourceIdentity } from "./source-identity.js";
 
@@ -9,6 +15,7 @@ type RouteCandidate = {
   channel?: unknown;
   accountId?: unknown;
   conversationId?: unknown;
+  parentConversationId?: unknown;
   target?: unknown;
 };
 
@@ -24,10 +31,14 @@ type InboundCandidate = RouteCandidate & {
 export type SourceAdmission =
   | {
       accepted: true;
+      pipeline: DeliberationPipeline;
+      pipelineId: string;
+      deliveryTarget: KmWireDeliveryTarget;
       route: DeliberationRoute;
       sourceTarget: string;
       providerEventId: string;
       sourceThreadId: string;
+      historyChannelId: string;
       threadId?: string;
       senderId: string;
     }
@@ -57,8 +68,10 @@ export function candidateRoute(candidate: RouteCandidate): DeliberationRoute | u
   const channel = agreedValue(candidate.channelId, candidate.channel);
   const accountId = agreedValue(candidate.accountId);
   const conversationId = normalizedTarget(candidate.conversationId);
+  const parentConversationId = normalizedTarget(candidate.parentConversationId);
   const targetValue = normalizedTarget(candidate.target);
-  const target = agreedValue(conversationId, targetValue);
+  const directTarget = agreedValue(conversationId, targetValue);
+  const target = channel === "discord" ? (parentConversationId ?? directTarget) : directTarget;
   if (!isSupportedProvider(channel) || !accountId || !target) {
     return undefined;
   }
@@ -68,6 +81,27 @@ export function candidateRoute(candidate: RouteCandidate): DeliberationRoute | u
     channel: target,
   });
   return sourceTarget ? { channel, accountId, target } : undefined;
+}
+
+function pipelineTargetToWire(
+  pipeline: DeliberationPipeline,
+  route: DeliberationRoute,
+  sourceThreadId: string,
+): KmWireDeliveryTarget {
+  const target = pipeline.target;
+  return target
+    ? {
+        provider: target.channel,
+        account: target.accountId,
+        channel: target.target,
+        ...(target.threadId === undefined ? {} : { threadId: target.threadId }),
+      }
+    : {
+        provider: route.channel,
+        account: route.accountId,
+        channel: route.target,
+        threadId: sourceThreadId,
+      };
 }
 
 export function admitInboundSource(
@@ -88,15 +122,27 @@ export function admitInboundSource(
   if (rawTargets.some((value, index) => value !== undefined && targets[index] === undefined)) {
     return { accepted: false, reason: "malformed-route" };
   }
-  const target = agreedValue(...targets);
-  if (!isSupportedProvider(channel) || !accountId || !target) {
+  const directTarget = agreedValue(...targets);
+  const rawParents = [event.parentConversationId, context.parentConversationId];
+  const parents = rawParents.map(normalizedTarget);
+  if (rawParents.some((value, index) => value !== undefined && parents[index] === undefined)) {
+    return { accepted: false, reason: "malformed-route" };
+  }
+  const parentTarget = agreedValue(...parents);
+  if (rawParents.some((value) => value !== undefined) && !parentTarget) {
+    return { accepted: false, reason: "ambiguous-route" };
+  }
+  if (!isSupportedProvider(channel) || !accountId || !directTarget) {
     return { accepted: false, reason: "ambiguous-route" };
   }
   const providerEventId = agreedValue(event.messageId, context.messageId);
   if (!providerEventId) {
     return { accepted: false, reason: "missing-message-id" };
   }
-  const threadId = event.threadId;
+  const threadId = agreedValue(event.threadId, context.threadId);
+  if ((event.threadId !== undefined || context.threadId !== undefined) && threadId === undefined) {
+    return { accepted: false, reason: "malformed-message-id" };
+  }
   if (
     channel === "slack" &&
     (!isSlackTimestamp(providerEventId) ||
@@ -107,8 +153,29 @@ export function admitInboundSource(
   ) {
     return { accepted: false, reason: "malformed-message-id" };
   }
+  if (channel === "slack" && parentTarget !== undefined && parentTarget !== directTarget) {
+    return { accepted: false, reason: "ambiguous-route" };
+  }
+  if (channel === "discord" && parentTarget === directTarget) {
+    return { accepted: false, reason: "ambiguous-route" };
+  }
+  if (channel === "discord" && threadId !== undefined && parentTarget === undefined) {
+    return { accepted: false, reason: "ambiguous-route" };
+  }
+  if (
+    channel === "discord" &&
+    parentTarget !== undefined &&
+    threadId !== undefined &&
+    threadId !== directTarget
+  ) {
+    return { accepted: false, reason: "ambiguous-route" };
+  }
   const normalizedThreadId =
-    channel === "slack" && typeof threadId === "string" ? threadId : providerEventId;
+    channel === "slack" && threadId
+      ? threadId
+      : channel === "discord" && parentTarget
+        ? directTarget
+        : providerEventId;
   if (!SOURCE_THREAD_ID_PATTERN.test(normalizedThreadId)) {
     return { accepted: false, reason: "malformed-message-id" };
   }
@@ -116,11 +183,13 @@ export function admitInboundSource(
   if (!senderId) {
     return { accepted: false, reason: "missing-sender-id" };
   }
-  const route = { channel, accountId, target } satisfies DeliberationRoute;
+  const routeTarget = channel === "discord" ? (parentTarget ?? directTarget) : directTarget;
+  const route = { channel, accountId, target: routeTarget } satisfies DeliberationRoute;
   if (routeKey(route) === routeKey(config.processingSource)) {
     return { accepted: false, reason: "processing-route" };
   }
-  if (!config.sourceKeys.has(routeKey(route))) {
+  const pipeline = config.pipelineBySourceKey.get(routeKey(route));
+  if (!pipeline) {
     return { accepted: false, reason: "unmatched-route" };
   }
   const sourceTarget = encodeSourceIdentity({
@@ -131,10 +200,14 @@ export function admitInboundSource(
   return sourceTarget
     ? {
         accepted: true,
+        pipeline,
+        pipelineId: pipeline.id,
+        deliveryTarget: pipelineTargetToWire(pipeline, route, normalizedThreadId),
         route,
         sourceTarget,
         providerEventId,
         sourceThreadId: normalizedThreadId,
+        historyChannelId: directTarget,
         ...(channel === "slack" ? { threadId: normalizedThreadId } : {}),
         senderId,
       }
@@ -143,5 +216,5 @@ export function admitInboundSource(
 
 export function matchesSource(config: DeliberationConfig, candidate: RouteCandidate): boolean {
   const route = candidateRoute(candidate);
-  return route ? config.sourceKeys.has(routeKey(route)) : false;
+  return route ? config.pipelineBySourceKey.has(routeKey(route)) : false;
 }

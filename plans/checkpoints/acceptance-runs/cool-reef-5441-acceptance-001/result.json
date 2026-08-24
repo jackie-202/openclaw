@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Carry deliberation pipeline identity and effective target from intake: goal-001: Carry deliberation pip"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-reef-5441-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-reef-5441"
+}

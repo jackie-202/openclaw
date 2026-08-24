@@ -29,6 +29,8 @@ export type {
   ChannelOutboundPayloadContext,
   ChannelOutboundPayloadHint,
   ChannelOutboundTargetRef,
+  ChannelOutboundTextAttemptContext,
+  ChannelOutboundTextAttemptResult,
   ChannelDeliveryCapabilities,
 } from "./outbound.types.js";
 import type {

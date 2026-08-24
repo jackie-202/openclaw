@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The caller-required TDD evidence must demonstrate the planned RED/GREEN cycle with fresh GREEN from the identical owner contract-gate command.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The proof credibly links the historical RED from the parent contract test, but its GREEN phase runs extensions/deliberation/src/plugin.test.ts instead of the plan's identical extensions/deliberation/src/contract.test.ts command. The supplied proof therefore does not establish that the exact RED contract gate became GREEN.",
+      "rationale": "The manifest declares tddRequired true, and the task plan explicitly defines the identical contract command as the GREEN evidence needed to close the original missing-owner-contract failure. Passing a different behavioral suite does not prove that required transition.",
+      "required": "Append credible fresh GREEN evidence from the identical contract-gate command specified in the plan, preserving the linked historical RED provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-reef-2510.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-vale-3982.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-21_calm-reef-2510_route-per-pipeline-deliberation-and-deliver-source-default.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Route per-pipeline deliberation and deliver source-default replies: goal-001: Route per-pipeline delibe"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-reef-2510-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "calm-reef-2510"
+}

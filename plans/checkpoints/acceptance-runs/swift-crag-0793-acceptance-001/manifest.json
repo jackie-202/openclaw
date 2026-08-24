@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-19T17:29:01+00:00",
+    "implementingStartedAt": "2026-08-19T17:23:47+00:00",
+    "taskFile": "plans/tasks/2026-08-19_followup-swift-crag-0793-update-stale-deliberation-intake-producer-test-to-optional-d.md",
+    "taskId": "swift-crag-0793",
+    "title": "[acceptance-fix] Update stale deliberation intake-producer test to optional Discord sourceThreadId semantics: goal-002: "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Update stale deliberation intake-producer test to optional Discord sourceThreadId semantics: goal-002:"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-crag-0793-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-crag-0793",
+  "tddRequired": false
+}

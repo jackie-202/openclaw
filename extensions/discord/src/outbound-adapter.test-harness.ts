@@ -6,10 +6,13 @@ type AsyncUnknownMock = Mock<(...args: unknown[]) => Promise<unknown>>;
 
 type DiscordOutboundHoisted = {
   sendMessageDiscordMock: AsyncUnknownMock;
+  sendTextAttemptDiscordMock: AsyncUnknownMock;
   sendDiscordComponentMessageMock: AsyncUnknownMock;
   sendPollDiscordMock: AsyncUnknownMock;
   sendWebhookMessageDiscordMock: AsyncUnknownMock;
   sendVoiceMessageDiscordMock: AsyncUnknownMock;
+  createThreadDiscordMock: AsyncUnknownMock;
+  fetchMessageDiscordMock: AsyncUnknownMock;
   getThreadBindingManagerMock: UnknownMock;
 };
 
@@ -27,17 +30,23 @@ function invokeMock<TArgs extends unknown[], TResult>(
 
 export function createDiscordOutboundHoisted(): DiscordOutboundHoisted {
   const sendMessageDiscordMock = vi.fn();
+  const sendTextAttemptDiscordMock = vi.fn();
   const sendDiscordComponentMessageMock = vi.fn();
   const sendPollDiscordMock = vi.fn();
   const sendWebhookMessageDiscordMock = vi.fn();
   const sendVoiceMessageDiscordMock = vi.fn();
+  const createThreadDiscordMock = vi.fn();
+  const fetchMessageDiscordMock = vi.fn();
   const getThreadBindingManagerMock = vi.fn();
   return {
     sendMessageDiscordMock,
+    sendTextAttemptDiscordMock,
     sendDiscordComponentMessageMock,
     sendPollDiscordMock,
     sendWebhookMessageDiscordMock,
     sendVoiceMessageDiscordMock,
+    createThreadDiscordMock,
+    fetchMessageDiscordMock,
     getThreadBindingManagerMock,
   };
 }
@@ -55,11 +64,26 @@ async function createDiscordSendModuleMock(
   const actual = await loadActual();
   return {
     ...actual,
+    createThreadDiscord: (...args: Parameters<DiscordSendModule["createThreadDiscord"]>) =>
+      invokeMock<
+        Parameters<DiscordSendModule["createThreadDiscord"]>,
+        ReturnType<DiscordSendModule["createThreadDiscord"]>
+      >(hoisted.createThreadDiscordMock, ...args),
+    fetchMessageDiscord: (...args: Parameters<DiscordSendModule["fetchMessageDiscord"]>) =>
+      invokeMock<
+        Parameters<DiscordSendModule["fetchMessageDiscord"]>,
+        ReturnType<DiscordSendModule["fetchMessageDiscord"]>
+      >(hoisted.fetchMessageDiscordMock, ...args),
     sendMessageDiscord: (...args: Parameters<DiscordSendModule["sendMessageDiscord"]>) =>
       invokeMock<
         Parameters<DiscordSendModule["sendMessageDiscord"]>,
         ReturnType<DiscordSendModule["sendMessageDiscord"]>
       >(hoisted.sendMessageDiscordMock, ...args),
+    sendTextAttemptDiscord: (...args: Parameters<DiscordSendModule["sendTextAttemptDiscord"]>) =>
+      invokeMock<
+        Parameters<DiscordSendModule["sendTextAttemptDiscord"]>,
+        ReturnType<DiscordSendModule["sendTextAttemptDiscord"]>
+      >(hoisted.sendTextAttemptDiscordMock, ...args),
     sendPollDiscord: (...args: Parameters<DiscordSendModule["sendPollDiscord"]>) =>
       invokeMock<
         Parameters<DiscordSendModule["sendPollDiscord"]>,
@@ -120,6 +144,15 @@ export async function installDiscordOutboundModuleSpies(hoisted: DiscordOutbound
   vi.spyOn(sendModule, "sendMessageDiscord").mockImplementation(
     mockedSendModule.sendMessageDiscord,
   );
+  vi.spyOn(sendModule, "sendTextAttemptDiscord").mockImplementation(
+    mockedSendModule.sendTextAttemptDiscord,
+  );
+  vi.spyOn(sendModule, "createThreadDiscord").mockImplementation(
+    mockedSendModule.createThreadDiscord,
+  );
+  vi.spyOn(sendModule, "fetchMessageDiscord").mockImplementation(
+    mockedSendModule.fetchMessageDiscord,
+  );
   vi.spyOn(sendModule, "sendPollDiscord").mockImplementation(mockedSendModule.sendPollDiscord);
   vi.spyOn(sendModule, "sendWebhookMessageDiscord").mockImplementation(
     mockedSendModule.sendWebhookMessageDiscord,
@@ -152,6 +185,15 @@ export function resetDiscordOutboundMocks(hoisted: DiscordOutboundHoisted) {
     messageId: "msg-1",
     channelId: "ch-1",
   });
+  hoisted.sendTextAttemptDiscordMock.mockReset().mockResolvedValue({
+    messageId: "msg-attempt-1",
+    channelId: "ch-1",
+    receipt: {
+      primaryPlatformMessageId: "msg-attempt-1",
+      platformMessageIds: ["msg-attempt-1"],
+      parts: [],
+    },
+  });
   hoisted.sendDiscordComponentMessageMock.mockReset().mockResolvedValue({
     messageId: "component-1",
     channelId: "ch-1",
@@ -168,6 +210,10 @@ export function resetDiscordOutboundMocks(hoisted: DiscordOutboundHoisted) {
     messageId: "voice-1",
     channelId: "ch-1",
   });
+  hoisted.createThreadDiscordMock.mockReset().mockResolvedValue({ id: "thread-created" });
+  hoisted.fetchMessageDiscordMock
+    .mockReset()
+    .mockResolvedValue({ thread: { id: "thread-existing" } });
   hoisted.getThreadBindingManagerMock.mockReset().mockReturnValue(null);
 }
 

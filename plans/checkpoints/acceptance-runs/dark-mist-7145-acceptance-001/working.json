@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The mandatory TDD artifact must demonstrate a valid RED and GREEN cycle for the acceptance repair's identical focused source-thread regression command.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The canonical proof metadata and both captured phases use only 'pnpm test extensions/deliberation/src/config.test.ts -- --reporter=verbose'. The supplied repair plan instead requires RED and GREEN for the identical focused command covering route-match, contract, KM client, and intake producer tests; the reused parser RED does not exercise the sourceThreadId regression repaired by this follow-up.",
+      "rationale": "Because tddRequired is true, a historical RED is credible only when it applies to the repaired behavior and is paired with the required identical-command GREEN. The supplied parser-only cycle proves canonical pipeline parsing, not the follow-up's sourceThreadId contract repair.",
+      "required": "Provide a genuine RED and GREEN capture for the repair's specified identical focused source-thread regression command, or supply credible historical RED provenance for that same behavior paired with an identical-command GREEN.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-mist-7145.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-21_dark-mist-7145_define-deliberation-pipelines-config-and-legacy.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-21_followup-dark-mist-7145-define-deliberation-pipelines-config-and-legacy-normalizatio.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Define deliberation pipelines config and legacy normalization: goal-001: Define deliberation pipelines"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-7145-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "dark-mist-7145"
+}

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T17:49:00+00:00",
+    "implementingStartedAt": "2026-08-21T17:05:32+00:00",
+    "taskFile": "plans/tasks/2026-08-21_deliberation-enforce-one-native-provider-attempt-and-one-mes.md",
+    "taskId": "bold-brook-3323",
+    "title": "Deliberation: enforce one native provider attempt and one-message delivery"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation: enforce one native provider attempt and one-message delivery"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-brook-3323-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-brook-3323",
+  "tddRequired": true
+}

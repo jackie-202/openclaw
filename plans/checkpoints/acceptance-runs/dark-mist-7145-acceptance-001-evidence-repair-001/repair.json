@@ -1,0 +1,56 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/dark-mist-7145.evidence.md",
+      "provenance": "evidence_repair:dark-mist-7145-acceptance-001-evidence-repair-001",
+      "size": 1943
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/dark-mist-7145.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/dark-mist-7145-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "90eeb86db1e74fc6048a641a5095cdd4b665d72c",
+  "escalationReason": "exact_command_outcome_evidence_unavailable",
+  "finishedAt": "2026-08-21T09:30:42.294641+00:00",
+  "gaps": [],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=dark-mist-7145 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/config.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=dark-mist-7145 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/config.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=dark-mist-7145 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/config.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=warm-vale-8134 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/config.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "ps -ax -o pid=,command= | rg \"proof-capture|config.test.ts|vitest\"",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=warm-vale-8134 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/config.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=warm-vale-8134 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/config.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "dark-mist-7145-acceptance-001-evidence-repair-001",
+  "sourceRunId": "dark-mist-7145-acceptance-001",
+  "startedAt": "2026-08-21T09:30:38.151639+00:00",
+  "status": "escalated"
+}

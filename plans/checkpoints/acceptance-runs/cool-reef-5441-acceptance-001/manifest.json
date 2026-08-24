@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T10:49:37+00:00",
+    "implementingStartedAt": "2026-08-21T10:36:26+00:00",
+    "taskFile": "plans/tasks/2026-08-21_followup-cool-reef-5441-carry-deliberation-pipeline-identity-and-effective-target-fr.md",
+    "taskId": "cool-reef-5441",
+    "title": "[acceptance-fix] Carry deliberation pipeline identity and effective target from intake: goal-001: Carry deliberation pip"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Carry deliberation pipeline identity and effective target from intake: goal-001: Carry deliberation pip"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-reef-5441-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-reef-5441",
+  "tddRequired": true
+}

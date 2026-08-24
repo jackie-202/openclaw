@@ -2,17 +2,39 @@ import type { OpenClawConfig } from "openclaw/plugin-sdk/discord";
 import { describe, expect, it, vi } from "vitest";
 import { parseDeliberationConfig } from "./config.js";
 import { createHistoryReadHandler } from "./history-read.js";
+import type {
+  DiscordHistoryIdentity,
+  SourceHistoryIdentityStore,
+} from "./thread-identity-store.js";
 
 const config = parseDeliberationConfig({
   enabled: true,
   failClosed: true,
-  sources: [
-    { channel: "discord", accountId: "acct-a", target: "channel-1" },
-    { channel: "discord", accountId: "acct-b", target: "channel-1" },
-    { channel: "discord", accountId: "acct-a", target: "channel-2" },
-    { channel: "slack", accountId: "workspace-a", target: "C123" },
-    { channel: "slack", accountId: "workspace-b", target: "C123" },
-    { channel: "slack", accountId: "workspace-a", target: "C456" },
+  pipelines: [
+    {
+      id: "discord-acct-a-channel-1",
+      source: { channel: "discord", accountId: "acct-a", target: "channel-1" },
+    },
+    {
+      id: "discord-acct-b-channel-1",
+      source: { channel: "discord", accountId: "acct-b", target: "channel-1" },
+    },
+    {
+      id: "discord-acct-a-channel-2",
+      source: { channel: "discord", accountId: "acct-a", target: "channel-2" },
+    },
+    {
+      id: "slack-workspace-a-c123",
+      source: { channel: "slack", accountId: "workspace-a", target: "C123" },
+    },
+    {
+      id: "slack-workspace-b-c123",
+      source: { channel: "slack", accountId: "workspace-b", target: "C123" },
+    },
+    {
+      id: "slack-workspace-a-c456",
+      source: { channel: "slack", accountId: "workspace-a", target: "C456" },
+    },
   ],
   processingSource: { channel: "discord", accountId: "acct-a", target: "processing" },
   km: {
@@ -30,12 +52,41 @@ const request = {
   limit: 20,
 };
 
+function discordHistoryStore(historyChannelId?: string): SourceHistoryIdentityStore {
+  return {
+    lookup: vi.fn(async (key: string): Promise<DiscordHistoryIdentity | undefined> => {
+      const [sourceTarget, providerEventId] = key.split("\u0000");
+      if (!sourceTarget || !providerEventId) {
+        return undefined;
+      }
+      const resolvedHistoryChannelId = historyChannelId ?? sourceTarget.split(":").at(-1);
+      if (!resolvedHistoryChannelId) {
+        return undefined;
+      }
+      return {
+        provider: "discord",
+        sourceTarget,
+        providerEventId,
+        historyChannelId: resolvedHistoryChannelId,
+      };
+    }),
+    registerIfAbsent: vi.fn(async () => true),
+  };
+}
+
 describe("Deliberation history read", () => {
   it("reads the exact account and channel and normalizes chronological history", async () => {
     const readMessages = vi.fn(async () => [
-      { id: "2", content: "later", timestamp: "2026-08-07T12:00:02Z", author: { id: "u" } },
+      {
+        id: "2",
+        channel_id: "channel-1",
+        content: "later",
+        timestamp: "2026-08-07T12:00:02Z",
+        author: { id: "u" },
+      },
       {
         id: "1",
+        channel_id: "channel-1",
         content: "bot",
         timestamp: "2026-08-07T12:00:01Z",
         author: { id: "b", bot: true },
@@ -45,6 +96,7 @@ describe("Deliberation history read", () => {
       config,
       openclawConfig: {} as OpenClawConfig,
       readMessages,
+      historyStore: discordHistoryStore(),
     });
 
     const result = await handler(request);
@@ -71,6 +123,7 @@ describe("Deliberation history read", () => {
     const readMessages = vi.fn(async () =>
       Array.from({ length: count }, (_, index) => ({
         id: String(index + 1),
+        channel_id: "channel-1",
         content: String(index + 1),
         timestamp: `2026-08-07T12:00:${String(index).padStart(2, "0")}Z`,
         author: { id: "u" },
@@ -80,6 +133,7 @@ describe("Deliberation history read", () => {
       config,
       openclawConfig: {} as OpenClawConfig,
       readMessages,
+      historyStore: discordHistoryStore(),
     })(request);
     expect(result.messages).toHaveLength(Math.min(count, 20));
   });
@@ -90,6 +144,7 @@ describe("Deliberation history read", () => {
       config,
       openclawConfig: {} as OpenClawConfig,
       readMessages,
+      historyStore: discordHistoryStore(),
     })({ ...request, sourceTarget: "v1:discord:acct-a:channel-2" });
     expect(readMessages).toHaveBeenCalledWith(
       "channel-2",
@@ -100,7 +155,12 @@ describe("Deliberation history read", () => {
 
   it("rejects unconfigured identity and closed-schema drift without provider access", async () => {
     const readMessages = vi.fn(async () => []);
-    const handler = createHistoryReadHandler({ config, openclawConfig: {}, readMessages });
+    const handler = createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      readMessages,
+      historyStore: discordHistoryStore(),
+    });
     await expect(
       handler({ ...request, sourceTarget: "v1:discord:acct-c:channel-1" }),
     ).rejects.toThrow("not a configured Deliberation source");
@@ -115,12 +175,14 @@ describe("Deliberation history read", () => {
     let available = [
       {
         id: "105",
+        channel_id: "channel-1",
         content: "at watermark",
         timestamp: "2026-08-07T12:00:05Z",
         author: { id: "u" },
       },
       {
         id: "101",
+        channel_id: "channel-1",
         content: "after cutoff",
         timestamp: "2026-08-07T12:00:01Z",
         author: { id: "u" },
@@ -136,6 +198,7 @@ describe("Deliberation history read", () => {
         available = [
           {
             id: "106",
+            channel_id: "channel-1",
             content: "concurrent",
             timestamp: "2026-08-07T12:00:06Z",
             author: { id: "u" },
@@ -146,7 +209,12 @@ describe("Deliberation history read", () => {
       return page;
     });
 
-    const result = await createHistoryReadHandler({ config, openclawConfig: {}, readMessages })({
+    const result = await createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      readMessages,
+      historyStore: discordHistoryStore(),
+    })({
       schemaVersion: 2,
       sourceTarget: "v1:discord:acct-b:channel-1",
       after: "100",
@@ -160,7 +228,12 @@ describe("Deliberation history read", () => {
 
   it("returns complete empty evidence when the read-start watermark is not newer", async () => {
     const readMessages = vi.fn(async () => []);
-    const result = await createHistoryReadHandler({ config, openclawConfig: {}, readMessages })({
+    const result = await createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      readMessages,
+      historyStore: discordHistoryStore(),
+    })({
       schemaVersion: 2,
       sourceTarget: "v1:discord:acct-b:channel-1",
       after: "100",
@@ -178,23 +251,140 @@ describe("Deliberation history read", () => {
   it("marks evidence incomplete when one message beyond the artifact count bound exists", async () => {
     const messages = Array.from({ length: 51 }, (_, index) => ({
       id: String(151 - index),
+      channel_id: "channel-1",
       content: String(index),
       timestamp: `2026-08-07T12:00:${String(index % 60).padStart(2, "0")}Z`,
       author: { id: "u" },
     }));
     const readMessages = vi.fn(async (_channel, query) => {
-      if (query.limit === 1) return [messages[0]];
+      if (query.limit === 1) {
+        return [messages[0]];
+      }
       return messages
         .filter((item) => BigInt(item.id) < BigInt(query.before ?? "999"))
         .slice(0, query.limit);
     });
-    const result = await createHistoryReadHandler({ config, openclawConfig: {}, readMessages })({
+    const result = await createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      readMessages,
+      historyStore: discordHistoryStore(),
+    })({
       schemaVersion: 2,
       sourceTarget: "v1:discord:acct-b:channel-1",
       after: "100",
     });
     expect(result.messages).toHaveLength(50);
     expect(result.complete).toBe(false);
+  });
+
+  it("reads a Discord child thread exactly while retaining the parent source route", async () => {
+    const readMessages = vi.fn(async () => []);
+    const result = await createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      readMessages,
+      historyStore: discordHistoryStore("thread-1"),
+    })({
+      schemaVersion: 1,
+      sourceTarget: "v1:discord:acct-a:channel-1",
+      before: "child-message-1",
+      limit: 20,
+    });
+
+    expect(readMessages).toHaveBeenCalledWith(
+      "thread-1",
+      { limit: 20, before: "child-message-1" },
+      { cfg: {}, accountId: "acct-a" },
+    );
+    expect(result).toMatchObject({
+      sourceTarget: "v1:discord:acct-a:channel-1",
+      provenance: { provider: "discord", account: "acct-a", channel: "channel-1" },
+    });
+  });
+
+  it.each([
+    ["missing", undefined],
+    [
+      "conflicting source",
+      {
+        provider: "discord",
+        sourceTarget: "v1:discord:acct-a:channel-2",
+        providerEventId: "child-message-1",
+        historyChannelId: "thread-1",
+      },
+    ],
+    [
+      "conflicting event",
+      {
+        provider: "discord",
+        sourceTarget: "v1:discord:acct-a:channel-1",
+        providerEventId: "other-message",
+        historyChannelId: "thread-1",
+      },
+    ],
+    [
+      "off-thread provider",
+      {
+        provider: "slack",
+        sourceTarget: "v1:discord:acct-a:channel-1",
+        providerEventId: "child-message-1",
+        historyChannelId: "thread-1",
+      },
+    ],
+    [
+      "missing history channel",
+      {
+        provider: "discord",
+        sourceTarget: "v1:discord:acct-a:channel-1",
+        providerEventId: "child-message-1",
+      },
+    ],
+  ])("fails closed for Discord history with %s identity", async (_name, mapping) => {
+    const readMessages = vi.fn(async () => []);
+    const handler = createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      readMessages,
+      historyStore: { lookup: vi.fn().mockResolvedValue(mapping) } as never,
+    });
+
+    await expect(
+      handler({
+        schemaVersion: 1,
+        sourceTarget: "v1:discord:acct-a:channel-1",
+        before: "child-message-1",
+        limit: 20,
+      }),
+    ).rejects.toThrow("Discord history identity mapping is unavailable or conflicting");
+    expect(readMessages).not.toHaveBeenCalled();
+  });
+
+  it("rejects Discord provider rows outside the authenticated history channel", async () => {
+    const readMessages = vi.fn(async () => [
+      {
+        id: "1",
+        channel_id: "sibling-thread",
+        content: "wrong thread",
+        timestamp: "2026-08-07T12:00:01Z",
+        author: { id: "u" },
+      },
+    ]);
+    const handler = createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      readMessages,
+      historyStore: discordHistoryStore("thread-1"),
+    });
+
+    await expect(
+      handler({
+        schemaVersion: 1,
+        sourceTarget: "v1:discord:acct-a:channel-1",
+        before: "child-message-1",
+        limit: 20,
+      }),
+    ).rejects.toThrow("off-channel message");
   });
 
   it("reads only the mapped Slack thread and preserves exact child and root identities", async () => {
@@ -232,7 +422,7 @@ describe("Deliberation history read", () => {
     const result = await createHistoryReadHandler({
       config,
       openclawConfig: {},
-      threadStore: { lookup } as never,
+      historyStore: { lookup } as never,
       resolveChannelHistory,
     })({
       schemaVersion: 2,
@@ -281,7 +471,7 @@ describe("Deliberation history read", () => {
     const result = await createHistoryReadHandler({
       config,
       openclawConfig: {},
-      threadStore: {
+      historyStore: {
         lookup: vi.fn().mockResolvedValue({
           sourceTarget,
           providerEventId: "1723640000.01",
@@ -348,7 +538,7 @@ describe("Deliberation history read", () => {
     const handler = createHistoryReadHandler({
       config,
       openclawConfig: {},
-      threadStore: { lookup: vi.fn().mockResolvedValue(mapping) } as never,
+      historyStore: { lookup: vi.fn().mockResolvedValue(mapping) } as never,
       resolveChannelHistory,
     });
 
@@ -368,7 +558,7 @@ describe("Deliberation history read", () => {
       createHistoryReadHandler({
         config,
         openclawConfig: {},
-        threadStore: {
+        historyStore: {
           lookup: vi.fn().mockResolvedValue({
             sourceTarget,
             providerEventId: "1723640000.1",
@@ -385,10 +575,10 @@ describe("Deliberation history read", () => {
           readThreadPage: vi.fn().mockResolvedValue({ messages: [message] }),
         }),
       });
-    const request = { schemaVersion: 2, sourceTarget, after: "1723640000.1" };
+    const slackRequest = { schemaVersion: 2, sourceTarget, after: "1723640000.1" };
 
     await expect(
-      makeHandler({ id: "1723640000.bad", content: "bad", senderId: "U1" })(request),
+      makeHandler({ id: "1723640000.bad", content: "bad", senderId: "U1" })(slackRequest),
     ).rejects.toThrow();
     await expect(
       makeHandler({
@@ -396,10 +586,10 @@ describe("Deliberation history read", () => {
         threadId: "1723649999.1",
         content: "wrong thread",
         senderId: "U1",
-      })(request),
+      })(slackRequest),
     ).rejects.toThrow();
     await expect(
-      makeHandler({ id: "1723640000.2", content: "missing thread", senderId: "U1" })(request),
+      makeHandler({ id: "1723640000.2", content: "missing thread", senderId: "U1" })(slackRequest),
     ).rejects.toThrow();
     await expect(
       makeHandler({
@@ -407,7 +597,7 @@ describe("Deliberation history read", () => {
         threadId: "1723640000.1",
         content: "invalid sender",
         senderId: 123,
-      })(request),
+      })(slackRequest),
     ).rejects.toThrow("invalid sender");
   });
 
@@ -416,7 +606,7 @@ describe("Deliberation history read", () => {
     const handler = createHistoryReadHandler({
       config,
       openclawConfig: {},
-      threadStore: {
+      historyStore: {
         lookup: vi.fn().mockResolvedValue({
           sourceTarget,
           providerEventId: "1723640000.1",
@@ -451,7 +641,7 @@ describe("Deliberation history read", () => {
     const result = await createHistoryReadHandler({
       config,
       openclawConfig: {},
-      threadStore: {
+      historyStore: {
         lookup: vi.fn().mockResolvedValue({
           sourceTarget,
           providerEventId: "1723640000.000001",
@@ -485,7 +675,7 @@ describe("Deliberation history read", () => {
     const result = await createHistoryReadHandler({
       config,
       openclawConfig: {},
-      threadStore: {
+      historyStore: {
         lookup: vi.fn().mockResolvedValue({
           sourceTarget,
           providerEventId: "1723640000.000001",
@@ -513,7 +703,7 @@ describe("Deliberation history read", () => {
     const result = await createHistoryReadHandler({
       config,
       openclawConfig: {},
-      threadStore: {
+      historyStore: {
         lookup: vi.fn().mockResolvedValue({
           sourceTarget,
           providerEventId: "1723640000.000001",
@@ -551,7 +741,7 @@ describe("Deliberation history read", () => {
     const handler = createHistoryReadHandler({
       config,
       openclawConfig: {},
-      threadStore: {
+      historyStore: {
         lookup: vi.fn().mockResolvedValue({
           sourceTarget,
           providerEventId: "1723640000.000001",

@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-22T23:26:11+00:00",
+    "implementingStartedAt": "2026-08-22T23:20:15+00:00",
+    "taskFile": "plans/tasks/2026-08-22_deliberation-one-event-one-record-and-uncertain-delivery.md",
+    "taskId": "warm-mist-6808",
+    "title": "RED-GREEN: preserve one-event intake and safe uncertain-delivery semantics"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "One authenticated provider event produces exactly one durable item/record; thread peers share history only."
+    },
+    {
+      "id": "goal-002",
+      "summary": "One item produces at most one provider attempt and one matching receipt."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Unknown delivery outcome is fail-closed and cannot silently retry or reroute."
+    },
+    {
+      "id": "goal-004",
+      "summary": "A new send is allowed only when canonical durable evidence proves no provider attempt occurred."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Discord and Slack fixtures cover root/child events, timeout, transport ambiguity, replay, duplicate evidence, and receipt mismatch."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Relevant contract/plugin integration tests, build, lint, and canonical Test Gate pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-mist-6808-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-mist-6808",
+  "tddRequired": true
+}

@@ -8,6 +8,7 @@ import {
   resolveInboundMentionDecision,
   resolveUnmentionedGroupInboundPolicy,
   recordDroppedChannelInboundHistory,
+  resolveChannelInboundEventPolicy,
   toInboundMediaFacts,
 } from "openclaw/plugin-sdk/channel-inbound";
 import { hasControlCommand } from "openclaw/plugin-sdk/command-detection";
@@ -250,6 +251,28 @@ export async function preflightDiscordMessage(
   if (isPreflightAborted(params.abortSignal)) {
     return null;
   }
+  const threadContext = await resolveDiscordPreflightThreadContext({
+    client: params.client,
+    isGuildMessage,
+    message,
+    channelInfo,
+    messageChannelId,
+    abortSignal: params.abortSignal,
+  });
+  if (!threadContext) {
+    return null;
+  }
+  const { earlyThreadChannel, earlyThreadParentId, earlyThreadParentName, earlyThreadParentType } =
+    threadContext;
+  const inboundEventPolicy = resolveChannelInboundEventPolicy({
+    provider: "discord",
+    accountId: params.accountId,
+    conversationId: messageChannelId,
+    parentConversationId: earlyThreadParentId,
+    providerEventId: message.id,
+  });
+  const requiresAttributedClaim =
+    inboundEventPolicy.kind === "exclusive" || inboundEventPolicy.kind === "ambiguous";
   const { isDirectMessage, isGroupDm } = resolveDiscordPreflightConversationKind({
     isGuildMessage,
     channelType: channelInfo?.type,
@@ -286,7 +309,8 @@ export async function preflightDiscordMessage(
         }),
       isBotAuthor: Boolean(author.bot),
       text: messageText,
-    })
+    }) &&
+    !requiresAttributedClaim
   ) {
     logVerbose(`discord: drop bound-thread bot system message ${message.id}`);
     return null;
@@ -306,7 +330,7 @@ export async function preflightDiscordMessage(
   });
 
   if (author.bot) {
-    if (allowBotsMode === "off" && !sender.isPluralKit) {
+    if (allowBotsMode === "off" && !sender.isPluralKit && !requiresAttributedClaim) {
       logVerbose("discord: drop bot message (allowBots=false)");
       return null;
     }
@@ -352,12 +376,6 @@ export async function preflightDiscordMessage(
     includeForwarded: false,
   });
 
-  recordChannelActivity({
-    channel: "discord",
-    accountId: params.accountId,
-    direction: "inbound",
-  });
-
   // Resolve thread parent early for binding inheritance
   const channelName =
     channelInfo?.name ??
@@ -366,19 +384,13 @@ export async function preflightDiscordMessage(
           "channel" in message ? (message as { channel?: unknown }).channel : undefined,
         )
       : undefined);
-  const threadContext = await resolveDiscordPreflightThreadContext({
-    client: params.client,
-    isGuildMessage,
-    message,
-    channelInfo,
-    messageChannelId,
-    abortSignal: params.abortSignal,
-  });
-  if (!threadContext) {
-    return null;
+  if (!requiresAttributedClaim) {
+    recordChannelActivity({
+      channel: "discord",
+      accountId: params.accountId,
+      direction: "inbound",
+    });
   }
-  const { earlyThreadChannel, earlyThreadParentId, earlyThreadParentName, earlyThreadParentType } =
-    threadContext;
 
   // Routing inputs are payload-derived, but config must come from the boundary
   // snapshot already threaded into the monitor path.
@@ -446,7 +458,8 @@ export async function preflightDiscordMessage(
   if (
     isGuildMessage &&
     (message.type === MessageType.ChatInputCommand ||
-      message.type === MessageType.ContextMenuCommand)
+      message.type === MessageType.ContextMenuCommand) &&
+    !requiresAttributedClaim
   ) {
     logVerbose("discord: drop channel command message");
     return null;
@@ -665,7 +678,7 @@ export async function preflightDiscordMessage(
   logDebug(
     `[discord-preflight] shouldRequireMention=${shouldRequireMention} baseRequireMention=${shouldRequireMentionByConfig} boundThreadSession=${isBoundThreadSession} mentionDecision.shouldSkip=${mentionDecision.shouldSkip} wasMentioned=${wasMentioned}`,
   );
-  if (isGuildMessage && shouldRequireMention) {
+  if (isGuildMessage && shouldRequireMention && !requiresAttributedClaim) {
     if (mentionDecision.shouldSkip) {
       logDebug(`[discord-preflight] drop: no-mention`);
       logVerbose(`discord: drop guild message (mention required, botId=${botId ?? "<missing>"})`);
@@ -686,7 +699,12 @@ export async function preflightDiscordMessage(
     }
   }
 
-  if (author.bot && !sender.isPluralKit && allowBotsMode === "mentions") {
+  if (
+    author.bot &&
+    !sender.isPluralKit &&
+    allowBotsMode === "mentions" &&
+    !requiresAttributedClaim
+  ) {
     const botMentioned = isDirectMessage || wasMentioned || mentionDecision.implicitMention;
     if (!botMentioned) {
       logDebug(`[discord-preflight] drop: bot message missing mention (allowBots=mentions)`);
@@ -701,7 +719,8 @@ export async function preflightDiscordMessage(
     ignoreOtherMentions &&
     hasUserOrRoleMention &&
     !wasMentioned &&
-    !mentionDecision.implicitMention
+    !mentionDecision.implicitMention &&
+    !requiresAttributedClaim
   ) {
     logDebug(`[discord-preflight] drop: other-mention`);
     logVerbose(
@@ -724,7 +743,7 @@ export async function preflightDiscordMessage(
   });
   const { resolveDiscordSystemEvent } = await loadSystemEventsRuntime();
   const systemText = resolveDiscordSystemEvent(message, systemLocation);
-  if (systemText) {
+  if (systemText && !requiresAttributedClaim) {
     logDebug(`[discord-preflight] drop: system event`);
     enqueueSystemEvent(systemText, {
       sessionKey: effectiveRoute.sessionKey,
@@ -733,12 +752,12 @@ export async function preflightDiscordMessage(
     return null;
   }
 
-  if (!messageText) {
+  if (!messageText && !requiresAttributedClaim) {
     logDebug(`[discord-preflight] drop: empty content`);
     logVerbose(`discord: drop message ${message.id} (empty content)`);
     return null;
   }
-  if (configuredBinding) {
+  if (configuredBinding && !requiresAttributedClaim) {
     const ensured = await conversationRuntime.ensureConfiguredBindingRouteReady({
       cfg: params.cfg,
       bindingResolution: configuredBinding,
@@ -790,6 +809,7 @@ export async function preflightDiscordMessage(
     commandAuthorized,
     baseText,
     messageText,
+    systemEventText: systemText || undefined,
     ...(preflightTranscript !== undefined ? { preflightAudioTranscript: preflightTranscript } : {}),
     wasMentioned,
     route: effectiveRoute,
@@ -818,6 +838,7 @@ export async function preflightDiscordMessage(
     shouldBypassMention: mentionDecision.shouldBypassMention,
     effectiveWasMentioned,
     inboundEventKind,
+    inboundEventPolicy,
     canDetectMention,
     historyEntry,
     botLoopProtection,

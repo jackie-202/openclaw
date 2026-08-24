@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-24T00:40:42+00:00",
+    "implementingStartedAt": "2026-08-24T00:16:32+00:00",
+    "taskFile": "plans/tasks/2026-08-23_establish-canonical-deliberation-or-01-through-or-23-gate.md",
+    "taskId": "bright-fork-2292",
+    "title": "Establish canonical Deliberation OR-01 through OR-23 gate"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Establish canonical Deliberation OR-01 through OR-23 gate"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-fork-2292-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-fork-2292",
+  "tddRequired": true
+}

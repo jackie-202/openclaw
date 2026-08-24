@@ -1,0 +1,46 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The required focused and five-file broader-suite passing verification is not established by caller-owned canonical Test Gate evidence.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied Test Gate status is not run and plans/checkpoints/cool-brook-4894.test-gate.md explicitly records that its passing local Vitest results have no concrete non-not-run caller-owned Test Gate reference.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal-001 carries the original goal-006 verification requirement. The supplied plan and evidence guidance require Acceptance to rely on a caller-owned canonical Test Gate reference, and local output cannot substitute for it.",
+      "required": "Provide a caller-owned canonical Test Gate reference with non-not-run status, exact commands, exit codes, and complete passing totals for both required Vitest suites.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical Test Gate reference: status not run; no evidence"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-brook-4894.test-gate.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-20_cool-brook-4894_acceptance-fix-fix-compaction-openai-oauth-bridge-provider.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix compaction OpenAI OAuth/bridge provider-auth validation: goal-006: Relevant focuse"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-brook-4894-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-brook-4894"
+}

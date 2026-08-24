@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T13:06:30+00:00",
+    "implementingStartedAt": "2026-08-21T12:58:33+00:00",
+    "taskFile": "plans/tasks/2026-08-21_route-per-pipeline-deliberation-and-deliver-source-default-r.md",
+    "taskId": "calm-vale-3982",
+    "title": "Route per-pipeline deliberation and deliver source-default replies"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Route per-pipeline deliberation and deliver source-default replies"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-vale-3982-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-vale-3982",
+  "tddRequired": true
+}

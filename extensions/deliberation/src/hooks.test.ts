@@ -2,13 +2,23 @@ import { createServer } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import { parseDeliberationConfig } from "./config.js";
 import { createBeforeToolCallHandler, createMessageSendingHandler } from "./guards.js";
-import { createBeforeDispatchHandler, createInboundClaimHandler } from "./intake.js";
+import * as intakeHandlers from "./intake.js";
+import {
+  createBeforeDispatchHandler,
+  createInboundClaimHandler as createInboundClaimHandlerImpl,
+} from "./intake.js";
 import { createKmClient, KmRequestError } from "./km-client.js";
+
+function testPipelines(
+  ...sources: Array<{ channel: "discord" | "slack"; accountId: string; target: string }>
+) {
+  return sources.map((source, index) => ({ id: `test-pipeline-${index}`, source }));
+}
 
 const config = parseDeliberationConfig({
   enabled: true,
   failClosed: true,
-  sources: [{ channel: "discord", accountId: "acct", target: "source" }],
+  pipelines: testPipelines({ channel: "discord", accountId: "acct", target: "source" }),
   processingSource: { channel: "discord", accountId: "acct", target: "processing" },
   km: {
     endpoint: "https://km.invalid",
@@ -34,6 +44,19 @@ function createLogger() {
   };
 }
 
+function createInboundClaimHandler(
+  ...args: Parameters<typeof createInboundClaimHandlerImpl>
+): ReturnType<typeof createInboundClaimHandlerImpl> {
+  const [routeConfig, client, logger, historyStore] = args;
+  return createInboundClaimHandlerImpl(
+    routeConfig,
+    client,
+    logger,
+    historyStore ??
+      ({ registerIfAbsent: vi.fn().mockResolvedValue(true), lookup: vi.fn() } as never),
+  );
+}
+
 function loggedMessages(logger: ReturnType<typeof createLogger>): string[] {
   return [logger.debug, logger.info, logger.warn, logger.error].flatMap((log) =>
     log.mock.calls.map(([message]) => String(message)),
@@ -41,6 +64,127 @@ function loggedMessages(logger: ReturnType<typeof createLogger>): string[] {
 }
 
 describe("deliberation hooks", () => {
+  it("claims configured source ownership for pre-aggregation policy even while disabled", () => {
+    const disabled = parseDeliberationConfig({
+      enabled: false,
+      failClosed: true,
+      pipelines: testPipelines(
+        { channel: "discord", accountId: "acct", target: "source" },
+        { channel: "slack", accountId: "workspace", target: "C123" },
+      ),
+      processingSource: { channel: "discord", accountId: "acct", target: "processing" },
+      km: config.km,
+      restrictedSessionKeys: ["agent:reviewer"],
+    });
+    const createPolicy = (
+      intakeHandlers as typeof intakeHandlers & {
+        createInboundEventPolicyHandler: (
+          config: typeof disabled,
+        ) => (
+          event: Record<string, unknown>,
+        ) => { aggregation: "separate"; dispatch?: "exclusive" } | undefined;
+      }
+    ).createInboundEventPolicyHandler;
+
+    expect(createPolicy).toBeTypeOf("function");
+    const policy = createPolicy(disabled);
+    expect(
+      policy({
+        provider: "discord",
+        accountId: "acct",
+        conversationId: "created-thread",
+        parentConversationId: "source",
+        providerEventId: "m1",
+      }),
+    ).toEqual({ aggregation: "separate", dispatch: "exclusive" });
+    expect(
+      policy({
+        provider: "slack",
+        accountId: "workspace",
+        conversationId: "C123",
+        providerEventId: "1700000000.000100",
+      }),
+    ).toEqual({ aggregation: "separate", dispatch: "exclusive" });
+    expect(
+      policy({
+        provider: "discord",
+        accountId: "acct",
+        conversationId: "ordinary",
+        providerEventId: "m2",
+      }),
+    ).toBeUndefined();
+  });
+
+  it.each([
+    {
+      provider: "discord" as const,
+      accountId: "acct",
+      conversationId: "source",
+      messageIds: ["message-1", "message-2"],
+      threadId: undefined,
+    },
+    {
+      provider: "slack" as const,
+      accountId: "workspace",
+      conversationId: "C123",
+      messageIds: ["1700000000.000100", "1700000000.000200"],
+      threadId: "1700000000.000001",
+    },
+  ])(
+    "intakes two same-source $provider events separately by provider event ID",
+    async ({ provider, accountId, conversationId, messageIds, threadId }) => {
+      const routeConfig = parseDeliberationConfig({
+        enabled: true,
+        failClosed: true,
+        pipelines: testPipelines({ channel: provider, accountId, target: conversationId }),
+        processingSource: { channel: "discord", accountId: "acct", target: "processing" },
+        km: config.km,
+        restrictedSessionKeys: ["agent:reviewer"],
+      });
+      const intake = vi.fn().mockResolvedValue({
+        recordId: "record-1",
+        inboundId: "inbound-1",
+        duplicate: false,
+      });
+      const handler = createInboundClaimHandler(
+        routeConfig,
+        { intake } as never,
+        createLogger(),
+        provider === "slack"
+          ? ({ registerIfAbsent: vi.fn().mockResolvedValue(true), lookup: vi.fn() } as never)
+          : undefined,
+      );
+
+      for (const messageId of messageIds) {
+        await handler(
+          {
+            provider,
+            channel: provider,
+            eventType: "message",
+            eventKind: "user_request",
+            accountId,
+            conversationId,
+            messageId,
+            threadId,
+            senderId: "sender",
+            content: messageId,
+            isGroup: true,
+          },
+          {
+            channelId: provider,
+            accountId,
+            conversationId,
+            messageId,
+            senderId: "sender",
+          },
+        );
+      }
+
+      expect(intake).toHaveBeenCalledTimes(2);
+      expect(intake.mock.calls.map(([request]) => request.providerEventId)).toEqual(messageIds);
+    },
+  );
+
   it.each([
     ["Discord root", "discord", "acct", "source", "m1", undefined, "m1"],
     [
@@ -72,7 +216,7 @@ describe("deliberation hooks", () => {
       const routeConfig = parseDeliberationConfig({
         enabled: true,
         failClosed: true,
-        sources: [{ channel: provider, accountId, target: channelId }],
+        pipelines: testPipelines({ channel: provider, accountId, target: channelId }),
         processingSource: { channel: "discord", accountId: "acct", target: "processing" },
         km: config.km,
         restrictedSessionKeys: ["agent:reviewer"],
@@ -113,8 +257,15 @@ describe("deliberation hooks", () => {
 
       expect(intake).toHaveBeenCalledWith(
         expect.objectContaining({
+          pipelineId: "test-pipeline-0",
           sourceTarget: `v1:${provider}:${accountId}:${channelId}`,
           sourceThreadId: expected,
+          deliveryTarget: {
+            provider,
+            account: accountId,
+            channel: channelId,
+            threadId: expected,
+          },
         }),
       );
       expect(intake.mock.calls[0]?.[0]).not.toHaveProperty("source_thread_id");
@@ -125,7 +276,7 @@ describe("deliberation hooks", () => {
     const slackConfig = parseDeliberationConfig({
       enabled: true,
       failClosed: true,
-      sources: [{ channel: "slack", accountId: "workspace-a", target: "C123" }],
+      pipelines: testPipelines({ channel: "slack", accountId: "workspace-a", target: "C123" }),
       processingSource: { channel: "discord", accountId: "acct", target: "processing" },
       km: config.km,
       restrictedSessionKeys: ["agent:reviewer"],
@@ -185,11 +336,69 @@ describe("deliberation hooks", () => {
     );
   });
 
+  it("registers authenticated Discord child history identity without changing parent route ownership", async () => {
+    const intake = vi.fn().mockResolvedValue({
+      recordId: "record-1",
+      inboundId: "inbound-1",
+      duplicate: false,
+    });
+    const registerIfAbsent = vi.fn().mockResolvedValue(true);
+    const handler = createInboundClaimHandler(config, { intake } as never, createLogger(), {
+      registerIfAbsent,
+      lookup: vi.fn(),
+    } as never);
+
+    await expect(
+      handler(
+        {
+          provider: "discord",
+          channel: "discord",
+          eventType: "message",
+          eventKind: "user_request",
+          accountId: "acct",
+          conversationId: "child-thread",
+          parentConversationId: "source",
+          content: "reply",
+          isGroup: true,
+          messageId: "child-message",
+          threadId: "child-thread",
+          senderId: "user-1",
+        },
+        {
+          channelId: "discord",
+          accountId: "acct",
+          conversationId: "child-thread",
+          parentConversationId: "source",
+          messageId: "child-message",
+          senderId: "user-1",
+        },
+      ),
+    ).resolves.toEqual({ handled: true });
+
+    expect(registerIfAbsent).toHaveBeenCalledWith(expect.any(String), {
+      provider: "discord",
+      sourceTarget: "v1:discord:acct:source",
+      providerEventId: "child-message",
+      historyChannelId: "child-thread",
+    });
+    expect(intake).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "discord",
+        sourceTarget: "v1:discord:acct:source",
+        providerEventId: "child-message",
+        sourceThreadId: "child-thread",
+      }),
+    );
+    expect(registerIfAbsent.mock.invocationCallOrder[0]).toBeLessThan(
+      intake.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
   it("fails Slack intake closed when an existing child mapping conflicts", async () => {
     const slackConfig = parseDeliberationConfig({
       enabled: true,
       failClosed: true,
-      sources: [{ channel: "slack", accountId: "workspace-a", target: "C123" }],
+      pipelines: testPipelines({ channel: "slack", accountId: "workspace-a", target: "C123" }),
       processingSource: { channel: "discord", accountId: "acct", target: "processing" },
       km: config.km,
       restrictedSessionKeys: ["agent:reviewer"],
@@ -235,10 +444,10 @@ describe("deliberation hooks", () => {
     const routeConfig = parseDeliberationConfig({
       enabled: true,
       failClosed: true,
-      sources: [
+      pipelines: testPipelines(
         { channel: "discord", accountId: "account-a", target: "source" },
         { channel: "discord", accountId: "account-b", target: "source" },
-      ],
+      ),
       processingSource: { channel: "discord", accountId: "account-a", target: "processing" },
       km: config.km,
       restrictedSessionKeys: ["agent:reviewer"],
@@ -288,10 +497,10 @@ describe("deliberation hooks", () => {
     const routeConfig = parseDeliberationConfig({
       enabled: true,
       failClosed: true,
-      sources: [
+      pipelines: testPipelines(
         { channel: "discord", accountId: "account-a", target: "source-a" },
         { channel: "discord", accountId: "account-a", target: "source-b" },
-      ],
+      ),
       processingSource: { channel: "discord", accountId: "account-a", target: "processing" },
       km: config.km,
       restrictedSessionKeys: ["agent:reviewer"],
@@ -467,7 +676,7 @@ describe("deliberation hooks", () => {
       const routeConfig = parseDeliberationConfig({
         enabled: true,
         failClosed: true,
-        sources: [{ channel: "discord", accountId, target: "source" }],
+        pipelines: testPipelines({ channel: "discord", accountId, target: "source" }),
         processingSource: { channel: "discord", accountId, target: "processing" },
         km: config.km,
         restrictedSessionKeys: ["agent:reviewer"],
@@ -498,6 +707,13 @@ describe("deliberation hooks", () => {
       ).resolves.toEqual({ handled: true });
       expect(intake).toHaveBeenCalledTimes(1);
       expect(intake).toHaveBeenCalledWith({
+        pipelineId: "test-pipeline-0",
+        deliveryTarget: {
+          provider: "discord",
+          account: accountId,
+          channel: "source",
+          threadId: "m1",
+        },
         provider: "discord",
         providerEventId: "m1",
         sourceTarget: `v1:discord:${accountId}:source`,
@@ -625,7 +841,7 @@ describe("deliberation hooks", () => {
     const exactConfig = parseDeliberationConfig({
       enabled: true,
       failClosed: true,
-      sources: [{ channel: "discord", accountId: "default", target: sourceId }],
+      pipelines: testPipelines({ channel: "discord", accountId: "default", target: sourceId }),
       processingSource: { channel: "discord", accountId: "default", target: "processing" },
       km: {
         endpoint: "https://km.invalid",
@@ -715,7 +931,7 @@ describe("deliberation hooks", () => {
         parseDeliberationConfig({
           enabled: false,
           failClosed: true,
-          sources: [{ channel: "discord", accountId: "acct", target: "source" }],
+          pipelines: testPipelines({ channel: "discord", accountId: "acct", target: "source" }),
           processingSource: { channel: "discord", accountId: "acct", target: "processing" },
           km: {
             endpoint: "https://km.invalid",
@@ -869,7 +1085,7 @@ describe("deliberation hooks", () => {
     const disabled = parseDeliberationConfig({
       enabled: false,
       failClosed: true,
-      sources: [{ channel: "discord", accountId: "acct", target: "source" }],
+      pipelines: testPipelines({ channel: "discord", accountId: "acct", target: "source" }),
       processingSource: { channel: "discord", accountId: "acct", target: "processing" },
       km: {
         endpoint: "https://km.invalid",
@@ -879,5 +1095,48 @@ describe("deliberation hooks", () => {
       restrictedSessionKeys: ["agent:reviewer"],
     });
     expect(createBeforeDispatchHandler(disabled)({}, sourceContext)).toEqual({ handled: true });
+  });
+
+  it.each([
+    ["accepted intake", true],
+    ["rejected intake", true],
+    ["disabled processing", false],
+    ["empty content", true],
+    ["KM failure", true],
+  ] as const)("suppresses every configured pipeline source after %s", (_outcome, enabled) => {
+    const routeConfig = parseDeliberationConfig({
+      enabled,
+      failClosed: true,
+      pipelines: testPipelines(
+        { channel: "discord", accountId: "discord-account", target: "discord-source" },
+        { channel: "slack", accountId: "slack-account", target: "C123" },
+      ),
+      processingSource: {
+        channel: "discord",
+        accountId: "discord-account",
+        target: "processing",
+      },
+      km: config.km,
+      restrictedSessionKeys: ["agent:reviewer"],
+    });
+    const beforeDispatch = createBeforeDispatchHandler(routeConfig);
+
+    expect(
+      beforeDispatch(
+        {},
+        {
+          channelId: "discord",
+          accountId: "discord-account",
+          conversationId: "discord-thread",
+          parentConversationId: "discord-source",
+        },
+      ),
+    ).toEqual({ handled: true });
+    expect(
+      beforeDispatch(
+        {},
+        { channelId: "slack", accountId: "slack-account", conversationId: "C123" },
+      ),
+    ).toEqual({ handled: true });
   });
 });

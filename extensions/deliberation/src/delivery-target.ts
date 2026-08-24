@@ -11,22 +11,35 @@ const discordDeliveryTargetSchema = z
     provider: z.literal("discord"),
     accountId: destinationComponentSchema,
     channelId: destinationComponentSchema,
+    mode: z.enum(["root", "thread", "source_anchor"]),
     threadId: destinationComponentSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((target, ctx) => {
+    if ((target.mode === "root") === (target.threadId !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "target mode and threadId disagree" });
+    }
+  });
 
 const slackDeliveryTargetSchema = z
   .object({
     provider: z.literal("slack"),
     accountId: destinationComponentSchema,
     channelId: destinationComponentSchema,
+    mode: z.enum(["root", "thread"]),
     threadId: z
       .string()
       .min(3)
       .max(96)
-      .regex(/^\d+\.\d+$/),
+      .regex(/^\d+\.\d+$/)
+      .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((target, ctx) => {
+    if ((target.mode === "root") === (target.threadId !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "target mode and threadId disagree" });
+    }
+  });
 
 export const kmDeliveryTargetSchema = z.discriminatedUnion("provider", [
   discordDeliveryTargetSchema,

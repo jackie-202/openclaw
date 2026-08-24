@@ -24,6 +24,7 @@ export type DiscordClientOpts = {
   rest?: RequestClient;
   retry?: RetryConfig;
   verbose?: boolean;
+  singleAttempt?: boolean;
 };
 
 export function createDiscordRuntimeAccountContext(params: {
@@ -77,15 +78,16 @@ function resolveRest(
   cfg: OpenClawConfig,
   rest?: RequestClient,
   proxyFetch?: typeof fetch,
+  singleAttempt?: boolean,
 ) {
   if (rest) {
     return rest;
   }
   const resolvedProxyFetch = proxyFetch ?? resolveDiscordProxyFetchForAccount(account, cfg);
-  return createDiscordRequestClient(
-    token,
-    resolvedProxyFetch ? { fetch: resolvedProxyFetch } : undefined,
-  );
+  return createDiscordRequestClient(token, {
+    ...(resolvedProxyFetch ? { fetch: resolvedProxyFetch } : {}),
+    ...(singleAttempt ? { scheduler: { maxRateLimitRetries: 0 } } : {}),
+  });
 }
 
 function resolveAccountWithoutToken(params: {
@@ -121,7 +123,14 @@ export function createDiscordRestClient(opts: DiscordClientOpts) {
       accountId: account.accountId,
       fallbackToken: account.token,
     });
-  const rest = resolveRest(token, account, resolvedCfg, opts.rest, proxyContext.proxyFetch);
+  const rest = resolveRest(
+    token,
+    account,
+    resolvedCfg,
+    opts.rest,
+    proxyContext.proxyFetch,
+    opts.singleAttempt,
+  );
   return { token, rest, account };
 }
 
@@ -132,8 +141,8 @@ export function createDiscordClient(opts: DiscordClientOpts): {
 } {
   const { token, rest, account } = createDiscordRestClient(opts);
   const request = createDiscordRetryRunner({
-    retry: opts.retry,
-    configRetry: account.config.retry,
+    retry: opts.singleAttempt ? { attempts: 1 } : opts.retry,
+    configRetry: opts.singleAttempt ? undefined : account.config.retry,
     verbose: opts.verbose,
   });
   return { token, rest, request };

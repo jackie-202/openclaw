@@ -1,0 +1,37 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T01:42:55+00:00",
+    "implementingStartedAt": "2026-08-23T01:20:51+00:00",
+    "taskFile": "plans/tasks/2026-08-22_deliberation-owner-runtime-convergence-gate.md",
+    "taskId": "fresh-peak-7129",
+    "title": "Close deliberation owner-runtime convergence gates before rollout"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "All 23 owner-runtime scenarios have passing, named automated evidence."
+    },
+    {
+      "id": "goal-002",
+      "summary": "No scoped lint errors remain."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Full relevant tests and build pass."
+    },
+    {
+      "id": "goal-004",
+      "summary": "A rollout-readiness report explicitly distinguishes implementation readiness from live activation approval."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Any remaining blocker produces `NOT READY` with exact evidence; do not self-certify live rollout."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-peak-7129-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-peak-7129",
+  "tddRequired": true
+}

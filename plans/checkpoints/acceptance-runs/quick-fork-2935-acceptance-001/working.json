@@ -1,0 +1,70 @@
+{
+  "findings": [
+    {
+      "claim": "The required canonical OR-01 through OR-23 Green ledger and completion evidence are absent.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied follow-up checkpoint states that the owner harness stops at the immutable-authority revision guard because the configured KM checkout is at 00a413356f40459307276d87bc2d8c546a16f544 rather than accepted revision 79bbc5c0426bc7be901d5199da11b21213bfa008. Focused owner/gate execution, fresh GREEN capture, and canonical full-gate execution remain incomplete; the supplied readiness artifact still reports that no validated 23-row canonical artifact exists.",
+      "rationale": "Goal-001 requires one caller-owned canonical command establishing every OR-01 through OR-23 leaf exactly once under the accepted owner authority. Unexecuted leaves and the absent validated ledger do not establish that gate, even though the exact selectors are reported as implemented.",
+      "required": "Run the owner-backed and canonical gate through the authorized accepted KM revision, then preserve the validated ordered 23/23 Green ledger and required bounded completion evidence without weakening authority preflight or synthesizing rows.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-fork-2935.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.rollout-readiness.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_followup-quick-fork-2935-establish-caller-owned-deliberation-or-01-through-or-23-full.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is incomplete because it contains no fresh GREEN evidence for the repaired owner manifest.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The run manifest declares tddRequired true. The supplied quick-fork-2935 proof links a genuine historical RED, but its GREEN section is only a requirement statement saying GREEN must be appended after the current owner-backed command reports OR-07 through OR-21 exactly once. The follow-up checkpoint confirms focused owner execution and fresh passing GREEN evidence are still incomplete.",
+      "rationale": "A historical RED alone does not demonstrate the acceptance repair reached GREEN. The task's declared TDD contract specifically requires fresh owner-backed GREEN from the current command after the selector implementation.",
+      "required": "Append fresh GREEN provenance only after the required owner-backed command reports every OR-07 through OR-21 selector exactly once with no failed or skipped leaf, preserving the linked genuine historical RED.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-fork-2935.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-fork-2935.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/acceptance-runs/quick-fork-2935-acceptance-001/manifest.json"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Establish caller-owned Deliberation OR-01 through OR-23 full gate: goal-001: Establish caller-owned Del"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-fork-2935-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-fork-2935"
+}

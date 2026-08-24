@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T02:14:56+00:00",
+    "implementingStartedAt": "2026-08-23T01:53:35+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-bold-reef-6539-close-deliberation-owner-runtime-convergence-gates-before-ro.md",
+    "taskId": "bold-reef-6539",
+    "title": "[acceptance-fix] Close deliberation owner-runtime convergence gates before rollout: goal-001: All 23 owner-runtime scena"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Close deliberation owner-runtime convergence gates before rollout: goal-001: All 23 owner-runtime scena"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-reef-6539-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-reef-6539",
+  "tddRequired": true
+}

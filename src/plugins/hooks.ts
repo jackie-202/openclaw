@@ -47,6 +47,9 @@ import type {
   PluginHookInboundClaimContext,
   PluginHookInboundClaimEvent,
   PluginHookInboundClaimResult,
+  PluginHookInboundEventPolicyEvent,
+  PluginHookInboundEventPolicyDecision,
+  PluginHookInboundEventPolicyResult,
   PluginHookLlmInputEvent,
   PluginHookLlmOutputEvent,
   PluginHookBeforeResetEvent,
@@ -127,6 +130,8 @@ export type {
   PluginHookInboundClaimContext,
   PluginHookInboundClaimEvent,
   PluginHookInboundClaimResult,
+  PluginHookInboundEventPolicyEvent,
+  PluginHookInboundEventPolicyResult,
   PluginHookAfterCompactionEvent,
   PluginHookMessageContext,
   PluginHookMessageReceivedEvent,
@@ -263,7 +268,7 @@ export type PluginTargetedInboundClaimOutcome =
       error: string;
     };
 
-type SyncHookName = "tool_result_persist" | "before_message_write";
+type SyncHookName = "inbound_event_policy" | "tool_result_persist" | "before_message_write";
 type SyncHookHandler<K extends SyncHookName> = NonNullable<PluginHookRegistration<K>["handler"]>;
 type SyncHookEvent<K extends SyncHookName> = Parameters<SyncHookHandler<K>>[0];
 type SyncHookContext<K extends SyncHookName> = Parameters<SyncHookHandler<K>>[1];
@@ -594,8 +599,11 @@ export function createHookRunner(
     event: SyncHookEvent<K>,
     ctx: SyncHookContext<K>,
   ): SyncHookResult<K> | PromiseLike<unknown> => {
-    const handler = hook.handler as SyncHookHandler<K>;
-    return handler(event, ctx) as SyncHookResult<K> | PromiseLike<unknown>;
+    const handler = hook.handler as unknown as (
+      event: SyncHookEvent<K>,
+      ctx: SyncHookContext<K>,
+    ) => SyncHookResult<K> | PromiseLike<unknown>;
+    return handler(event, ctx);
   };
 
   /**
@@ -1011,6 +1019,51 @@ export function createHookRunner(
   // =========================================================================
   // Message Hooks
   // =========================================================================
+
+  /**
+   * Run inbound_event_policy before channel debounce can merge provider events.
+   * Any handler failure disables aggregation because merged events cannot be split later.
+   */
+  function runInboundEventPolicy(
+    event: PluginHookInboundEventPolicyEvent,
+  ): PluginHookInboundEventPolicyDecision {
+    const hooks = getHooksForName(registry, "inbound_event_policy");
+    const exclusiveOwners = new Set<string>();
+    let requiresSeparation = false;
+    for (const hook of hooks) {
+      try {
+        const out = runSyncHookHandler(hook, event, undefined);
+        if (isPromiseLike(out)) {
+          logger?.warn?.(
+            `[hooks] inbound_event_policy handler from ${hook.pluginId} returned a Promise; ` +
+              "this hook is synchronous, so aggregation was disabled.",
+          );
+          requiresSeparation = true;
+          continue;
+        }
+        const result = out as PluginHookInboundEventPolicyResult | undefined;
+        if (result?.aggregation === "separate") {
+          requiresSeparation = true;
+          if (result.dispatch === "exclusive") {
+            exclusiveOwners.add(hook.pluginId);
+          }
+        }
+      } catch {
+        logger?.error(
+          `[hooks] inbound_event_policy handler from ${hook.pluginId} failed; aggregation was disabled.`,
+        );
+        requiresSeparation = true;
+      }
+    }
+    if (exclusiveOwners.size > 1) {
+      return { kind: "ambiguous" };
+    }
+    const ownerPluginId = exclusiveOwners.values().next().value;
+    if (ownerPluginId) {
+      return { kind: "exclusive", ownerPluginId };
+    }
+    return requiresSeparation ? { kind: "separate" } : { kind: "ordinary" };
+  }
 
   /**
    * Run inbound_claim hook.
@@ -1640,6 +1693,7 @@ export function createHookRunner(
     // Lifecycle gate hooks
     runBeforeAgentRun,
     // Message hooks
+    runInboundEventPolicy,
     runInboundClaim,
     runInboundClaimForPlugin,
     runInboundClaimForPluginOutcome,

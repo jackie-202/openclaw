@@ -1,24 +1,54 @@
 {
-  "acceptedBy": "cool-vale-1698 provider-neutral owner reconciliation",
-  "acceptedAt": "2026-08-18",
-  "acceptedRevision": "872436aad992826b5d501597e265e8c2b94e6f78",
-  "evidence": "semantic deep comparison with the immutable KM owner files and passing canonical seven-test cross-repository verification",
-  "scope": "KM-owned Deliberation v2 semantic mirror plus a separate OpenClaw provider-adapter overlay",
+  "acceptedBy": "quick-fork-2935 artifact authority verification",
+  "acceptedAt": "2026-08-23",
+  "semanticAuthority": "the SHA-256 hashes in ownerFiles are authoritative for contract semantics",
+  "runtimeRevision": {
+    "head": "printed by the owner-backed gate at execution time",
+    "scope": "runtime provenance only",
+    "blocking": false
+  },
+  "evidence": "the four accepted owner artifact hashes establish semantic authority; KM HEAD is informational runtime provenance and does not block acceptance",
+  "scope": "repository-local Deliberation contract fixtures and OpenClaw runtime compatibility only; external and live deployment convergence is unknown",
   "sources": {
-    "km-wire-v1.json": "proposal-20260814-203937-cbe1dc stable owner-contract handoff",
-    "cutover-controls-v1.json": "proposal-20260814-203937-cbe1dc stable owner-fixture handoff",
-    "openclaw-overlay-v1.json": "OpenClaw delivery-target adapter constraints",
+    "km-wire-v1.json": "calm-reef-2510 synchronized owner-contract handoff",
+    "cutover-controls-v1.json": "calm-cove-1824 executable repository-local lifecycle and rejection fixtures",
+    "openclaw-overlay-v1.json": "calm-reef-2510 adopted producer extension and delivery-target adapter constraints",
     "source-identity-v1.json": "km-system/contracts/deliberation-v2/v1/contract.json#/sourceIdentity",
     "source-identity-fixtures-v1.json": "km-system/contracts/deliberation-v2/v1/fixtures.json#/identityVectors"
   },
+  "openclawProducerExtension": {
+    "proposal": "proposal-20260820-203458-161e2c",
+    "owner": "openclaw-fork",
+    "status": "repository-local closed schemas and lifecycle fixtures are semantically consistent; external deployment is unknown",
+    "kmOwnerBaselineChanged": true
+  },
+  "repositoryLocalEvidence": {
+    "schemaValidation": "all request and status-specific response fixtures pass",
+    "runtimeHarness": "current producer and named negative scenarios are implemented",
+    "scope": "OpenClaw repository only"
+  },
+  "configuredKmCheckoutEvidence": {
+    "status": "accepted artifact authority",
+    "contractSha256": "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
+    "fixturesSha256": "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
+    "wireSha256": "a0e42e4fe54eedab6f9955e77f439a4e69c9614a60560ca46532ce0de9dbb528",
+    "spoolContractsSha256": "47587e405d3e6b7f433eb7d450bd02969546860ff0d6822ad7bea9ff2478a0ca",
+    "result": "artifact hashes govern semantic acceptance; the runtime HEAD is non-blocking and this does not prove deployment or live convergence"
+  },
+  "externalLiveDeployment": {
+    "status": "unknown",
+    "reason": "no live KM deployment was inspected or exercised"
+  },
   "ownerFiles": {
-    "km-system/contracts/deliberation-v2/v1/contract.json": "d3c0771d5c1d63fecc18cb93e381136fa8af3054c96cbcdebb95b7785a46dc5f",
-    "km-system/contracts/deliberation-v2/v1/fixtures.json": "a399132355c792e3861a3e8e2d8e2542e0ccb517231e817acf8afe3c54cca4b7"
+    "km-system/contracts/deliberation-v2/v1/contract.json": "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
+    "km-system/contracts/deliberation-v2/v1/fixtures.json": "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
+    "km-system/lib/deliberation_wire.py": "a0e42e4fe54eedab6f9955e77f439a4e69c9614a60560ca46532ce0de9dbb528",
+    "km-system/lib/deliberation_spool_contracts.py": "47587e405d3e6b7f433eb7d450bd02969546860ff0d6822ad7bea9ff2478a0ca"
   },
   "files": {
-    "km-wire-v1.json": "dd1a15fb6a17a4ebd71535b52680562b7ca397d6c7c3c42319f96a2f2e2dfd0b",
-    "cutover-controls-v1.json": "6ba0a60a2a287254e2f6154129bced7e81688333a5bb5924e30d222932db079b",
-    "openclaw-overlay-v1.json": "458f148e8d58d7e0b61aa114a960bc3cadc1d250e25f029079e2f5fc214e9eac",
+    "km-wire-v1.json": "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
+    "cutover-controls-v1.json": "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
+    "openclaw-overlay-v1.json": "32c2215917b303b11639a724a6b95992a979a6ad551291d5b7a7785b6c812f9b",
     "source-identity-v1.json": "252f03184601f2f2fa8752c5df1b4bb7dd4a20b90bd47c932eee09b9c0bc3af6",
     "source-identity-fixtures-v1.json": "8e4f0373b5d986cb8098fbc7bf3565cfd3f88ef9b83e7189f4bbb53299a427fb"
   }

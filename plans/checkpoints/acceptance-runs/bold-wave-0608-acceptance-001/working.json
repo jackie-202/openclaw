@@ -1,0 +1,105 @@
+{
+  "findings": [
+    {
+      "claim": "The required OpenClaw convergence with the canonical KM owner was not delivered.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task checkpoint states that the immutable KM authority gate remains blocked, reconciliation steps are incomplete, and no production or test code was edited; the supplied material therefore establishes no task-owned implementation of the contract, producer, client, adapter, provenance, or named OR-07 through OR-21 owner-runtime convergence.",
+      "rationale": "Goal goal-001 requires concrete OpenClaw owner-contract and owner-runtime convergence behind a cross-repository gate; stopping before reconciliation leaves that required behavior absent.",
+      "required": "Supply the coherent immutable KM authority bundle, then implement the owner-demonstrated OpenClaw contract, producer, client, adapter, provenance, and named owner-runtime reconciliation without modifying KM.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-wave-0608.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_followup-bold-wave-0608-acceptance-fix-converge-openclaw-deliberation-with-canonical.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_bold-wave-0608_acceptance-fix-converge-openclaw-deliberation-with.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED-GREEN TDD proof is incomplete.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied proof links a genuine historical RED but explicitly labels the 111 repository-local passing tests as not GREEN and records no fresh owner-backed GREEN because the approved immutable KM checkout is unavailable.",
+      "rationale": "The manifest declares tddRequired true, so historical RED without fresh post-implementation GREEN for the required owner-backed behavior does not satisfy the mandatory TDD proof contract.",
+      "required": "After the authority bundle is supplied and reconciliation is implemented, capture fresh GREEN from the approved owner-backed command while retaining the historical RED provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-wave-0608.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-mist-2854.red-green-proof.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/bold-wave-0608-acceptance-001/manifest.json"
+        }
+      ]
+    },
+    {
+      "claim": "The explicitly required immutable owner provenance and named cross-repository completion evidence are absent.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The supplied evidence contains no accepted full KM revision and required owner/runtime hashes, complete OR-07 through OR-21 assignment and outcomes, exact three pinned-KM E2E selectors, or owner-backed GREEN; the canonical Test Gate status is not run and provides no evidence.",
+      "rationale": "The task contract requires exact immutable owner provenance and completed named cross-repository verification to establish convergence; repository-local supporting checks cannot substitute for those explicit completion artifacts.",
+      "required": "Provide caller-owned completion evidence with the approved full KM revision and hashes, each OR-07 through OR-21 result exactly once, exact pinned-KM E2E selector outcomes, focused completion checks, and the canonical Test Gate reference when available.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-wave-0608.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-wave-0608.evidence.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-wave-0608.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-crag-3236.evidence.md"
+        },
+        {
+          "kind": "test-gate",
+          "reference": "not run; no Test Gate evidence exists"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Converge OpenClaw Deliberation with canonical KM owner and cross-repository gate: goal"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-wave-0608-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bold-wave-0608"
+}

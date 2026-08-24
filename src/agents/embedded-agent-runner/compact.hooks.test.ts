@@ -1,9 +1,12 @@
 // Hook integration coverage for direct and queued embedded compaction.
 import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
 import { beforeAll, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { CUSTOM_LOCAL_AUTH_MARKER } from "../model-auth-markers.js";
 import {
   applyExtraParamsToAgentMock,
+  applyAuthHeaderOverrideMock,
   applyAgentCompactionSettingsFromConfigMock,
+  applyLocalNoAuthHeaderOverrideMock,
   buildEmbeddedSystemPromptMock,
   contextEngineCompactMock,
   createAgentSessionMock,
@@ -13,6 +16,7 @@ import {
   ensureRuntimePluginsLoaded,
   estimateTokensMock,
   getMemorySearchManagerMock,
+  getApiKeyForModelMock,
   guardSessionManagerMock,
   hookRunner,
   listRegisteredPluginAgentPromptGuidanceMock,
@@ -779,6 +783,72 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
     expect(result.ok).toBe(true);
     expect(mockCallArg(resolveModelMock)).toBe("openai");
     expect(mockCallArg(resolveModelMock, 0, 1)).toBe("gpt-5.5");
+  });
+
+  it("uses synthetic local auth without forwarding OAuth during OpenAI bridge compaction", async () => {
+    const setRuntimeApiKey = vi.fn();
+    resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "openclaw" });
+    resolveModelMock.mockReturnValue({
+      model: {
+        provider: "openai",
+        api: "openai-completions",
+        id: "gpt-5.5",
+        input: [],
+        baseUrl: "http://127.0.0.1:18800/v1",
+      },
+      error: null,
+      authStorage: { setRuntimeApiKey },
+      modelRegistry: {},
+    });
+    getApiKeyForModelMock.mockResolvedValueOnce({
+      apiKey: CUSTOM_LOCAL_AUTH_MARKER,
+      mode: "api-key",
+      source: "models.providers.openai (synthetic local key)",
+    });
+    const config = {
+      models: {
+        providers: {
+          openai: {
+            baseUrl: "http://127.0.0.1:18800/v1",
+            api: "openai-completions",
+            models: [{ id: "gpt-5.5" }],
+          },
+        },
+      },
+    } as never;
+
+    const result = await compactEmbeddedAgentSessionDirect({
+      sessionId: TEST_SESSION_ID,
+      sessionKey: TEST_SESSION_KEY,
+      sessionFile: TEST_SESSION_FILE,
+      workspaceDir: TEST_WORKSPACE_DIR,
+      provider: "openai",
+      model: "gpt-5.5",
+      authProfileId: "openai:default",
+      config,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(getApiKeyForModelMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: "openai:default",
+        cfg: config,
+      }),
+    );
+    expect(setRuntimeApiKey).toHaveBeenCalledWith("openai", CUSTOM_LOCAL_AUTH_MARKER);
+    expect(setRuntimeApiKey).not.toHaveBeenCalledWith("openai", "access-token");
+    expect(applyLocalNoAuthHeaderOverrideMock).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: "openai", api: "openai-completions" }),
+      expect.objectContaining({ apiKey: CUSTOM_LOCAL_AUTH_MARKER }),
+    );
+    expect(applyAuthHeaderOverrideMock).toHaveBeenCalledWith(
+      expect.objectContaining({ headers: { Authorization: null } }),
+      expect.objectContaining({ apiKey: CUSTOM_LOCAL_AUTH_MARKER }),
+      config,
+    );
+    expectRecordFields(mockCallArg(createAgentSessionMock), {
+      model: expect.objectContaining({ headers: { Authorization: null } }),
+    });
   });
 
   it("routes OpenAI compaction model overrides through Codex OAuth when Codex runtime is active", async () => {

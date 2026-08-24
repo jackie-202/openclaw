@@ -1,0 +1,70 @@
+{
+  "findings": [
+    {
+      "claim": "The configuration-only slice must not change intake or KM wire behavior.",
+      "crossCutting": false,
+      "findingType": "implemented_behavior_incorrect",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff removes sourceThreadId from the intake producer expectation, removes it from the KM wire request's required fields, and rewrites reservation semantics to make genuine sourceThreadId optional.",
+      "rationale": "These delivered changes alter intake and producer/final-delivery contracts despite the explicit constraint not to change intake or producer/final delivery behavior in this slice.",
+      "required": "Restore the pre-existing intake and KM wire sourceThreadId contract in this task and limit the implementation to configuration parsing, normalization, consumers, fixtures, and documentation.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/scripts/intake-producer.test.ts:69"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/contracts/km-wire-v1.json:89"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/contracts/km-wire-v1.json:317"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/contracts/cutover-controls-v1.json:397"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-declared mandatory TDD evidence must contain a valid RED and GREEN cycle for the focused command.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof contains metadata and a genuine failing RED phase, but no GREEN phase or successful identical-command capture is present in the supplied artifact.",
+      "rationale": "The manifest sets tddRequired to true, and a checkpoint assertion that GREEN exists does not substitute for the required run-scoped RED/GREEN proof content.",
+      "required": "Provide the captured GREEN phase for the identical focused command in the canonical TDD proof artifact, preserving the demonstrated RED phase.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-vale-8134.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-vale-8134.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Define deliberation pipelines config and legacy normalization"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-vale-8134-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-vale-8134"
+}

@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Deliberation: preserve source ownership and one intake per provider event: goal-001: Deliberation: pres"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-vale-6663-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "dark-vale-6663"
+}

@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-22T22:38:01+00:00",
+    "implementingStartedAt": "2026-08-22T21:47:35+00:00",
+    "taskFile": "plans/tasks/2026-08-22_deliberation-exclusive-ownership-before-channel-side-effects.md",
+    "taskId": "dark-wave-6899",
+    "title": "RED-GREEN: enforce exclusive deliberation ownership before channel side effects"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A configured source causes zero ordinary acknowledgement, typing, auto-thread, assistant-dispatch, or fallback side effects before/after claim."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Failure and disabled paths remain silent in the source while producing bounded diagnostics."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Exactly one authenticated pipeline owns the event; duplicate/ambiguous routes fail closed."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Discord and Slack owner-path integration tests cover positive and negative cases."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Existing non-deliberation channel behavior remains unchanged."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Focused tests, relevant channel/plugin integration tests, build, lint, and canonical Test Gate pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-wave-6899-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-wave-6899",
+  "tddRequired": true
+}

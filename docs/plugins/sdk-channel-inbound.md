@@ -34,6 +34,10 @@ import {
   record, dispatch, and finalize for one inbound platform event.
 - `dispatchChannelInboundReply(...)`: record and dispatch an already assembled
   inbound reply with a delivery adapter.
+- `resolveChannelInboundEventPolicy(...)`: evaluate synchronous plugin ownership
+  policy before debounce. Pass authenticated provider, account, conversation,
+  optional parent conversation, and provider event IDs; use the returned
+  `allowDebounce` value in `shouldDebounceTextInbound(...)`.
 
 The injected plugin runtime exposes the same high-level helpers under
 `runtime.channel.inbound.*` for bundled/native channels that already receive the

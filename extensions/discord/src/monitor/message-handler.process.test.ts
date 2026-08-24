@@ -574,13 +574,19 @@ describe("processDiscordMessage reply runtime wiring", () => {
 async function runDeliberationIntegrationTest() {
   const sourceId = "1494265174389948538";
   const requests: Array<{ url?: string; body: string }> = [];
+  let failIntake = false;
   const server = createServer((request, response) => {
     let body = "";
     request.setEncoding("utf8");
     request.on("data", (chunk) => (body += chunk));
     request.on("end", () => {
       requests.push({ url: request.url, body });
-      response.writeHead(200, { "Content-Type": "application/json" });
+      if (failIntake) {
+        response.writeHead(503, { "Content-Type": "application/json", Connection: "close" });
+        response.end(JSON.stringify({ protocolVersion: 1, error: { code: "INTERNAL_ERROR" } }));
+        return;
+      }
+      response.writeHead(200, { "Content-Type": "application/json", Connection: "close" });
       response.end(
         JSON.stringify({
           protocolVersion: 1,
@@ -612,7 +618,12 @@ async function runDeliberationIntegrationTest() {
           config: {
             enabled: true,
             failClosed: true,
-            sources: [{ channel: "discord", accountId: "default", target: sourceId }],
+            pipelines: [
+              {
+                id: "discord-source",
+                source: { channel: "discord", accountId: "default", target: sourceId },
+              },
+            ],
             processingSource: {
               channel: "discord",
               accountId: "default",
@@ -630,6 +641,19 @@ async function runDeliberationIntegrationTest() {
     },
   };
   const registry = loadOpenClawPluginsForTest({ config: cfg });
+  const inboundEventPolicyHook = registry.typedHooks.find(
+    (hook) => hook.pluginId === "deliberation" && hook.hookName === "inbound_event_policy",
+  );
+  if (!inboundEventPolicyHook) {
+    throw new Error("missing loader-backed Deliberation inbound_event_policy hook");
+  }
+  const inboundEventPolicyHandler = inboundEventPolicyHook.handler as (event: {
+    provider: string;
+    accountId: string;
+    conversationId: string;
+    parentConversationId?: string;
+    providerEventId?: string;
+  }) => unknown;
   const intakeHook = registry.typedHooks.find(
     (hook) => hook.pluginId === "deliberation" && hook.hookName === "inbound_claim",
   );
@@ -646,6 +670,23 @@ async function runDeliberationIntegrationTest() {
   const beforeDispatchHandler = vi.fn(beforeDispatchHook.handler);
   intakeHook.handler = intakeHandler;
   beforeDispatchHook.handler = beforeDispatchHandler;
+  expect(
+    inboundEventPolicyHandler({
+      provider: "discord",
+      accountId: "default",
+      conversationId: "authenticated-child",
+      parentConversationId: sourceId,
+      providerEventId: "policy-event-1",
+    }),
+  ).toEqual({ aggregation: "separate", dispatch: "exclusive" });
+  expect(
+    inboundEventPolicyHandler({
+      provider: "discord",
+      accountId: "default",
+      conversationId: "ordinary-channel",
+      providerEventId: "policy-event-2",
+    }),
+  ).toBeUndefined();
   const dispatchConfig = {
     ...cfg,
     plugins: { ...cfg.plugins, enabled: false },
@@ -699,7 +740,7 @@ async function runDeliberationIntegrationTest() {
     expect.objectContaining({
       channelId: "discord",
       accountId: "default",
-      conversationId: `channel:${sourceId}`,
+      conversationId: sourceId,
       messageId: "1533451497218506752",
       senderId: "U1",
     }),
@@ -709,6 +750,13 @@ async function runDeliberationIntegrationTest() {
   expect(requests[0]?.url).toBe("/deliberation/v1/intake");
   const intakeBody = JSON.parse(requests[0]?.body ?? "") as Record<string, unknown>;
   expect(intakeBody).toMatchObject({
+    pipelineId: "discord-source",
+    deliveryTarget: {
+      provider: "discord",
+      account: "default",
+      channel: sourceId,
+      threadId: "1533451497218506752",
+    },
     provider: "discord",
     providerEventId: "1533451497218506752",
     sourceTarget: `v1:discord:default:${sourceId}`,
@@ -716,19 +764,14 @@ async function runDeliberationIntegrationTest() {
     occurredAt: "2026-08-02T12:28:47.088000Z",
     content: "Tak schvalne",
   });
+  expect(sendMocks.reactMessageDiscord).not.toHaveBeenCalled();
+  expect(sendMocks.removeReactionDiscord).not.toHaveBeenCalled();
+  expect(typingMocks.sendTyping).not.toHaveBeenCalled();
   expect(dispatchInboundMessage).not.toHaveBeenCalled();
   expect(deliverDiscordReply).not.toHaveBeenCalled();
   expect(beforeDispatchHandler).not.toHaveBeenCalled();
 
-  await new Promise<void>((resolve, reject) => {
-    server.close((error) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
-    });
-  });
+  failIntake = true;
   const failedCtx = await createBaseContext({
     cfg: dispatchConfig,
     runtime,
@@ -751,10 +794,24 @@ async function runDeliberationIntegrationTest() {
   await runProcessDiscordMessage(failedCtx);
 
   expect(intakeHandler).toHaveBeenCalledTimes(2);
-  expect(requests).toHaveLength(1);
-  expect(beforeDispatchHandler).toHaveBeenCalledTimes(1);
+  expect(requests).toHaveLength(2);
+  expect(sendMocks.reactMessageDiscord).not.toHaveBeenCalled();
+  expect(sendMocks.removeReactionDiscord).not.toHaveBeenCalled();
+  expect(typingMocks.sendTyping).not.toHaveBeenCalled();
+  expect(beforeDispatchHandler).not.toHaveBeenCalled();
   expect(dispatchInboundMessage).not.toHaveBeenCalled();
   expect(deliverDiscordReply).not.toHaveBeenCalled();
+
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+    server.closeAllConnections();
+  });
 }
 
 function getLastRouteUpdate():
@@ -2130,6 +2187,34 @@ describe("processDiscordMessage session routing", () => {
       ModelParentSessionKey: "agent:main:discord:channel:parent-1",
     });
     expect(getLastDispatchCtx()?.ParentSessionKey).toBeUndefined();
+  });
+
+  it("preserves the configured source parent when autoThread retargets dispatch", async () => {
+    const rest = { post: vi.fn(async () => ({ id: "auto-thread-1" })) };
+    const ctx = await createBaseContext({
+      messageChannelId: "source-parent",
+      message: {
+        id: "source-message-1",
+        channelId: "source-parent",
+        content: "start a thread",
+        timestamp: new Date().toISOString(),
+        attachments: [],
+      },
+      client: { rest },
+      channelConfig: { allowed: true, autoThread: true },
+      route: {
+        ...BASE_CHANNEL_ROUTE,
+        sessionKey: "agent:main:discord:channel:source-parent",
+      },
+    });
+
+    await runProcessDiscordMessage(ctx);
+
+    expectRecordFields(requireRecord(getLastDispatchCtx(), "dispatch context"), {
+      MessageThreadId: "auto-thread-1",
+      ThreadParentId: "source-parent",
+      To: "channel:auto-thread-1",
+    });
   });
 
   it("omits thread starter context when the effective thread session already exists", async () => {
@@ -3875,5 +3960,6 @@ describe("processDiscordMessage Deliberation integration", () => {
   it(
     "intakes a configured Discord source through the production dispatch path",
     runDeliberationIntegrationTest,
+    180_000,
   );
 });

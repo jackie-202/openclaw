@@ -1,0 +1,104 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required completion and receipt runtime repairs are not delivered in the caller-supplied task-scoped implementation diff.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied diff changes changelog, documentation, README, and Deliberation wire/control contracts, but contains no hunks for extensions/deliberation/src/final-adapter.ts, extensions/deliberation/index.ts, extensions/deliberation/src/km-client.ts, or their focused tests. Checkpoint and proof prose name those files and behaviors but do not supply their implementation.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal-001 requires concrete completion, receipt, duplicate identity, exact replay/conflict, lifecycle binding, and strict projection behavior. Without the owning runtime and test hunks, semantic acceptance cannot establish that those required behaviors were delivered.",
+      "required": "Supply the task-owned runtime and focused test hunks implementing all required completion and receipt semantics.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-22_followup-calm-crag-0993-deliberation-repair-completion-and-receipt-semantics.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_calm-crag-0993_deliberation-repair-completion-and-receipt-semantics-goal.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        }
+      ]
+    },
+    {
+      "claim": "The required bounded implementation-diff provenance artifact is absent from the supplied review material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The plan requires plans/checkpoints/calm-crag-0993.evidence.md to contain the complete task-owned source/test diff, path inventory, statistics, digest, truncation checks, and reverse-apply validation. That artifact is neither included in the task-scoped diff nor supplied among the additional task artifacts.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "This follow-up exists to make preserved implementation hunks inspectable and distinguish them from unrelated dirty-worktree changes. The checkpoint's completion statement and test proof do not replace the explicitly required bounded provenance evidence.",
+      "required": "Supply plans/checkpoints/calm-crag-0993.evidence.md with the complete bounded runtime/test diff and the provenance checks required by the plan.",
+      "sources": [
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_calm-crag-0993_deliberation-repair-completion-and-receipt-semantics-goal.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-additional-task-artifacts"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-crag-0993.checkpoint.md"
+        }
+      ]
+    },
+    {
+      "claim": "The supplied task-scoped diff contains a material pipeline-routing and wire-contract redesign outside this acceptance repair's declared boundary.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "unknown",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "correctness",
+      "observed": "The diff changes inbound policy documentation, per-pipeline configuration and legacy normalization, source-default routing, delivery target modes, intake and envelope requirements, lifecycle vectors, SDK channel semantics, README, and changelog, including extensions/deliberation/contracts/km-wire-v1.json and cutover-controls-v1.json.",
+      "policyRule": "catalog:unknown:blocking",
+      "rationale": "The repair plan explicitly excludes routing, config, docs, SDK, and contract changes and says not to modify extensions/deliberation/contracts/**. These are broad semantic changes rather than incidental churn, and no concurrent assignment candidates were supplied to establish alternate ownership.",
+      "required": "Remove the unrelated routing/config/documentation/SDK/contract redesign from this task-scoped payload and supply only the bounded completion/receipt repair evidence.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-task-scoped-diff"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_calm-crag-0993_deliberation-repair-completion-and-receipt-semantics-goal.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-22_followup-calm-crag-0993-deliberation-repair-completion-and-receipt-semantics.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation: repair completion and receipt semantics: goal-001: Deliberation: repair completion and re"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-crag-0993-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "calm-crag-0993"
+}

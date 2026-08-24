@@ -1,0 +1,46 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required named OR-22 acceptance leaf does not cover five-hook singleton behavior.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "test/scripts/deliberation-doctor-package.e2e.test.ts defines OR-22 doctor-package-writeback-built-five-hook-runtime, but its assertions stop at packaged sidecar presence, doctor writeback/idempotence, config validation, plugin listing, and refusal cases; it never inspects or asserts the five ordered Deliberation hooks or the singleton service count.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "The canonical task explicitly says the real named OR-22 leaf itself must cover five-hook singleton behavior. A separately executed scripts/test-built-plugin-singleton.mjs smoke demonstrates that behavior elsewhere but does not make the named OR-22 leaf cover it.",
+      "required": "Extend the named OR-22 leaf to exercise the installed or emitted Deliberation runtime and assert the exact ordered five hooks plus the sole deliberation-final-delivery service, while retaining the standalone singleton smoke.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_ship-and-verify-openclaw-deliberation-doctor-migration-packa.md:21-31"
+        },
+        {
+          "kind": "file",
+          "reference": "test/scripts/deliberation-doctor-package.e2e.test.ts:74-218"
+        },
+        {
+          "kind": "file",
+          "reference": "scripts/test-built-plugin-singleton.mjs:213-245"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Ship and verify OpenClaw Deliberation doctor migration package"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-cove-3068-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-cove-3068"
+}

@@ -45,7 +45,7 @@ describe("source checkout bundled plugin runtime", () => {
     expect(tokenjuice?.rootDir).toContain(expectedRoot);
   });
 
-  it("loads Deliberation with exactly four hooks and one final-delivery service", () => {
+  it("loads Deliberation with exactly five hooks and one final-delivery service", () => {
     const registry = loadOpenClawPlugins({
       cache: false,
       onlyPluginIds: ["deliberation"],
@@ -57,7 +57,16 @@ describe("source checkout bundled plugin runtime", () => {
               config: {
                 enabled: true,
                 failClosed: true,
-                sources: [{ channel: "discord", accountId: "acct-1", target: "source-1" }],
+                pipelines: [
+                  {
+                    id: "discord-source-1",
+                    source: {
+                      channel: "discord",
+                      accountId: "acct-1",
+                      target: "source-1",
+                    },
+                  },
+                ],
                 processingSource: {
                   channel: "discord",
                   accountId: "acct-1",
@@ -82,7 +91,13 @@ describe("source checkout bundled plugin runtime", () => {
       registry.typedHooks
         .filter((hook) => hook.pluginId === "deliberation")
         .map((hook) => hook.hookName),
-    ).toEqual(["inbound_claim", "before_dispatch", "before_tool_call", "message_sending"]);
+    ).toEqual([
+      "inbound_event_policy",
+      "inbound_claim",
+      "before_dispatch",
+      "before_tool_call",
+      "message_sending",
+    ]);
     expect(
       registry.services
         .filter((service) => service.pluginId === "deliberation")
@@ -129,7 +144,12 @@ describe("source checkout bundled plugin runtime", () => {
               config: {
                 enabled: true,
                 failClosed: true,
-                sources: [{ channel: "discord", accountId: "default", target: sourceId }],
+                pipelines: [
+                  {
+                    id: "discord-source",
+                    source: { channel: "discord", accountId: "default", target: sourceId },
+                  },
+                ],
                 processingSource: {
                   channel: "discord",
                   accountId: "default",

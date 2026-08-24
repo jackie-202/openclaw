@@ -1,0 +1,89 @@
+{
+  "findings": [
+    {
+      "claim": "The required OpenClaw owner-convergence implementation was not delivered in the supplied task-scoped changes.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff changes architecture-review artifacts, changelog entries, and documentation, but does not show the required owner contract mirror, provenance, KM client, final adapter, singular spool probe, cross-repository OR-07..OR-21 harness, or focused regression-test changes named by the canonical task.",
+      "rationale": "Plans and checkpoint assertions do not substitute for delivered implementation. Without the required product boundary changes in the supplied material, goal-001 cannot be accepted.",
+      "required": "Deliver the task-scoped contract/provenance, producer/probe, client, adapter, harness, and regression-test changes that implement the verified KM owner semantics.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_complete-openclaw-convergence-against-verified-km-owner-arti.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:task-scoped-diff"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required RED/GREEN TDD proof is incomplete in the supplied material.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied cool-vale-4616 TDD proof contains a historical RED section with exit code 1, but no fresh post-change GREEN section, exact successful output, or completed RED-to-GREEN sequence is supplied; the checkpoint's summary claim is not the proof itself.",
+      "rationale": "The manifest declares tddRequired true, so both genuine RED and implementation-backed GREEN evidence must be materially present and attributable to this task.",
+      "required": "Provide the task-scoped TDD proof containing the exact RED command/result and fresh post-change GREEN command/result for the required OR-19/OR-20 regression cycle.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-4616.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-4616.checkpoint.md"
+        }
+      ]
+    },
+    {
+      "claim": "The explicitly required convergence completion evidence is not supplied.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "No completion note or equivalent supplied artifact preserves the current KM HEAD, all four verified hashes, touched OpenClaw boundaries, exact named OR-07..OR-21 results, integration result, deterministic KM composed E2E result, focused-check commands/results, and cleanup/forbidden-action confirmation. The checkpoint provides summary claims and identifies a remaining composed-E2E gap, but not the required exact evidence ledger.",
+      "rationale": "These evidence items are explicit completion requirements of the canonical task. Their absence prevents semantic confirmation of owner-backed convergence independently of the unrun caller-owned Test Gate.",
+      "required": "Provide a task-owned completion artifact with the exact required provenance, per-leaf results, commands, outcomes, cleanup evidence, and forbidden-action confirmation.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_complete-openclaw-convergence-against-verified-km-owner-arti.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-vale-4616.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:test-gate-status"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Complete OpenClaw convergence against verified KM owner artifacts"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-vale-4616-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "cool-vale-4616"
+}

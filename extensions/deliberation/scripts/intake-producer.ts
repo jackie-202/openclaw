@@ -1,7 +1,6 @@
 import { pathToFileURL } from "node:url";
 import { z } from "zod";
 import { parseDeliberationConfig } from "../src/config.js";
-import { kmDeliveryTargetSchema } from "../src/delivery-target.js";
 import { createInboundClaimHandler } from "../src/intake.js";
 import { createKmClient, KmRequestError, type KmClient } from "../src/km-client.js";
 
@@ -9,35 +8,51 @@ const CREDENTIAL_ENV = "OPENCLAW_DELIBERATION_KM_CREDENTIAL";
 
 const configuredRouteSchema = z
   .object({
-    provider: z.literal("discord"),
+    channel: z.enum(["discord", "slack"]),
     accountId: z.string().min(1).max(96),
-    channelId: z.string().min(1).max(96),
+    target: z.string().min(1).max(96),
+  })
+  .strict();
+
+const configuredTargetSchema = configuredRouteSchema
+  .extend({ threadId: z.string().min(1).max(96).optional() })
+  .strict();
+
+const pipelineSchema = z
+  .object({
+    id: z.string().min(1).max(256),
+    source: configuredRouteSchema,
+    target: configuredTargetSchema.optional(),
+  })
+  .strict();
+
+const inboundIdentitySchema = z
+  .object({
+    accountId: z.string().min(1).max(96),
+    conversationId: z.string().min(1).max(96),
+    parentConversationId: z.string().min(1).max(96).optional(),
+    messageId: z.string().min(1).max(96),
+    senderId: z.string().min(1).max(96),
   })
   .strict();
 
 const inputSchema = z
   .object({
     endpoint: z.url(),
-    routes: z
-      .object({
-        sources: z.array(configuredRouteSchema).min(1),
-        processing: configuredRouteSchema,
-        delivery: kmDeliveryTargetSchema.optional(),
-      })
-      .strict(),
+    pipelines: z.array(pipelineSchema).min(1),
+    processingSource: configuredRouteSchema,
     event: z
       .object({
-        provider: z.literal("discord"),
+        provider: z.enum(["discord", "slack"]),
         eventType: z.literal("message"),
         eventKind: z.literal("user_request"),
-        channelId: z.string().min(1).max(256),
-        accountId: z.string().min(1).max(256),
-        messageId: z.string().min(1).max(256),
-        senderId: z.string().min(1).max(256),
+        ...inboundIdentitySchema.shape,
+        threadId: z.string().min(1).max(96).optional(),
         timestamp: z.iso.datetime({ offset: true }),
         content: z.string().min(1).max(65536),
       })
       .strict(),
+    context: inboundIdentitySchema.extend({ channelId: z.enum(["discord", "slack"]) }).strict(),
   })
   .strict();
 
@@ -58,25 +73,12 @@ export async function runIntakeProducer(
   if (!parsed.success) {
     throw new Error("invalid producer input");
   }
-  const { endpoint, routes, event } = parsed.data;
+  const { endpoint, pipelines, processingSource, event, context } = parsed.data;
   const config = parseDeliberationConfig({
     enabled: true,
     failClosed: true,
-    sources: routes.sources.map((route) => ({
-      channel: route.provider,
-      accountId: route.accountId,
-      target: route.channelId,
-    })),
-    processingSource: {
-      channel: routes.processing.provider,
-      accountId: routes.processing.accountId,
-      target: routes.processing.channelId,
-    },
-    ...(routes.delivery
-      ? {
-          deliveryTarget: routes.delivery,
-        }
-      : {}),
+    pipelines,
+    processingSource,
     km: {
       endpoint,
       credential: { source: "env", provider: "default", id: CREDENTIAL_ENV },
@@ -102,12 +104,24 @@ export async function runIntakeProducer(
       }
     },
   };
-  const handler = createInboundClaimHandler(config, intakeClient, {
-    info() {},
-    warn() {},
-    error() {},
-    debug() {},
-  });
+  const handler = createInboundClaimHandler(
+    config,
+    intakeClient,
+    {
+      info() {},
+      warn() {},
+      error() {},
+      debug() {},
+    },
+    {
+      async registerIfAbsent() {
+        return true;
+      },
+      async lookup() {
+        return undefined;
+      },
+    },
+  );
   const result = await handler(
     {
       channel: event.provider,
@@ -115,18 +129,17 @@ export async function runIntakeProducer(
       eventType: event.eventType,
       eventKind: event.eventKind,
       accountId: event.accountId,
-      conversationId: event.channelId,
+      conversationId: event.conversationId,
+      parentConversationId: event.parentConversationId,
+      threadId: event.threadId,
+      messageId: event.messageId,
       content: event.content,
       isGroup: true,
       senderId: event.senderId,
       timestamp: Date.parse(event.timestamp),
     },
     {
-      channelId: event.provider,
-      accountId: event.accountId,
-      conversationId: event.channelId,
-      messageId: event.messageId,
-      senderId: event.senderId,
+      ...context,
     },
   );
   return {
@@ -144,11 +157,52 @@ async function main(): Promise<void> {
   for await (const chunk of process.stdin) {
     chunks.push(Buffer.from(chunk));
   }
-  const input = JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+  let input = JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("invalid producer input");
   }
-  const result = await runIntakeProducer({ ...input, endpoint });
+  if ("routes" in input && "event" in input) {
+    const routes = input.routes as {
+      sources?: Array<{ provider: "discord" | "slack"; accountId: string; channelId: string }>;
+      processing?: { provider: "discord" | "slack"; accountId: string; channelId: string };
+    };
+    const event = input.event as Record<string, unknown>;
+    if (routes.sources && routes.processing) {
+      const { channelId, ...canonicalEvent } = event;
+      input = {
+        pipelines: routes.sources.map((source) => ({
+          id: `${source.provider}-source`,
+          source: {
+            channel: source.provider,
+            accountId: source.accountId,
+            target: source.channelId,
+          },
+          target: {
+            channel: source.provider,
+            accountId: source.accountId,
+            target: source.channelId,
+          },
+        })),
+        processingSource: {
+          channel: routes.processing.provider,
+          accountId: routes.processing.accountId,
+          target: routes.processing.channelId,
+        },
+        event: {
+          ...canonicalEvent,
+          conversationId: channelId,
+        },
+        context: {
+          channelId: event.provider,
+          accountId: event.accountId,
+          conversationId: channelId,
+          messageId: event.messageId,
+          senderId: event.senderId,
+        },
+      };
+    }
+  }
+  const result = await runIntakeProducer({ ...(input as Record<string, unknown>), endpoint });
   process.stdout.write(`${JSON.stringify(result)}\n`);
   if (!result.handled) {
     process.exitCode = 1;

@@ -5,12 +5,34 @@ import { admitInboundSource } from "./route-match.js";
 const config = parseDeliberationConfig({
   enabled: true,
   failClosed: true,
-  sources: [
-    { channel: "discord", accountId: "account-a", target: "source" },
-    { channel: "discord", accountId: "account-b", target: "source" },
-    { channel: "slack", accountId: "workspace-a", target: "C123" },
-    { channel: "slack", accountId: "workspace-b", target: "C123" },
-    { channel: "slack", accountId: "workspace-a", target: "C456" },
+  pipelines: [
+    {
+      id: "discord-account-a",
+      source: { channel: "discord", accountId: "account-a", target: "source" },
+    },
+    {
+      id: "discord-account-b",
+      source: { channel: "discord", accountId: "account-b", target: "source" },
+      target: { channel: "discord", accountId: "delivery", target: "root-target" },
+    },
+    {
+      id: "slack-workspace-a-c123",
+      source: { channel: "slack", accountId: "workspace-a", target: "C123" },
+    },
+    {
+      id: "slack-workspace-b-c123",
+      source: { channel: "slack", accountId: "workspace-b", target: "C123" },
+      target: {
+        channel: "slack",
+        accountId: "workspace-delivery",
+        target: "C999",
+        threadId: "1723649999.000100",
+      },
+    },
+    {
+      id: "slack-workspace-a-c456",
+      source: { channel: "slack", accountId: "workspace-a", target: "C456" },
+    },
   ],
   processingSource: { channel: "discord", accountId: "account-a", target: "processing" },
   km: {
@@ -40,13 +62,35 @@ const context = {
 };
 
 describe("Deliberation source admission", () => {
-  it("accepts one exact configured source identity", () => {
-    expect(admitInboundSource(config, event, context)).toEqual({
+  it("selects the pipeline and anchors an omitted target to the root source message", () => {
+    expect(admitInboundSource(config, event, context)).toMatchObject({
       accepted: true,
+      pipelineId: "discord-account-a",
+      deliveryTarget: {
+        provider: "discord",
+        account: "account-a",
+        channel: "source",
+        threadId: "message-1",
+      },
+    });
+  });
+
+  it("accepts one exact configured source identity", () => {
+    expect(admitInboundSource(config, event, context)).toMatchObject({
+      accepted: true,
+      pipeline: config.pipelines[0],
+      pipelineId: "discord-account-a",
+      deliveryTarget: {
+        provider: "discord",
+        account: "account-a",
+        channel: "source",
+        threadId: "message-1",
+      },
       route: { channel: "discord", accountId: "account-a", target: "source" },
       sourceTarget: "v1:discord:account-a:source",
       providerEventId: "message-1",
       sourceThreadId: "message-1",
+      historyChannelId: "source",
       senderId: "sender-1",
     });
   });
@@ -74,8 +118,15 @@ describe("Deliberation source admission", () => {
           senderId: "U123",
         },
       ),
-    ).toEqual({
+    ).toMatchObject({
       accepted: true,
+      pipelineId: "slack-workspace-a-c123",
+      deliveryTarget: {
+        provider: "slack",
+        account: "workspace-a",
+        channel: "C123",
+        threadId: "1723640000.000100",
+      },
       route: { channel: "slack", accountId: "workspace-a", target: "C123" },
       sourceTarget: "v1:slack:workspace-a:C123",
       providerEventId: "1723640000.000200",
@@ -109,11 +160,85 @@ describe("Deliberation source admission", () => {
 
     expect(result).toMatchObject({
       accepted: true,
+      pipelineId: "slack-workspace-b-c123",
+      deliveryTarget: {
+        provider: "slack",
+        account: "workspace-delivery",
+        channel: "C999",
+        threadId: "1723649999.000100",
+      },
       sourceTarget: "v1:slack:workspace-b:C123",
       providerEventId: "1723640000.000300",
       sourceThreadId: "1723640000.000300",
       threadId: "1723640000.000300",
     });
+  });
+
+  it("matches a Discord child through its authenticated parent and preserves the child thread", () => {
+    expect(
+      admitInboundSource(
+        config,
+        {
+          ...event,
+          conversationId: "thread-1",
+          parentConversationId: "source",
+          threadId: "thread-1",
+          messageId: "message-2",
+        },
+        {
+          ...context,
+          conversationId: "thread-1",
+          parentConversationId: "source",
+          messageId: "message-2",
+        },
+      ),
+    ).toMatchObject({
+      accepted: true,
+      pipelineId: "discord-account-a",
+      providerEventId: "message-2",
+      sourceThreadId: "thread-1",
+      historyChannelId: "thread-1",
+      route: { channel: "discord", accountId: "account-a", target: "source" },
+      sourceTarget: "v1:discord:account-a:source",
+      deliveryTarget: {
+        provider: "discord",
+        account: "account-a",
+        channel: "source",
+        threadId: "thread-1",
+      },
+    });
+  });
+
+  it("rejects Discord parent evidence that describes the root conversation", () => {
+    expect(
+      admitInboundSource(
+        config,
+        { ...event, parentConversationId: "source" },
+        { ...context, parentConversationId: "source" },
+      ),
+    ).toEqual({ accepted: false, reason: "ambiguous-route" });
+  });
+
+  it("uses an explicit root target without inheriting the Discord source thread", () => {
+    const result = admitInboundSource(
+      config,
+      { ...event, accountId: "account-b", messageId: "message-b" },
+      { ...context, accountId: "account-b", messageId: "message-b" },
+    );
+
+    expect(result).toMatchObject({
+      accepted: true,
+      pipelineId: "discord-account-b",
+      deliveryTarget: {
+        provider: "discord",
+        account: "delivery",
+        channel: "root-target",
+      },
+    });
+    if (!result.accepted) {
+      throw new Error("expected explicit target admission");
+    }
+    expect(result.deliveryTarget).not.toHaveProperty("threadId");
   });
 
   it.each([
@@ -167,6 +292,13 @@ describe("Deliberation source admission", () => {
     ["missing id", { messageId: undefined }, { messageId: undefined }],
     ["conflicting account", { accountId: "account-b" }, {}],
     ["conflicting target", { conversationId: "other" }, {}],
+    ["conflicting parent", { parentConversationId: "other" }, { parentConversationId: "source" }],
+    ["thread without authenticated parent", { threadId: "thread-1" }, {}],
+    [
+      "thread id that contradicts the child conversation",
+      { conversationId: "thread-1", parentConversationId: "source", threadId: "thread-2" },
+      { conversationId: "thread-1", parentConversationId: "source" },
+    ],
     ["conflicting id", { messageId: "other" }, {}],
     ["malformed id", { messageId: "message:other" }, { messageId: "message:other" }],
     ["oversized id", { messageId: "m".repeat(97) }, { messageId: "m".repeat(97) }],

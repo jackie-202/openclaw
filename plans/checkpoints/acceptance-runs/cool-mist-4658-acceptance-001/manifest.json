@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T19:26:19+00:00",
+    "implementingStartedAt": "2026-08-23T19:20:21+00:00",
+    "taskFile": "plans/tasks/2026-08-23_converge-openclaw-with-supplied-immutable-km-deliberation-ow.md",
+    "taskId": "cool-mist-4658",
+    "title": "Converge OpenClaw with supplied immutable KM Deliberation owner bundle"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Converge OpenClaw with supplied immutable KM Deliberation owner bundle"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-mist-4658-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-mist-4658",
+  "tddRequired": true
+}

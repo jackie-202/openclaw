@@ -12,6 +12,7 @@ import type { OutboundIdentity } from "../../infra/outbound/identity-types.js";
 import type { OutboundSendDeps } from "../../infra/outbound/send-deps.js";
 import type { MessagePresentation, ReplyPayloadDeliveryPin } from "../../interactive/payload.js";
 import type { OutboundMediaAccess } from "../../media/load-options.js";
+import type { MessageReceipt } from "../message/types.js";
 import type {
   ChannelOutboundTargetMode,
   ChannelPollContext,
@@ -41,6 +42,35 @@ export type ChannelOutboundContext = {
   silent?: boolean;
   gatewayClientScopes?: readonly string[];
 };
+
+export type ChannelOutboundTextAttemptContext = ChannelOutboundContext & {
+  /** Durable invocation identity forwarded unchanged to native providers that support it. */
+  idempotencyKey: string;
+  /** Source message whose attached thread is the immutable delivery target. */
+  sourceMessageId?: string;
+};
+
+export type ChannelOutboundTextAttemptResult =
+  | {
+      outcome: "sent";
+      messageId: string;
+      receipt: MessageReceipt;
+      idempotency: "native" | "unsupported";
+    }
+  | {
+      /** Definitive rejection where native acceptance is not possible. */
+      outcome: "rejected";
+      failureClass: "permission" | "rate_limit" | "rejection";
+      error: string;
+      idempotency: "native" | "unsupported";
+    }
+  | {
+      /** Dispatch may have reached the provider and must never be retried automatically. */
+      outcome: "unknown";
+      failureClass: "timeout" | "transport" | "unknown";
+      error: string;
+      idempotency: "native" | "unsupported";
+    };
 
 export type ChannelOutboundPayloadContext = ChannelOutboundContext & {
   payload: ReplyPayload;
@@ -229,6 +259,17 @@ export type ChannelOutboundAdapter = {
   sendFormattedMedia?: (
     ctx: ChannelOutboundFormattedContext & { mediaUrl: string },
   ) => Promise<OutboundDeliveryResult>;
+  /** Create or reuse the thread attached to a source message, then send one text message. */
+  sendTextToSourceThread?: (
+    ctx: ChannelOutboundContext & { sourceMessageId: string },
+  ) => Promise<OutboundDeliveryResult>;
+  /**
+   * Render one final provider payload and make at most one native text-message attempt.
+   * Implementations must not retry, fall back to another route, or rechunk the payload.
+   */
+  sendTextAttempt?: (
+    ctx: ChannelOutboundTextAttemptContext,
+  ) => Promise<ChannelOutboundTextAttemptResult>;
   sendText?: (ctx: ChannelOutboundContext) => Promise<OutboundDeliveryResult>;
   sendMedia?: (ctx: ChannelOutboundContext) => Promise<OutboundDeliveryResult>;
   sendPoll?: (ctx: ChannelPollContext) => Promise<ChannelPollResult>;

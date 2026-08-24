@@ -1,0 +1,54 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The required current owner-backed GREEN proof for the repaired Deliberation integration harness is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied proof says GREEN was not run because no reachable owner revision both preserves the accepted contract and fixture hashes and implements pipelineId, intake deliveryTarget, and mode-bearing target parsing. The inherited canonical run remains exit 1 with 12 passing and 11 failing scenarios, the checkpoint leaves goal-001 incomplete, and the canonical Test Gate was not run.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal-001 is an acceptance evidence repair whose required outcome is a successful unchanged 23-scenario cross-repository integration run against an approved contract-converged owner runtime. Owner-history inspection and a preserved RED explain the blocker but do not supply the required passing verification evidence.",
+      "required": "Provide an owner-approved immutable KM revision that retains the accepted owner bytes and implements the complete required runtime contract, then supply caller-owned evidence that the unchanged canonical integration command exits 0 with all 23 scenarios passing while external/live convergence remains explicitly unknown.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-peak-4880.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-peak-4880.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-wave-3956.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-22_bold-peak-4880_acceptance-fix-deliberation-validate-fixtures-bound-legacy.md"
+        },
+        {
+          "kind": "test-gate",
+          "reference": "not-run"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation: validate fixtures, bound legacy config, and repair integration proof: go"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-peak-4880-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-peak-4880"
+}

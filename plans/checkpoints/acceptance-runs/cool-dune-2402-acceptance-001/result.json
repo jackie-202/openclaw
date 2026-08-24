@@ -1,0 +1,46 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required OR-22 installed-runtime probe is absent from the supplied task-scoped implementation material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The caller-supplied task-scoped diff contains no change to test/scripts/deliberation-doctor-package.e2e.test.ts and therefore does not statically supply the installed-runtime load or assertions for the exact ordered five hooks and sole deliberation-final-delivery service. The plan, checkpoint, TDD proof narrative, and captured stdout claim the hunk exists or passed, but they do not deliver the required code in the supplied diff.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "This acceptance-fix exists specifically to carry the previously omitted OR-22 test hunk into task-scoped material. Without the test-file implementation, the supplied material repeats the omission identified by the canonical task and does not establish that the named leaf directly exercises the installed runtime contract.",
+      "required": "Supply test/scripts/deliberation-doctor-package.e2e.test.ts in the task-scoped change material with the installed Deliberation runtime probe and assertions for the ordered five hooks and exactly the deliberation-final-delivery service.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_followup-cool-dune-2402-acceptance-fix-ship-and-verify-openclaw-deliberation-doctor.md:10-27"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_cool-dune-2402_acceptance-fix-ship-and-verify-openclaw-deliberation-doctor.md:Implementation steps 2-4"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied task-scoped diff"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Ship and verify OpenClaw Deliberation doctor migration package: goal-001: Ship and ver"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-dune-2402-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-dune-2402"
+}

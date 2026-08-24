@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T21:02:49+00:00",
+    "implementingStartedAt": "2026-08-23T20:39:06+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-quick-fork-2935-establish-caller-owned-deliberation-or-01-through-or-23-full.md",
+    "taskId": "quick-fork-2935",
+    "title": "[acceptance-fix] Establish caller-owned Deliberation OR-01 through OR-23 full gate: goal-001: Establish caller-owned Del"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Establish caller-owned Deliberation OR-01 through OR-23 full gate: goal-001: Establish caller-owned Del"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-fork-2935-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-fork-2935",
+  "tddRequired": true
+}

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T19:04:18+00:00",
+    "implementingStartedAt": "2026-08-23T18:50:56+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-cool-dune-2402-acceptance-fix-ship-and-verify-openclaw-deliberation-doctor.md",
+    "taskId": "cool-dune-2402",
+    "title": "[acceptance-fix] [acceptance-fix] Ship and verify OpenClaw Deliberation doctor migration package: goal-001: Ship and ver"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Ship and verify OpenClaw Deliberation doctor migration package: goal-001: Ship and ver"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-dune-2402-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "cool-dune-2402",
+  "tddRequired": true
+}

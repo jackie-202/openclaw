@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T02:38:56+00:00",
+    "implementingStartedAt": "2026-08-23T02:23:32+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-dark-crag-3048-acceptance-fix-close-deliberation-owner-runtime-convergence.md",
+    "taskId": "dark-crag-3048",
+    "title": "[acceptance-fix] [acceptance-fix] Close deliberation owner-runtime convergence gates before rollout: goal-001: All 23 ow"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Close deliberation owner-runtime convergence gates before rollout: goal-001: All 23 ow"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-crag-3048-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-crag-3048",
+  "tddRequired": true
+}

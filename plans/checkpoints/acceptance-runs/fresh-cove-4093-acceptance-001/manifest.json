@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-19T17:43:02+00:00",
+    "implementingStartedAt": "2026-08-19T17:37:33+00:00",
+    "taskFile": "plans/tasks/2026-08-19_followup-fresh-cove-4093-acceptance-fix-update-stale-deliberation-intake-producer-tes.md",
+    "taskId": "fresh-cove-4093",
+    "title": "[acceptance-fix] [acceptance-fix] Update stale deliberation intake-producer test to optional Discord sourceThreadId sema"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Update stale deliberation intake-producer test to optional Discord sourceThreadId sema"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-cove-4093-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-cove-4093",
+  "tddRequired": false
+}

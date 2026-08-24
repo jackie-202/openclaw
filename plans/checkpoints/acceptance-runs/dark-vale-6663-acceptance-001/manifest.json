@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T20:05:26+00:00",
+    "implementingStartedAt": "2026-08-21T19:11:44+00:00",
+    "taskFile": "plans/tasks/2026-08-21_followup-dark-vale-6663-deliberation-preserve-source-ownership-and-one-intake-per-pr.md",
+    "taskId": "dark-vale-6663",
+    "title": "[acceptance-fix] Deliberation: preserve source ownership and one intake per provider event: goal-001: Deliberation: pres"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation: preserve source ownership and one intake per provider event: goal-001: Deliberation: pres"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-vale-6663-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-vale-6663",
+  "tddRequired": true
+}

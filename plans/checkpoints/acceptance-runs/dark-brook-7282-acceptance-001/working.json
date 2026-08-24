@@ -1,0 +1,78 @@
+{
+  "findings": [
+    {
+      "claim": "The required canonical OR-01 through OR-23 Green ledger and completion evidence are absent.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The owner-backed command failed at immutable-authority preflight because the configured KM checkout was at revision b80561ce6a72a086038074785d62ba1578275cea instead of accepted revision 79bbc5c0426bc7be901d5199da11b21213bfa008. The canonical full-gate command then failed at the dirty OpenClaw checkout preflight, created no plans/checkpoints/quick-brook-1900.full-gate.json ledger, and the supplied readiness artifact remains unknown/not Green.",
+      "rationale": "Goal-001 requires caller-owned canonical evidence establishing each OR-01 through OR-23 leaf exactly once under the accepted authority. Preflight failures and supporting validator results do not establish the required 23/23 Green gate.",
+      "required": "Provide the accepted KM authority and a clean eligible OpenClaw checkout, then preserve the canonical validated ordered 23/23 Green ledger and bounded completion evidence produced by the required gate without weakening preflight or synthesizing rows.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-brook-7282.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.rollout-readiness.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-brook-1900.final-note.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_dark-brook-7282_acceptance-fix-establish-caller-owned-deliberation-or-01.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is incomplete because no fresh accepted-authority GREEN evidence exists.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true. The supplied proof preserves a genuine historical RED, but its required GREEN command exited 1 with 38 authority-preflight failures and no passed owner behavior. It explicitly records no GREEN phase, while the canonical gate also stopped before behavioral execution and produced no ledger.",
+      "rationale": "A historical RED plus blocked preflight attempts does not demonstrate that the repaired owner boundary reached GREEN. The declared TDD contract requires fresh output from the owner-backed command under the accepted KM revision, with every exact OR-07 through OR-21 selector passing once and none failing or skipping.",
+      "required": "Append fresh GREEN provenance only after the required owner-backed command runs under the accepted authority, exits zero, and reports every exact OR-07 through OR-21 selector once with no failed or skipped required leaf, preserving the genuine historical RED.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-brook-7282.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-fork-2935.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/dark-brook-7282.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/dark-brook-7282-acceptance-001/manifest.json:20"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Establish caller-owned Deliberation OR-01 through OR-23 full gate: goal-001: Establish"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-brook-7282-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "dark-brook-7282"
+}

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T18:42:22+00:00",
+    "implementingStartedAt": "2026-08-23T18:32:56+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-dark-mist-2518-ship-and-verify-openclaw-deliberation-doctor-migration-packa.md",
+    "taskId": "dark-mist-2518",
+    "title": "[acceptance-fix] Ship and verify OpenClaw Deliberation doctor migration package: goal-001: Ship and verify OpenClaw Deli"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Ship and verify OpenClaw Deliberation doctor migration package: goal-001: Ship and verify OpenClaw Deli"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-mist-2518-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-mist-2518",
+  "tddRequired": true
+}

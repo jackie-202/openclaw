@@ -1,0 +1,55 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/calm-reef-2510.evidence.md",
+      "provenance": "evidence_repair:calm-reef-2510-acceptance-001-evidence-repair-001",
+      "size": 1883
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/calm-reef-2510.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/calm-reef-2510-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "90eeb86db1e74fc6048a641a5095cdd4b665d72c",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-21T13:55:01.051143+00:00",
+  "gaps": [
+    "command_lines_truncated",
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "env OPENCLAW_VITEST_FS_MODULE_CACHE_PATH=/Users/michal/.openclaw/tmp/opencode/calm-reef-2510-vitest-cache OPENCLAW_VITEST_MAX_WORKERS=1 pnpm test extensions/deliberation/src/plugin.test.ts -- --report",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "env OPENCLAW_VITEST_FS_MODULE_CACHE_PATH=/Users/michal/.openclaw/tmp/opencode/calm-reef-2510-vitest-cache OPENCLAW_VITEST_MAX_WORKERS=1 pnpm test extensions/deliberation/src/contract.test.ts extension",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "env OPENCLAW_VITEST_FS_MODULE_CACHE_PATH=/Users/michal/.openclaw/tmp/opencode/calm-reef-2510-vitest-cache OPENCLAW_VITEST_MAX_WORKERS=1 pnpm test extensions/deliberation/src/contract.test.ts extension",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=calm-vale-3982 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/contract.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "pgrep -af \"proof-capture.py|contract.test.ts|scripts/test-projects.mjs\"",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=calm-vale-3982 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- env OPENCLAW_VITEST_FS_MODULE_CACHE_PATH=/Users/michal/.openclaw/tmp/opencode/calm-vale-3982-",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "calm-reef-2510-acceptance-001-evidence-repair-001",
+  "sourceRunId": "calm-reef-2510-acceptance-001",
+  "startedAt": "2026-08-21T13:54:57.641033+00:00",
+  "status": "escalated"
+}

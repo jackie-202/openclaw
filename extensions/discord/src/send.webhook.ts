@@ -24,6 +24,7 @@ type DiscordWebhookSendOpts = {
   username?: string;
   avatarUrl?: string;
   wait?: boolean;
+  preparedText?: boolean;
 };
 
 function resolveWebhookExecutionUrl(params: {
@@ -86,10 +87,12 @@ export async function sendWebhookMessageDiscord(
     cfg: opts.cfg,
     accountId: opts.accountId,
   });
-  const rewrittenText = rewriteDiscordKnownMentions(text, {
-    accountId: account.accountId,
-    mentionAliases: account.config.mentionAliases,
-  });
+  const rewrittenText = opts.preparedText
+    ? text
+    : rewriteDiscordKnownMentions(text, {
+        accountId: account.accountId,
+        mentionAliases: account.config.mentionAliases,
+      });
 
   const response = await (proxyFetch ?? fetch)(
     resolveWebhookExecutionUrl({

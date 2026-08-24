@@ -90,6 +90,139 @@ describe("discordOutbound", () => {
     resetDiscordOutboundMocks(hoisted);
   });
 
+  it("exposes a bot text attempt with native idempotency and one send", async () => {
+    const result = await discordOutbound.sendTextAttempt({
+      cfg: {},
+      to: "channel:123456",
+      text: "one attempt",
+      accountId: "default",
+      idempotencyKey: "provider:attempt-1",
+    });
+
+    expect(hoisted.sendTextAttemptDiscordMock).toHaveBeenCalledTimes(1);
+    expect(hoisted.sendTextAttemptDiscordMock).toHaveBeenCalledWith(
+      "channel:123456",
+      "one attempt",
+      expect.objectContaining({
+        idempotencyKey: "provider:attempt-1",
+        accountId: "default",
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        outcome: "sent",
+        messageId: "msg-attempt-1",
+        idempotency: "native",
+      }),
+    );
+  });
+
+  it("does not retry an ambiguous bot text attempt", async () => {
+    hoisted.sendTextAttemptDiscordMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+
+    const result = await discordOutbound.sendTextAttempt({
+      cfg: {},
+      to: "channel:123456",
+      text: "one attempt",
+      idempotencyKey: "provider:attempt-2",
+    });
+
+    expect(hoisted.sendTextAttemptDiscordMock).toHaveBeenCalledTimes(1);
+    expect(hoisted.sendMessageDiscordMock).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      outcome: "unknown",
+      failureClass: "transport",
+      error: "fetch failed",
+      idempotency: "native",
+    });
+  });
+
+  it("rejects an idempotency key that Discord cannot represent before sending", async () => {
+    const result = await discordOutbound.sendTextAttempt({
+      cfg: {},
+      to: "channel:123456",
+      text: "one attempt",
+      idempotencyKey: "provider-attempt-key-longer-than-25-characters",
+    });
+
+    expect(hoisted.sendTextAttemptDiscordMock).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      outcome: "rejected",
+      failureClass: "rejection",
+      error: "Discord idempotency key must contain 1-25 characters",
+      idempotency: "native",
+    });
+  });
+
+  it("selects webhook once and never falls back to bot for an attempt", async () => {
+    mockDiscordBoundThreadManager(hoisted);
+    hoisted.sendWebhookMessageDiscordMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+
+    const result = await discordOutbound.sendTextAttempt({
+      cfg: {},
+      to: "channel:parent-1",
+      text: "webhook attempt",
+      threadId: "thread-1",
+      idempotencyKey: "provider:attempt-3",
+    });
+
+    expect(hoisted.sendWebhookMessageDiscordMock).toHaveBeenCalledTimes(1);
+    expect(hoisted.sendTextAttemptDiscordMock).not.toHaveBeenCalled();
+    expect(hoisted.sendMessageDiscordMock).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      outcome: "unknown",
+      failureClass: "transport",
+      error: "fetch failed",
+      idempotency: "unsupported",
+    });
+  });
+
+  it("rejects after mention rendering exceeds Discord's limit", async () => {
+    const result = await discordOutbound.sendTextAttempt({
+      cfg: {
+        channels: {
+          discord: {
+            mentionAliases: { xx: "123456789012345678" },
+          },
+        },
+      },
+      to: "channel:123456",
+      text: Array.from({ length: 101 }, () => "@xx").join(" "),
+      idempotencyKey: "provider:attempt-4",
+    });
+
+    expect(hoisted.sendTextAttemptDiscordMock).not.toHaveBeenCalled();
+    expect(hoisted.sendWebhookMessageDiscordMock).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      outcome: "rejected",
+      failureClass: "rejection",
+      error: "Discord rendered text exceeds 2000 characters",
+      idempotency: "native",
+    });
+  });
+
+  it("resolves a source-message thread before one subsequent text attempt", async () => {
+    mockDiscordBoundThreadManager(hoisted);
+    await discordOutbound.sendTextAttempt({
+      cfg: {},
+      to: "channel:parent-1",
+      text: "anchored",
+      accountId: "default",
+      threadId: "thread-1",
+      sourceMessageId: "source-message-1",
+      idempotencyKey: "provider:attempt-5",
+    });
+
+    expect(hoisted.createThreadDiscordMock).toHaveBeenCalledTimes(1);
+    expect(hoisted.sendWebhookMessageDiscordMock).not.toHaveBeenCalled();
+    expect(hoisted.sendTextAttemptDiscordMock).toHaveBeenCalledTimes(1);
+    expect(hoisted.sendTextAttemptDiscordMock).toHaveBeenCalledWith(
+      "channel:thread-created",
+      "anchored",
+      expect.objectContaining({ idempotencyKey: "provider:attempt-5" }),
+    );
+  });
+
   it("routes text sends to thread target when threadId is provided", async () => {
     const result = await discordOutbound.sendText?.({
       cfg: {},
@@ -104,6 +237,48 @@ describe("discordOutbound", () => {
       text: "hello",
       result,
     });
+  });
+
+  it("creates a source-message thread and sends exactly one text message", async () => {
+    const result = await discordOutbound.sendTextToSourceThread?.({
+      cfg: {},
+      to: "channel:parent-1",
+      text: "deliberated reply",
+      accountId: "default",
+      sourceMessageId: "source-message-1",
+    });
+
+    expect(hoisted.createThreadDiscordMock).toHaveBeenCalledWith(
+      "parent-1",
+      { messageId: "source-message-1", name: "Deliberation" },
+      { cfg: {}, accountId: "default" },
+    );
+    expect(hoisted.sendMessageDiscordMock).toHaveBeenCalledTimes(1);
+    expect(hoisted.sendMessageDiscordMock).toHaveBeenCalledWith(
+      "channel:thread-created",
+      "deliberated reply",
+      expect.objectContaining({ accountId: "default" }),
+    );
+    expect(result).toEqual({ channel: "discord", messageId: "msg-1", channelId: "ch-1" });
+  });
+
+  it("reuses the thread attached to a source message after a creation race", async () => {
+    hoisted.createThreadDiscordMock.mockRejectedValueOnce(new Error("already created"));
+
+    await discordOutbound.sendTextToSourceThread?.({
+      cfg: {},
+      to: "channel:parent-1",
+      text: "deliberated reply",
+      accountId: "default",
+      sourceMessageId: "source-message-1",
+    });
+
+    expect(hoisted.fetchMessageDiscordMock).toHaveBeenCalledWith("parent-1", "source-message-1", {
+      cfg: {},
+      accountId: "default",
+    });
+    expect(hoisted.sendMessageDiscordMock).toHaveBeenCalledTimes(1);
+    expect(hoisted.sendMessageDiscordMock.mock.calls[0]?.[0]).toBe("channel:thread-existing");
   });
 
   it("sanitizes internal runtime scaffolding before Discord delivery", () => {

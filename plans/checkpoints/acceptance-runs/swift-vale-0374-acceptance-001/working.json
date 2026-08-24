@@ -1,0 +1,47 @@
+{
+  "findings": [
+    {
+      "claim": "The required OpenClaw owner-convergence implementation is still absent from the supplied task-scoped changes.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied diff contains architecture-review artifacts, changelog entries, and plugin documentation, but no task-scoped changes to the required contract/provenance mirror, intake producer, spool probe, KM client, final adapter, OR-07..OR-21 owner-backed harness, or focused regressions. The completion ledger asserts preserved implementation at those paths, but the supplied change set does not materially include that implementation for semantic review.",
+      "rationale": "Goal-001 requires delivery of the owner-backed OpenClaw convergence behavior, and the corrective task explicitly required the preserved implementation to be included in its reviewed change set. Artifact summaries cannot substitute for supplied implementation when the actual task-scoped diff omits every required product boundary.",
+      "required": "Supply the attributable task-scoped implementation changes for the contract/provenance, producer/probe, KM client, final adapter, owner-backed OR-07..OR-21 harness, and focused regressions so goal-001 can be semantically reviewed.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_followup-swift-vale-0374-complete-openclaw-convergence-against-verified-km-owner-arti.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-24_swift-vale-0374_complete-openclaw-convergence-against-verified-km-owner.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied:task-scoped-diff"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-vale-0374.evidence.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Complete OpenClaw convergence against verified KM owner artifacts: goal-001: Complete OpenClaw converge"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-vale-0374-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "swift-vale-0374"
+}

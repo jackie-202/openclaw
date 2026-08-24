@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T16:44:17+00:00",
+    "implementingStartedAt": "2026-08-23T15:25:59+00:00",
+    "taskFile": "plans/tasks/2026-08-23_close-openclaw-deliberation-exclusive-ownership-channel-boun.md",
+    "taskId": "swift-crag-4682",
+    "title": "Close OpenClaw Deliberation exclusive-ownership channel boundary"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Close OpenClaw Deliberation exclusive-ownership channel boundary"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-crag-4682-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-crag-4682",
+  "tddRequired": true
+}

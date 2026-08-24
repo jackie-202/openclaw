@@ -1,0 +1,96 @@
+{
+  "findings": [
+    {
+      "claim": "Required focused and broader-suite passing verification is not established by canonical Test Gate evidence.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-006"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The caller states that Test Gate status is not run and that no Test Gate evidence exists; the supplied TDD proof covers only pnpm test src/agents/model-auth.profiles.test.ts, while goal-006 also requires the smallest suitable broader suite.",
+      "rationale": "Goal-006 explicitly requires passing focused tests and a suitable broader suite, and Acceptance may recognize that execution result only through the caller-supplied canonical Test Gate reference.",
+      "required": "Provide canonical Test Gate evidence establishing the required focused and smallest suitable broader test suite results.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical Test Gate reference: status not run; no evidence"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-brook-8179.red-green-proof.md"
+        }
+      ]
+    },
+    {
+      "claim": "The required final note is absent from the supplied task artifacts.",
+      "crossCutting": false,
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-007"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint only states broad completion and blockers; it does not list changed files, exact verification commands with their results, or the residual post-deployment runtime verification. The plan contains intended files and verification steps, but it is a draft plan rather than the required final note.",
+      "rationale": "Goal-007 makes the final note itself a deliverable with specific contents, and none of the caller-supplied artifacts fulfills that deliverable.",
+      "required": "Provide a final note listing the actual changed files, exact verification commands and results, and any residual runtime verification required after deployment.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/fix-compaction-openai-oauth-bridge-auth-validation.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-brook-8179.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-20_bold-brook-8179_fix-compaction-openai-oauth-bridge-provider-auth-validation.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Compaction no longer raises the quoted OAuth-vs-API-key error for the supported local bridge/OAuth arrangement."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "Normal OpenAI provider initialization and compaction use one coherent auth-compatibility policy."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Direct API-key authentication remains valid."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "Unsupported auth/provider combinations remain rejected before network use."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "Tests prove the placeholder cannot become an upstream credential."
+    },
+    {
+      "id": "goal-006",
+      "status": "UNMET",
+      "summary": "Relevant focused tests and the smallest suitable broader test suite pass."
+    },
+    {
+      "id": "goal-007",
+      "status": "UNMET",
+      "summary": "The final note lists changed files, exact verification commands/results, and any residual runtime verification required after deployment."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-brook-8179-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bold-brook-8179"
+}

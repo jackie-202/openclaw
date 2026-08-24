@@ -1,0 +1,108 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required complete canonical OR-01 through OR-23 result artifact is absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task checkpoint states that the canonical full-gate command failed clean-checkout preflight and that no 23-row artifact was manufactured; rollout readiness likewise says no validated 23-row canonical artifact exists.",
+      "policyRule": "catalog:required_artifact_missing:blocking",
+      "rationale": "The task contract makes a complete immutable 23-row artifact an explicit deliverable and requires the canonical command to finish with 23/23 named leaves Green. Focused checks and a deliberately absent artifact do not satisfy that deliverable.",
+      "required": "Produce plans/checkpoints/bright-fork-2292.full-gate.json from one successful canonical run with exactly ordered, unique OR-01 through OR-23 Green rows and the required immutable evidence.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-fork-2292.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.rollout-readiness.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_establish-canonical-deliberation-or-01-through-or-23-gate.md"
+        }
+      ]
+    },
+    {
+      "claim": "The explicitly required canonical completion note and its successful gate evidence are absent.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied checkpoint says no final note was manufactured after the canonical command stopped at dirty-checkout preflight. The supplied readiness document remains unknown and points to a different historical quick-brook artifact rather than validated bright-fork evidence.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The task explicitly requires a final note containing the canonical command, revisions, accepted hashes, all 23 results, negative fail-closed characterization, and build/package/provenance and focused results. The supplied focused-check summary is not that required canonical validation report.",
+      "required": "After a successful canonical run, produce plans/checkpoints/bright-fork-2292.final-note.md with every completion-evidence field required by the task and update readiness to consume only the validated bright-fork artifact.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-fork-2292.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/fresh-peak-7129.rollout-readiness.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-23_establish-canonical-deliberation-or-01-through-or-23-gate.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is incomplete because no GREEN phase proof is supplied.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The supplied bright-fork-2292.red-green-proof.md material records the exact RED command and failing output, but includes no GREEN phase command, exit status, or passing output. The checkpoint summarizes later focused results without supplying the required RED/GREEN proof record.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The manifest declares tddRequired true and the plan requires preserved exact RED and GREEN commands and outcomes. A RED-only capture plus a narrative checkpoint is not a complete mandatory TDD proof.",
+      "required": "Complete the TDD proof artifact with attributable GREEN-phase metadata, the exact matching test command, exit status, and passing outcome after the implementation change.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-fork-2292.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-fork-2292.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-24_bright-fork-2292_establish-canonical-deliberation-or-01-through-or-23-gate.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "acceptance-run-manifest:tddRequired=true"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Establish canonical Deliberation OR-01 through OR-23 gate"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-fork-2292-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bright-fork-2292"
+}

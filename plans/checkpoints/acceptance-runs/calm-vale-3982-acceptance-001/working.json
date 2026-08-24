@@ -1,0 +1,66 @@
+{
+  "findings": [
+    {
+      "claim": "The task must implement per-pipeline routing, immutable source-default and explicit-target delivery, ordinary-response suppression, and the single-attempt completion contract.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint says implementation is blocked before production code, leaves implementation, documentation/integration coverage, and verification steps incomplete, and identifies the repository-local KM contract as still lacking pipelineId, durable deliveryTarget lifecycle evidence, and a source-anchor discriminator.",
+      "rationale": "The supplied diff adds pipeline configuration, producer-facing documentation, and a pending overlay, but the supplied checkpoint confirms that the final adapters, lifecycle enforcement, source-thread-anchor behavior, suppression paths, and focused coverage required by goal-001 were not implemented.",
+      "required": "Supply the synchronized repository-local owner contract, then implement and document the required routing, suppression, immutable adapter lifecycle, source-default thread semantics, explicit root/thread semantics, and focused positive/negative coverage.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-vale-3982.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "learnings/architecture/calm-vale-3982-distinguish-thread-anchors-from-exact-threads.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-21_calm-vale-3982_route-per-pipeline-deliberation-and-deliver-source-default.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-declared mandatory TDD requirement needs a valid RED/GREEN proof for the delivered behavior.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied proof records only a RED contract-gate run with exit code 1; the checkpoint leaves GREEN proof incomplete and states production implementation has not started.",
+      "rationale": "With tddRequired true, RED evidence alone does not establish the required RED/GREEN cycle for the acceptance goal.",
+      "required": "Complete the implementation and append credible GREEN evidence to the task-scoped TDD proof after the intended RED failure.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-vale-3982.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-vale-3982.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Route per-pipeline deliberation and deliver source-default replies"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-vale-3982-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "calm-vale-3982"
+}

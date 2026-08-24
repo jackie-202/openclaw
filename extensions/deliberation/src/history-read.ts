@@ -10,10 +10,13 @@ import {
   type DiscordHistoryMessage,
   type OpenClawConfig,
 } from "openclaw/plugin-sdk/discord";
-import type { DeliberationConfig } from "./config.js";
+import { routeKey, type DeliberationConfig } from "./config.js";
 import { compareSlackTimestamps, isSlackTimestamp, slackTimestampIso } from "./slack-timestamp.js";
-import { encodeSourceIdentity, parseSourceIdentity } from "./source-identity.js";
-import { slackThreadIdentityKey, type SlackThreadIdentityStore } from "./thread-identity-store.js";
+import { parseSourceIdentity } from "./source-identity.js";
+import {
+  sourceHistoryIdentityKey,
+  type SourceHistoryIdentityStore,
+} from "./thread-identity-store.js";
 
 export const HISTORY_READ_METHOD = "deliberation.history.read";
 export const HISTORY_READ_LIMIT = 20;
@@ -31,11 +34,13 @@ type NormalizedMessage = {
   content: string;
 };
 
+type DiscordHistoryRow = DiscordHistoryMessage & { channel_id?: unknown };
+
 type HistoryReader = (
   channelId: string,
   query: { limit: number; before?: string; after?: string },
   opts: { cfg: OpenClawConfig; accountId: string },
-) => Promise<DiscordHistoryMessage[]>;
+) => Promise<DiscordHistoryRow[]>;
 
 type ChannelHistoryResolver = (params: {
   provider: "slack";
@@ -78,7 +83,13 @@ function snowflake(value: string): bigint {
   return BigInt(value);
 }
 
-function normalizeDiscordMessage(message: DiscordHistoryMessage): NormalizedMessage {
+function normalizeDiscordMessage(
+  message: DiscordHistoryRow,
+  historyChannelId: string,
+): NormalizedMessage {
+  if (message.channel_id !== historyChannelId) {
+    throw new Error("Discord history response contains an off-channel message");
+  }
   if (
     typeof message.id !== "string" ||
     !message.id ||
@@ -160,21 +171,20 @@ function provenance(identity: { provider: string; account: string; channel: stri
   };
 }
 
-function configuredSource(config: DeliberationConfig, sourceTarget: string): boolean {
-  return (
-    config.sources.filter(
-      (candidate) =>
-        encodeSourceIdentity({
-          provider: candidate.channel,
-          account: candidate.accountId,
-          channel: candidate.target,
-        }) === sourceTarget,
-    ).length === 1
+function configuredSource(
+  config: DeliberationConfig,
+  identity: { provider: string; account: string; channel: string },
+): boolean {
+  if (identity.provider !== "discord" && identity.provider !== "slack") {
+    return false;
+  }
+  return config.pipelineBySourceKey.has(
+    routeKey({ channel: identity.provider, accountId: identity.account, target: identity.channel }),
   );
 }
 
 async function resolveSlackThread(params: {
-  store?: SlackThreadIdentityStore;
+  store?: SourceHistoryIdentityStore;
   sourceTarget: string;
   providerEventId: string;
 }): Promise<string> {
@@ -185,10 +195,11 @@ async function resolveSlackThread(params: {
     throw new Error("Slack thread identity store is unavailable");
   }
   const mapping = await params.store.lookup(
-    slackThreadIdentityKey(params.sourceTarget, params.providerEventId),
+    sourceHistoryIdentityKey(params.sourceTarget, params.providerEventId),
   );
   if (
     !mapping ||
+    !("threadId" in mapping) ||
     mapping.sourceTarget !== params.sourceTarget ||
     mapping.providerEventId !== params.providerEventId
   ) {
@@ -201,6 +212,33 @@ async function resolveSlackThread(params: {
     throw new Error("Slack thread identity mapping conflicts with message ordering");
   }
   return mapping.threadId;
+}
+
+async function resolveDiscordHistoryChannel(params: {
+  store?: SourceHistoryIdentityStore;
+  sourceTarget: string;
+  providerEventId: string;
+  accountId: string;
+}): Promise<string> {
+  if (!params.store) {
+    throw new Error("Discord history identity store is unavailable");
+  }
+  const mapping = await params.store.lookup(
+    sourceHistoryIdentityKey(params.sourceTarget, params.providerEventId),
+  );
+  if (
+    !mapping ||
+    !("provider" in mapping) ||
+    mapping.provider !== "discord" ||
+    mapping.sourceTarget !== params.sourceTarget ||
+    mapping.providerEventId !== params.providerEventId ||
+    typeof mapping.historyChannelId !== "string" ||
+    !mapping.historyChannelId ||
+    !parseSourceIdentity(`v1:discord:${params.accountId}:${mapping.historyChannelId}`)
+  ) {
+    throw new Error("Discord history identity mapping is unavailable or conflicting");
+  }
+  return mapping.historyChannelId;
 }
 
 function requireSlackHistoryContext(context: ChannelHistoryRuntimeContext | undefined) {
@@ -259,7 +297,7 @@ export function createHistoryReadHandler(options: {
   config: DeliberationConfig;
   openclawConfig: OpenClawConfig;
   readMessages?: HistoryReader;
-  threadStore?: SlackThreadIdentityStore;
+  historyStore?: SourceHistoryIdentityStore;
   channelRuntime?: ChannelRuntimeSurface;
   resolveChannelHistory?: ChannelHistoryResolver;
 }) {
@@ -267,17 +305,17 @@ export function createHistoryReadHandler(options: {
   return async (params: unknown) => {
     const request = readClosedRequest(params);
     const identity = parseSourceIdentity(request.sourceTarget);
-    if (!identity || options.config.enabled !== true) {
+    if (!identity || !options.config.enabled) {
       throw new Error("sourceTarget is not an enabled Deliberation source");
     }
-    if (!configuredSource(options.config, request.sourceTarget)) {
+    if (!configuredSource(options.config, identity)) {
       throw new Error("sourceTarget is not a configured Deliberation source");
     }
 
     if (identity.provider === "slack") {
       const providerEventId = request.schemaVersion === 2 ? request.after : request.before;
       const threadId = await resolveSlackThread({
-        store: options.threadStore,
+        store: options.historyStore,
         sourceTarget: request.sourceTarget,
         providerEventId,
       });
@@ -307,7 +345,7 @@ export function createHistoryReadHandler(options: {
           onMessage(message) {
             const normalized = normalizeSlackMessage(message, threadId);
             if (compareSlackTimestamps(normalized.providerEventId, request.before) >= 0) {
-              return;
+              return true;
             }
             const existing = byId.get(normalized.providerEventId);
             if (existing && !sameMessage(existing, normalized)) {
@@ -401,17 +439,26 @@ export function createHistoryReadHandler(options: {
     if (identity.provider !== "discord") {
       throw new Error("sourceTarget provider is unsupported");
     }
+    const providerEventId = request.schemaVersion === 2 ? request.after : request.before;
+    const historyChannelId = await resolveDiscordHistoryChannel({
+      store: options.historyStore,
+      sourceTarget: request.sourceTarget,
+      providerEventId,
+      accountId: identity.account,
+    });
     if (request.schemaVersion === 2) {
       const providerOpts = { cfg: options.openclawConfig, accountId: identity.account };
       const watermarkRows = await discordReader(
-        identity.channel,
+        historyChannelId,
         { limit: 1, after: request.after },
         providerOpts,
       );
       if (!Array.isArray(watermarkRows)) {
         throw new Error("Discord history response must be an array");
       }
-      const normalizedWatermark = watermarkRows.map(normalizeDiscordMessage);
+      const normalizedWatermark = watermarkRows.map((message) =>
+        normalizeDiscordMessage(message, historyChannelId),
+      );
       const cutoff = snowflake(request.after);
       const watermark = normalizedWatermark.reduce(
         (greatest, message) =>
@@ -437,14 +484,16 @@ export function createHistoryReadHandler(options: {
       let complete = true;
       while (true) {
         const page = await discordReader(
-          identity.channel,
+          historyChannelId,
           { limit: FRESHNESS_PAGE_LIMIT, after: request.after, before },
           providerOpts,
         );
         if (!Array.isArray(page)) {
           throw new Error("Discord history response must be an array");
         }
-        const normalized = page.map(normalizeDiscordMessage);
+        const normalized = page.map((message) =>
+          normalizeDiscordMessage(message, historyChannelId),
+        );
         if (normalized.length === 0) {
           break;
         }
@@ -497,7 +546,7 @@ export function createHistoryReadHandler(options: {
     }
 
     const raw = await discordReader(
-      identity.channel,
+      historyChannelId,
       { limit: HISTORY_READ_LIMIT, before: request.before },
       { cfg: options.openclawConfig, accountId: identity.account },
     );
@@ -505,7 +554,7 @@ export function createHistoryReadHandler(options: {
       throw new Error("Discord history response must be an array");
     }
     const messages = raw
-      .map(normalizeDiscordMessage)
+      .map((message) => normalizeDiscordMessage(message, historyChannelId))
       .toSorted(
         (left, right) =>
           left.occurredAt.localeCompare(right.occurredAt) ||

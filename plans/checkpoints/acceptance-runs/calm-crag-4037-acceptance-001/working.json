@@ -1,0 +1,64 @@
+{
+  "findings": [
+    {
+      "claim": "One authenticated provider event must produce exactly one durable record, with thread peers used only as history.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task checkpoint states implementation stopped before production edits, and the plan analysis says the mirrored KM contract still uses burst and multi-message record semantics; the supplied material therefore contains no delivered singular durable-intake implementation.",
+      "rationale": "Without the runtime and authoritative durable-contract change, distinct authenticated events can still be represented by burst-grouped records, so the evaluated one-event/one-record behavior is not delivered.",
+      "required": "Implement and supply the owner-approved singular-record intake path so each authenticated provider event creates exactly one durable record while thread peers remain context only, with idempotent replay preserving that record.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-crag-4037.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_calm-crag-4037_red-green-preserve-one-event-intake-and-safe-uncertain.md"
+        }
+      ]
+    },
+    {
+      "claim": "This run requires authentic RED-GREEN proof for the evaluated repair.",
+      "crossCutting": true,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true, the caller supplied no TDD proof, parent lineage records no historical verification evidence, and the current checkpoint shows RED creation and GREEN verification remain incomplete.",
+      "rationale": "The required test-first sequence and matching-command GREEN evidence cannot be established from the supplied artifacts.",
+      "required": "Supply authentic assertion-level RED evidence captured before implementation and matching-command GREEN evidence for the authoritative durable intake path; do not use setup or provenance failures as RED.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "TDD-proof/provenance:none-supplied"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/calm-crag-4037.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-mist-6808.evidence.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] RED-GREEN: preserve one-event intake and safe uncertain-delivery semantics: goal-001: One authenticated"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-crag-4037-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "calm-crag-4037"
+}

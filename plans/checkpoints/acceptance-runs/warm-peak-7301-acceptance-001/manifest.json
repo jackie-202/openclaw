@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-24T00:54:49+00:00",
+    "implementingStartedAt": "2026-08-24T00:49:11+00:00",
+    "taskFile": "plans/tasks/2026-08-24_followup-warm-peak-7301-establish-canonical-deliberation-or-01-through-or-23-gate.md",
+    "taskId": "warm-peak-7301",
+    "title": "[acceptance-fix] Establish canonical Deliberation OR-01 through OR-23 gate: goal-001: Establish canonical Deliberation O"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Establish canonical Deliberation OR-01 through OR-23 gate: goal-001: Establish canonical Deliberation O"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-peak-7301-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-peak-7301",
+  "tddRequired": true
+}

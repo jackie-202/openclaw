@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-21T09:44:39+00:00",
+    "implementingStartedAt": "2026-08-21T09:37:04+00:00",
+    "taskFile": "plans/tasks/2026-08-21_followup-bright-wave-5804-acceptance-fix-define-deliberation-pipelines-config-and-lega.md",
+    "taskId": "bright-wave-5804",
+    "title": "[acceptance-fix] [acceptance-fix] Define deliberation pipelines config and legacy normalization: goal-001: Define delibe"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Define deliberation pipelines config and legacy normalization: goal-001: Define delibe"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-wave-5804-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-wave-5804",
+  "tddRequired": true
+}

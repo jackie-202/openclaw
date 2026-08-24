@@ -94,6 +94,8 @@ export function buildDiscordMessageRequest(params: {
   files?: MessagePayloadFile[];
   flags?: number;
   replyTo?: string;
+  nonce?: string;
+  enforceNonce?: boolean;
 }) {
   const payload = buildDiscordMessagePayload(params);
   return stripUndefinedFields({
@@ -101,6 +103,8 @@ export function buildDiscordMessageRequest(params: {
     ...(params.replyTo
       ? { message_reference: { message_id: params.replyTo, fail_if_not_exists: false } }
       : {}),
+    nonce: params.nonce,
+    enforce_nonce: params.enforceNonce,
   });
 }
 

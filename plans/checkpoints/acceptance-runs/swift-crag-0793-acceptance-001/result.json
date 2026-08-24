@@ -1,0 +1,42 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The required full deliberation extension suite result has no canonical Test Gate evidence.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied Test Gate status is not run and no Test Gate evidence exists; the checkpoint only summarizes a local suite invocation.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The evaluated goal carries forward the canonical task's goal-002 requirement that the full deliberation extension suite be green. Acceptance may assess that explicit test-artifact goal only from supplied canonical Test Gate evidence and may not execute or interpret the suite itself.",
+      "required": "Provide canonical Test Gate evidence for exactly pnpm vitest run extensions/deliberation, including a non-not-run run reference, successful outcome, and complete suite summary.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-crag-0793.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Update stale deliberation intake-producer test to optional Discord sourceThreadId semantics: goal-002:"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-crag-0793-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "swift-crag-0793"
+}

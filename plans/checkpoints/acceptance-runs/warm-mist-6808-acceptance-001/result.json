@@ -1,0 +1,143 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The task must implement singular durable intake and fail-closed, proof-authorized delivery semantics.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-002",
+        "goal-003",
+        "goal-004"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint states that the owner handoff was unavailable, implementation stopped at step 2, no production code was edited, and steps for singular intake, uncertainty transitions, replay fencing, and proof-backed resend authorization remain incomplete.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Documentation and partial contract churn do not deliver the required runtime behavior; the task artifact explicitly records that the implementation was not performed.",
+      "required": "Deliver the runtime and canonical contract changes that enforce one record per authenticated event, at most one matching provider attempt, terminal unknown outcomes, and new sends only after durable NOT_SENT evidence.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-mist-6808.checkpoint.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-23_warm-mist-6808_red-green-preserve-one-event-intake-and-safe-uncertain.md"
+        }
+      ]
+    },
+    {
+      "claim": "Discord and Slack fixtures must cover the complete required root/child, ambiguity, replay, duplicate-evidence, and receipt-mismatch matrix.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-005"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint leaves the complete RED test matrix and implementation steps incomplete and explicitly states that no tests were edited; the supplied diff does not provide the required complete Discord and Slack fixture matrix.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "The required fixture coverage is a task deliverable and is absent from the supplied implementation material.",
+      "required": "Add authentic Discord and Slack fixtures covering root and child events, timeout, transport ambiguity, replay, duplicate evidence, and receipt mismatch through the required integration paths.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-mist-6808.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "task-scoped-diff"
+        }
+      ]
+    },
+    {
+      "claim": "This run requires authentic RED-GREEN proof for the task implementation.",
+      "crossCutting": true,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true, the caller supplied no TDD proof, and the checkpoint states that neither RED nor GREEN proof was captured.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The mandatory TDD evidence is absent, so the required test-first implementation sequence cannot be established from supplied artifacts.",
+      "required": "Supply authentic assertion-level RED and matching-command GREEN proof for the required intake and delivery-state-machine paths.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "TDD-proof/provenance:none-supplied"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-mist-6808.checkpoint.md"
+        }
+      ]
+    },
+    {
+      "claim": "The relevant contract/plugin integration checks, build, lint, and canonical Test Gate must have passing evidence.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-006"
+      ],
+      "id": "finding-004",
+      "kind": "evidence",
+      "observed": "The caller states that Test Gate was not run and no Test Gate evidence exists; the checkpoint also leaves focused tests, integration, lint, build, and changed gates incomplete.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal-006 explicitly requires successful verification, but the supplied artifacts contain no canonical passing reference or other required validation evidence.",
+      "required": "Provide the caller-owned canonical Test Gate passing reference and the required focused integration, build, and lint verification evidence.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "status:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-mist-6808.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "One authenticated provider event produces exactly one durable item/record; thread peers share history only."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "One item produces at most one provider attempt and one matching receipt."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "Unknown delivery outcome is fail-closed and cannot silently retry or reroute."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "A new send is allowed only when canonical durable evidence proves no provider attempt occurred."
+    },
+    {
+      "id": "goal-005",
+      "status": "UNMET",
+      "summary": "Discord and Slack fixtures cover root/child events, timeout, transport ambiguity, replay, duplicate evidence, and receipt mismatch."
+    },
+    {
+      "id": "goal-006",
+      "status": "UNMET",
+      "summary": "Relevant contract/plugin integration tests, build, lint, and canonical Test Gate pass."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-mist-6808-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "warm-mist-6808"
+}

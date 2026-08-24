@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T17:06:20+00:00",
+    "implementingStartedAt": "2026-08-23T17:00:18+00:00",
+    "taskFile": "plans/tasks/2026-08-23_converge-openclaw-deliberation-with-canonical-km-owner-and-c.md",
+    "taskId": "bright-cove-6185",
+    "title": "Converge OpenClaw Deliberation with canonical KM owner and cross-repository gate"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Converge OpenClaw Deliberation with canonical KM owner and cross-repository gate"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-cove-6185-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-cove-6185",
+  "tddRequired": true
+}

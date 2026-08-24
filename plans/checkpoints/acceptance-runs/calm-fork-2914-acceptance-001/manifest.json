@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-23T19:42:33+00:00",
+    "implementingStartedAt": "2026-08-23T19:36:53+00:00",
+    "taskFile": "plans/tasks/2026-08-23_followup-calm-fork-2914-converge-openclaw-with-supplied-immutable-km-deliberation-ow.md",
+    "taskId": "calm-fork-2914",
+    "title": "[acceptance-fix] Converge OpenClaw with supplied immutable KM Deliberation owner bundle: goal-001: Converge OpenClaw wit"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Converge OpenClaw with supplied immutable KM Deliberation owner bundle: goal-001: Converge OpenClaw wit"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-fork-2914-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-fork-2914",
+  "tddRequired": true
+}

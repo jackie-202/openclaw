@@ -1,0 +1,45 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-20T07:01:24+00:00",
+    "implementingStartedAt": "2026-08-20T06:39:23+00:00",
+    "taskFile": "plans/tasks/fix-compaction-openai-oauth-bridge-auth-validation.md",
+    "taskId": "bold-brook-8179",
+    "title": "Fix compaction OpenAI OAuth/bridge provider-auth validation"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Compaction no longer raises the quoted OAuth-vs-API-key error for the supported local bridge/OAuth arrangement."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Normal OpenAI provider initialization and compaction use one coherent auth-compatibility policy."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Direct API-key authentication remains valid."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Unsupported auth/provider combinations remain rejected before network use."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Tests prove the placeholder cannot become an upstream credential."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Relevant focused tests and the smallest suitable broader test suite pass."
+    },
+    {
+      "id": "goal-007",
+      "summary": "The final note lists changed files, exact verification commands/results, and any residual runtime verification required after deployment."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-brook-8179-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bold-brook-8179",
+  "tddRequired": true
+}

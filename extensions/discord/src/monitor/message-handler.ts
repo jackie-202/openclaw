@@ -1,6 +1,7 @@
 // Discord plugin module implements message handler behavior.
 import {
   createChannelInboundDebouncer,
+  resolveChannelInboundEventPolicy,
   shouldDebounceTextInbound,
 } from "openclaw/plugin-sdk/channel-inbound";
 import { danger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
@@ -28,6 +29,7 @@ import {
 } from "./message-run-queue.js";
 import {
   hasDiscordMessageStickers,
+  resolveDiscordChannelInfo,
   resolveDiscordMessageChannelId,
   resolveDiscordMessageText,
 } from "./message-utils.js";
@@ -84,6 +86,12 @@ function startAcceptedTypingFeedback(params: {
   activeFeedback: Map<string, PrestartedTypingFeedbackEntry>;
 }): DiscordReplyTypingFeedback | undefined {
   const { ctx, createFeedback, dedupeKey, activeFeedback } = params;
+  if (
+    ctx.inboundEventPolicy?.kind === "exclusive" ||
+    ctx.inboundEventPolicy?.kind === "ambiguous"
+  ) {
+    return undefined;
+  }
   if (!resolveDiscordAcceptedTypingPrestart(ctx).shouldPrestart) {
     return undefined;
   }
@@ -150,6 +158,7 @@ export function createDiscordMessageHandler(
     client: Client;
     abortSignal?: AbortSignal;
     replayKey?: string;
+    allowDebounce: boolean;
   }>({
     cfg: params.cfg,
     channel: "discord",
@@ -180,6 +189,7 @@ export function createDiscordMessageHandler(
         hasMedia:
           (message.attachments && message.attachments.length > 0) ||
           hasDiscordMessageStickers(message),
+        allowDebounce: entry.allowDebounce,
       });
     },
     onFlush: async (entries) => {
@@ -333,11 +343,35 @@ export function createDiscordMessageHandler(
         return;
       }
 
+      const message = data.message;
+      const channelId = message
+        ? resolveDiscordMessageChannelId({ message, eventChannelId: data.channel_id })
+        : undefined;
+      // Parent identity is source authority for Discord threads. Resolve it before debounce so
+      // multiple child events cannot be irreversibly merged before an owner plugin sees them.
+      const channelInfo =
+        message && channelId ? await resolveDiscordChannelInfo(client, channelId) : null;
+      const policy =
+        message && channelId
+          ? channelInfo
+            ? resolveChannelInboundEventPolicy({
+                provider: "discord",
+                accountId: params.accountId,
+                conversationId: channelId,
+                parentConversationId: channelInfo.parentId,
+                providerEventId: message.id,
+              })
+            : // Missing metadata can hide a configured thread parent. Keep provider events
+              // separate rather than irreversibly merging identities under uncertainty.
+              { kind: "separate" as const }
+          : { kind: "ordinary" as const };
+
       await debouncer.enqueue({
         data,
         client,
         abortSignal: options?.abortSignal,
         replayKey: replayKey ?? undefined,
+        allowDebounce: policy.kind === "ordinary",
       });
     } catch (err) {
       params.runtime.error(danger(`handler failed: ${String(err)}`));

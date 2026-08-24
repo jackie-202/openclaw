@@ -1,18 +1,58 @@
+import type { ChannelOutboundTextAttemptResult } from "openclaw/plugin-sdk/channel-send-result";
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { parseDeliberationConfig } from "./src/config.js";
 import {
   createFinalDeliveryService,
   FinalDeliveryOutcomeUnknownError,
+  FinalDeliveryRejectedError,
 } from "./src/final-adapter.js";
 import { createBeforeToolCallHandler, createMessageSendingHandler } from "./src/guards.js";
 import { createHistoryReadHandler, HISTORY_READ_METHOD } from "./src/history-read.js";
-import { createBeforeDispatchHandler, createInboundClaimHandler } from "./src/intake.js";
+import {
+  createBeforeDispatchHandler,
+  createInboundClaimHandler,
+  createInboundEventPolicyHandler,
+} from "./src/intake.js";
 import { createKmClient } from "./src/km-client.js";
-import type { SlackThreadIdentity } from "./src/thread-identity-store.js";
+import type { SourceHistoryIdentity } from "./src/thread-identity-store.js";
 
 export { createFinalDeliveryAdapter, type FinalDeliveryProvider } from "./src/final-adapter.js";
 
 const FAIL_CLOSED_HOOK_PRIORITY = 1000;
+const INVALID_PLATFORM_MESSAGE_IDS = new Set(["unknown", "suppressed"]);
+
+function requireSingleAttemptReceipt(result: ChannelOutboundTextAttemptResult): {
+  receiptId: string;
+  messageId: string;
+} {
+  if (result.outcome === "rejected") {
+    throw new FinalDeliveryRejectedError(result.error, result.failureClass);
+  }
+  if (result.outcome === "unknown") {
+    throw new FinalDeliveryOutcomeUnknownError(result.error);
+  }
+
+  const messageId = result.messageId;
+  const receiptId = result.receipt.primaryPlatformMessageId;
+  const platformIds = result.receipt.platformMessageIds;
+  const parts = result.receipt.parts;
+  const isSingleMessage =
+    messageId.length > 0 &&
+    messageId.length <= 256 &&
+    messageId === messageId.trim() &&
+    !INVALID_PLATFORM_MESSAGE_IDS.has(messageId) &&
+    receiptId === messageId &&
+    platformIds.length === 1 &&
+    platformIds[0] === messageId &&
+    parts.length === 1 &&
+    parts[0]?.platformMessageId === messageId;
+  if (!isSingleMessage) {
+    throw new FinalDeliveryOutcomeUnknownError(
+      "Final delivery returned malformed or multi-message receipt evidence",
+    );
+  }
+  return { receiptId, messageId };
+}
 
 export default definePluginEntry({
   id: "deliberation",
@@ -21,9 +61,9 @@ export default definePluginEntry({
   register(api) {
     const config = parseDeliberationConfig(api.pluginConfig);
     const client = createKmClient({ config, openclawConfig: api.config });
-    const threadStore = config.sources.some((source) => source.channel === "slack")
-      ? api.runtime.state.openKeyedStore<SlackThreadIdentity>({
-          namespace: "slack-thread-identities-v1",
+    const historyStore = config.enabled
+      ? api.runtime.state.openKeyedStore<SourceHistoryIdentity>({
+          namespace: "source-history-identities-v1",
           maxEntries: 100_000,
         })
       : undefined;
@@ -38,84 +78,55 @@ export default definePluginEntry({
         km: client,
         providers: {
           discord: {
-            async send({ accountId, channelId, threadId, text }) {
+            async send({ accountId, channelId, threadId, text, idempotencyKey }) {
               discordOutboundPromise ??= api.runtime.channel.outbound.loadAdapter("discord");
               const discordOutbound = await discordOutboundPromise;
-              if (!discordOutbound?.sendText) {
-                throw new Error("Discord outbound adapter does not support text delivery");
+              if (!discordOutbound?.sendTextAttempt) {
+                throw new FinalDeliveryRejectedError(
+                  "Discord outbound adapter does not support single-attempt text delivery",
+                  "rejection",
+                );
               }
-              const textLimit = discordOutbound.textChunkLimit;
-              const lineCount = text.split("\n").length;
-              const chunks =
-                typeof textLimit === "number" && discordOutbound.chunker
-                  ? discordOutbound.chunker(text, textLimit, {
-                      formatting: { maxLinesPerMessage: lineCount },
-                    })
-                  : [];
-              if (chunks.length !== 1 || chunks[0] !== text) {
-                throw new Error("Discord final delivery requires one platform message");
-              }
-              const result = await discordOutbound.sendText({
+              const result = await discordOutbound.sendTextAttempt({
                 cfg: api.config,
                 accountId,
                 to: `channel:${channelId}`,
-                ...(threadId ? { threadId } : {}),
                 text,
-                formatting: {
-                  chunkMode: "length",
-                  maxLinesPerMessage: lineCount,
-                  tableMode: "off",
-                  textLimit,
-                },
+                idempotencyKey,
+                ...(threadId ? { threadId } : {}),
               });
-              return {
-                receiptId: result.receipt?.primaryPlatformMessageId ?? result.messageId,
-                messageId: result.messageId,
-              };
+              return requireSingleAttemptReceipt(result);
             },
           },
           slack: {
-            async send({ accountId, channelId, threadId, text }) {
+            async send({ accountId, channelId, threadId, text, idempotencyKey }) {
               const slackAccounts = api.config.channels?.slack?.accounts;
               if (
                 accountId !== "default" &&
                 (!slackAccounts || !Object.hasOwn(slackAccounts, accountId))
               ) {
-                throw new Error("Slack final delivery requires a configured explicit account");
+                throw new FinalDeliveryRejectedError(
+                  "Slack final delivery requires a configured explicit account",
+                  "rejection",
+                );
               }
               slackOutboundPromise ??= api.runtime.channel.outbound.loadAdapter("slack");
               const slackOutbound = await slackOutboundPromise;
-              if (!slackOutbound?.sendText) {
-                throw new Error("Slack outbound adapter does not support text delivery");
+              if (!slackOutbound?.sendTextAttempt) {
+                throw new FinalDeliveryRejectedError(
+                  "Slack outbound adapter does not support single-attempt text delivery",
+                  "rejection",
+                );
               }
-              if (!threadId) {
-                throw new Error("Slack final delivery requires an explicit thread");
-              }
-              const textLimit = slackOutbound.textChunkLimit;
-              if (typeof textLimit !== "number" || text.length > textLimit) {
-                throw new Error("Slack final delivery requires one platform message");
-              }
-              const result = await slackOutbound.sendText({
+              const result = await slackOutbound.sendTextAttempt({
                 cfg: api.config,
                 accountId,
                 to: `channel:${channelId}`,
-                threadId,
+                ...(threadId ? { threadId } : {}),
                 text,
+                idempotencyKey,
               });
-              const receiptId = result.receipt?.primaryPlatformMessageId;
-              if (
-                !receiptId ||
-                result.messageId === "unknown" ||
-                result.messageId === "suppressed"
-              ) {
-                throw new FinalDeliveryOutcomeUnknownError(
-                  "Slack final delivery returned no platform message id",
-                );
-              }
-              return {
-                receiptId,
-                messageId: result.messageId,
-              };
+              return requireSingleAttemptReceipt(result);
             },
           },
         },
@@ -123,9 +134,10 @@ export default definePluginEntry({
       api.registerService(finalDeliveryService);
     }
     const hookOptions = { priority: FAIL_CLOSED_HOOK_PRIORITY };
+    api.on("inbound_event_policy", createInboundEventPolicyHandler(config), hookOptions);
     api.on(
       "inbound_claim",
-      createInboundClaimHandler(config, client, api.logger, threadStore),
+      createInboundClaimHandler(config, client, api.logger, historyStore),
       hookOptions,
     );
     api.on("before_dispatch", createBeforeDispatchHandler(config), hookOptions);
@@ -152,7 +164,7 @@ export default definePluginEntry({
     const readHistory = createHistoryReadHandler({
       config,
       openclawConfig: api.config,
-      threadStore,
+      historyStore,
       channelRuntime: api.runtime.channel,
     });
     api.registerGatewayMethod(

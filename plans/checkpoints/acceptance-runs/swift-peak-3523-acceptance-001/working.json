@@ -1,0 +1,66 @@
+{
+  "findings": [
+    {
+      "claim": "The caller-required TDD artifact must contain credible RED and GREEN evidence for the identical focused command.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof contains metadata and an exit-1 RED phase only; no GREEN phase or successful identical-command result is present. The checkpoint's narrative claim of 149/149 does not supply the missing proof record.",
+      "rationale": "The manifest declares tddRequired true, so a RED-only artifact cannot establish the required completed RED/GREEN cycle.",
+      "required": "Supply the run-scoped TDD proof containing both RED and GREEN phases for the identical command, including the successful GREEN outcome.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-peak-3523.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-peak-3523.checkpoint.md"
+        }
+      ]
+    },
+    {
+      "claim": "Repository reference documentation must describe the delivered producer-side pipeline selection and effective-target behavior consistently with this slice.",
+      "crossCutting": false,
+      "findingType": "implemented_behavior_incorrect",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "correctness",
+      "observed": "The changed reference and extension README still state that this is a configuration-only slice, that per-pipeline selection and source-default resolution activate in a following slice, and that a temporary common-target projection remains operative.",
+      "rationale": "Those statements directly contradict this task's required behavior and plan, which activate authenticated per-source selection and remove the temporary global target projection; leaving them in updated user-facing documentation makes the repository-local contract internally inconsistent.",
+      "required": "Update the deliberation reference and README to describe active producer-side pipeline selection, source-default target resolution, exact explicit targets, and removal of the temporary common-target projection.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "docs/plugins/reference/deliberation.md:93"
+        },
+        {
+          "kind": "file",
+          "reference": "docs/plugins/reference/deliberation.md:113"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/README.md:105"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Carry deliberation pipeline identity and effective target from intake"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-peak-3523-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "swift-peak-3523"
+}
