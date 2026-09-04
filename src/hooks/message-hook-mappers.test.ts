@@ -135,6 +135,20 @@ describe("message hook mappers", () => {
     });
   });
 
+  it("maps only the trusted sender tag into inbound claim aliases", () => {
+    const canonical = deriveInboundMessageHookContext(
+      makeInboundCtx({ SenderTag: " userone#1234 ", Body: "alias: Mallory" }),
+    );
+
+    expect(canonical.senderAliases).toEqual([" userone#1234 "]);
+    expect(toPluginInboundClaimEvent(canonical).senderAliases).toEqual([" userone#1234 "]);
+    expect(
+      toPluginInboundClaimEvent(
+        deriveInboundMessageHookContext(makeInboundCtx({ SenderTag: "  " })),
+      ).senderAliases,
+    ).toBeUndefined();
+  });
+
   it("maps inbound reply metadata into canonical and plugin payloads", () => {
     const canonical = deriveInboundMessageHookContext(
       makeInboundCtx({

@@ -1,0 +1,112 @@
+{
+  "findings": [
+    {
+      "claim": "The sender-hints task must leave existing delivery routing semantics unchanged.",
+      "crossCutting": false,
+      "findingType": "unknown",
+      "goalIds": [
+        "goal-004"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff changes the canonical Deliberation reference from Discord root source-anchor/thread creation semantics to root-channel delivery without threadId, and changes source-default destination derivation accordingly.",
+      "rationale": "This is a material routing-contract rewrite in the evaluated change set and cannot be reconciled with the explicit unchanged-routing goal from the supplied material.",
+      "required": "Remove the routing-semantic rewrite from this task's changes or supply a task-scoped implementation/diff that preserves the pre-task source-target and delivery-routing contract.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "docs/plugins/reference/deliberation.md"
+        }
+      ]
+    },
+    {
+      "claim": "Canonical contract provenance verification and focused Deliberation intake/contract tests must have passing canonical verification evidence.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-005",
+        "goal-006"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The caller-supplied canonical Test Gate status is not run and explicitly states that no Test Gate evidence exists; the supplied TDD proof covers only the focused Discord regression and is not canonical Test Gate evidence for these goals.",
+      "rationale": "Goals 005 and 006 are explicit verification-evidence goals, and Acceptance cannot infer their passing state from checkpoint prose or execute the suites itself.",
+      "required": "Provide canonical Test Gate evidence showing the contract generation/provenance verification and focused Deliberation intake/contract tests passed.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical Test Gate status: not run; no evidence"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-cove-1732.red-green-proof.md"
+        }
+      ]
+    },
+    {
+      "claim": "The task must deliver a final note documenting every supported sender-indicator source field and the serialized KM contract shape.",
+      "crossCutting": false,
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-007"
+      ],
+      "id": "finding-003",
+      "kind": "correctness",
+      "observed": "No final note was supplied. The checkpoint only states completion and does not enumerate the source fields or serialized shape; documentation changes elsewhere do not satisfy the explicitly required final-note deliverable.",
+      "rationale": "Goal 007 makes the final note itself a required deliverable, and the supplied artifacts do not contain that deliverable's required content.",
+      "required": "Provide the task final note with exact Discord and Slack source-field precedence for each indicator and the serialized senderIdentityHints shape consumed by KM.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-cove-1732.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "docs/plugins/reference/deliberation.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "A Discord event with trusted sender metadata reaches the Deliberation listener request with the opaque ID plus bounded display-name/username indicators."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "No sender indicator is sourced from user-controlled envelope text."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "Missing display-name/username fields remain valid and preserve current behavior."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "Existing source-target, idempotency, replay, and delivery routing behavior is unchanged."
+    },
+    {
+      "id": "goal-005",
+      "status": "UNMET",
+      "summary": "Canonical contract generation/provenance verification passes."
+    },
+    {
+      "id": "goal-006",
+      "status": "UNMET",
+      "summary": "Focused Deliberation intake/contract tests pass."
+    },
+    {
+      "id": "goal-007",
+      "status": "UNMET",
+      "summary": "Final note documents exact source fields used for every supported indicator and the serialized contract shape consumed by KM."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-cove-1732-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-cove-1732"
+}

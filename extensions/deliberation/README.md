@@ -1,21 +1,55 @@
 # Deliberation plugin
 
-## Local KM integration
+## Repository boundary
 
-Run the real intake serializer and HTTP client against an isolated KM listener
-and disposable canonical spool:
+OpenClaw owns the Deliberation channel/provider hooks, intake and history
+adapters, final-delivery behavior, and the public HTTP adapter contract. Run
+the repository-local coverage without another checkout:
 
 ```bash
-OPENCLAW_DELIBERATION_KM_ROOT=/absolute/path/to/km-system \
-  pnpm test:deliberation:km-integration
+pnpm test extensions/deliberation
+pnpm test:deliberation:full-gate
 ```
 
-The command is intentionally separate from the hermetic extension unit suite.
-It fails with an actionable `plugin:` error when the KM checkout is missing,
-uses only a random loopback port, generates a temporary credential, and removes
-the listener and all temporary state on success or failure. The listener's test
-mode requires a sentinel and rejects any path overlapping the production spool
-before opening SQLite.
+An external orchestrator may depend on this public boundary and run integration
+tests against OpenClaw. Its implementation, storage, migration, restart, and
+cross-repository end-to-end gates belong to that caller's repository and are
+not prerequisites for OpenClaw verification.
+
+### Probe final delivery from a built artifact
+
+An external caller-owned harness can import
+`dist-runtime/extensions/deliberation/api.js` and call
+`runDeliberationDeliveryProbe`. This test-only API composes the production KM
+client and final-delivery adapter with internal synthetic Discord and Slack
+providers. It is not listed in `openclaw.extensions`, is not exported from the
+plugin entry, and cannot be selected by Gateway startup.
+
+The input is a strict object with exactly these fields:
+
+```js
+{
+  endpoint: "http://127.0.0.1:<random-port>",
+  credential: { source: "env", provider: "default", id: "KM_PROBE_TOKEN" },
+  requestTimeoutMs: 5000,
+}
+```
+
+The endpoint must use plain HTTP and the literal host `127.0.0.1` or `[::1]`
+with an explicit high ephemeral port in the range `32768-65535`. The credential must be an environment-backed
+SecretRef; literal credentials, provider selection, provider injection, public
+hosts, HTTPS, URL credentials, query strings, fragments, and extra fields are
+refused before a KM client is created.
+
+The returned JSON contains `ok`, ordered `stages`, a synthetic-provider
+`callCount` and provider/root-or-thread target classification, and `build`
+identity with package version, commit, artifact class, and executing module
+SHA-256. Failures include only the stage plus a canonical KM operation, path,
+status, protocol code, or safe cause when available. Endpoint authority,
+credentials, ready-item text, request/response bodies, raw errors, receipts,
+and message IDs are not returned. Synthetic receipt and message IDs are
+deterministically derived from the production provider-attempt ID and cannot
+reach Discord or Slack.
 
 ## Slack source-only pilot
 
@@ -25,8 +59,8 @@ contract and final verification evidence for every preceding batch slice.
 
 ### Check prerequisites
 
-- Confirm the accepted contract provenance hashes pass in
-  `src/contract.test.ts` and match the KM-owned contract evidence.
+- Confirm the OpenClaw-owned adapter contract and local fixture hashes pass in
+  `src/contract.test.ts`.
 - Confirm the Slack intake/history, structured target, Discord delivery, and
   dormant Slack delivery slices each have stable final evidence.
 - Confirm the configured Slack app can read the single allowed source channel
@@ -126,12 +160,12 @@ runtime legacy fallback, common-target projection, or reservation-time override.
 
 Evaluate only these cases during a separately approved pilot window:
 
-| Case                      | Required observation                                                                                                                                       |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Slack root                | One intake identity where message and thread timestamps are equal; one bounded thread history; at most one Discord target call; one matching KM receipt.   |
-| Slack child reply         | Child `message.ts` remains the provider event ID while `thread_ts` selects history; unrelated channel threads are absent; at most one Discord target call. |
-| Duplicate event           | KM reports a duplicate or reservation conflict; no additional provider call occurs.                                                                        |
-| Invalid or stale evidence | Malformed target, identity drift, incomplete freshness, stale replay, or timestamp-bound failure closes the run with no provider call.                     |
+| Case                      | Required observation                                                                                                                                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Slack root                | One intake identity where message and thread timestamps are equal; bounded freshness merges exact-channel roots with replies in that root; at most one Discord target call; one matching KM receipt. |
+| Slack child reply         | Child `message.ts` remains the provider event ID while `thread_ts` selects history; unrelated channel threads are absent; at most one Discord target call.                                           |
+| Duplicate event           | KM reports a duplicate or reservation conflict; no additional provider call occurs.                                                                                                                  |
+| Invalid or stale evidence | Malformed target, identity drift, incomplete freshness, stale replay, or timestamp-bound failure closes the run with no provider call.                                                               |
 
 For each case, inspect the canonical Slack source identity, child/root timestamp
 separation, history `complete` flag, message and 32 KiB bounds, immutable target

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-31T19:19:13+00:00",
+    "implementingStartedAt": "2026-08-31T18:39:12+00:00",
+    "taskFile": "plans/tasks/2026-08-31_make-slack-deliberation-freshness-observe-newer-top-level-ch.md",
+    "taskId": "wild-reef-5195",
+    "title": "Make Slack Deliberation freshness observe newer top-level channel messages"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Make Slack Deliberation freshness observe newer top-level channel messages"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "wild-reef-5195-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "wild-reef-5195",
+  "tddRequired": true
+}

@@ -98,5 +98,7 @@ export type PluginRuntime = PluginRuntimeCore & {
 export type CreatePluginRuntimeOptions = {
   subagent?: PluginRuntime["subagent"];
   nodes?: PluginRuntime["nodes"];
+  /** Shared Gateway channel surface; monitor registrations and plugin readers must use one registry. */
+  channel?: PluginRuntime["channel"];
   allowGatewaySubagentBinding?: boolean;
 };

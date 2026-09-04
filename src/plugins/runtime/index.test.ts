@@ -118,6 +118,30 @@ function expectRunCommandOutcome(params: {
   return expect(command).rejects.toThrow("boom");
 }
 
+describe("plugin runtime channel injection", () => {
+  it("uses the caller-provided channel runtime", () => {
+    const channel = createPluginRuntime().channel;
+    const context = { read: "shared" };
+    const lease = channel.runtimeContexts.register({
+      channelId: "slack",
+      accountId: "default",
+      capability: "channel.history.v1",
+      context,
+    });
+    const runtime = createPluginRuntime({ channel });
+
+    expect(runtime.channel).toBe(channel);
+    expect(
+      runtime.channel.runtimeContexts.get({
+        channelId: "slack",
+        accountId: "default",
+        capability: "channel.history.v1",
+      }),
+    ).toBe(context);
+    lease.dispose();
+  });
+});
+
 describe("plugin runtime command execution", () => {
   beforeEach(() => {
     vi.restoreAllMocks();

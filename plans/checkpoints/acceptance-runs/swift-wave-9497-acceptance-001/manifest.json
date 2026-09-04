@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T22:12:07+00:00",
+    "implementingStartedAt": "2026-08-25T22:00:23+00:00",
+    "taskFile": "plans/tasks/2026-08-25_followup-swift-wave-9497-fix-slack-deliberation-history-read-and-verify-against-the-c.md",
+    "taskId": "swift-wave-9497",
+    "title": "[acceptance-fix] Fix Slack Deliberation history read and verify against the configured channel: goal-002: Existing focus"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix Slack Deliberation history read and verify against the configured channel: goal-002: Existing focus"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-wave-9497-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-wave-9497",
+  "tddRequired": false
+}

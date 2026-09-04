@@ -1,0 +1,42 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The caller-required TDD proof does not include a supplied GREEN phase.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied bold-wave-8562 RED/GREEN proof artifact contains RED Phase metadata and failing-command output only; no GREEN phase, successful post-implementation command, or GREEN outcome is present in the supplied artifact.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The run manifest declares tddRequired=true, and the task plan explicitly requires captured RED/GREEN proof. A checkpoint assertion that RED and GREEN were verified is not the missing proof itself.",
+      "required": "Supply the complete run-scoped TDD proof containing both the genuine RED result and a successful GREEN result for the declared focused command.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bold-wave-8562.red-green-proof.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-25_bold-wave-8562_add-openclaw-side-of-deployed-deliberation-delivery-probe.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Add OpenClaw side of deployed Deliberation delivery probe"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bold-wave-8562-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bold-wave-8562"
+}

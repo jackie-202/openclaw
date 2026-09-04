@@ -1,54 +1,17 @@
 {
-  "acceptedBy": "quick-fork-2935 artifact authority verification",
-  "acceptedAt": "2026-08-23",
-  "semanticAuthority": "the SHA-256 hashes in ownerFiles are authoritative for contract semantics",
-  "runtimeRevision": {
-    "head": "printed by the owner-backed gate at execution time",
-    "scope": "runtime provenance only",
-    "blocking": false
-  },
-  "evidence": "the four accepted owner artifact hashes establish semantic authority; KM HEAD is informational runtime provenance and does not block acceptance",
-  "scope": "repository-local Deliberation contract fixtures and OpenClaw runtime compatibility only; external and live deployment convergence is unknown",
-  "sources": {
-    "km-wire-v1.json": "calm-reef-2510 synchronized owner-contract handoff",
-    "cutover-controls-v1.json": "calm-cove-1824 executable repository-local lifecycle and rejection fixtures",
-    "openclaw-overlay-v1.json": "calm-reef-2510 adopted producer extension and delivery-target adapter constraints",
-    "source-identity-v1.json": "km-system/contracts/deliberation-v2/v1/contract.json#/sourceIdentity",
-    "source-identity-fixtures-v1.json": "km-system/contracts/deliberation-v2/v1/fixtures.json#/identityVectors"
-  },
-  "openclawProducerExtension": {
-    "proposal": "proposal-20260820-203458-161e2c",
-    "owner": "openclaw-fork",
-    "status": "repository-local closed schemas and lifecycle fixtures are semantically consistent; external deployment is unknown",
-    "kmOwnerBaselineChanged": true
-  },
+  "owner": "OpenClaw",
+  "acceptedAt": "2026-08-26",
+  "scope": "repository-local public adapter schemas and fixtures consumed by the Deliberation plugin",
+  "dependencyDirection": "External orchestrators consume the OpenClaw adapter boundary. Their implementation and cross-repository tests are caller-owned.",
   "repositoryLocalEvidence": {
     "schemaValidation": "all request and status-specific response fixtures pass",
-    "runtimeHarness": "current producer and named negative scenarios are implemented",
+    "runtimeCoverage": "intake, history, reservation, invocation, completion, delivery, and fail-closed behavior use OpenClaw-local fakes",
     "scope": "OpenClaw repository only"
   },
-  "configuredKmCheckoutEvidence": {
-    "status": "accepted artifact authority",
-    "contractSha256": "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
-    "fixturesSha256": "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
-    "wireSha256": "a0e42e4fe54eedab6f9955e77f439a4e69c9614a60560ca46532ce0de9dbb528",
-    "spoolContractsSha256": "47587e405d3e6b7f433eb7d450bd02969546860ff0d6822ad7bea9ff2478a0ca",
-    "result": "artifact hashes govern semantic acceptance; the runtime HEAD is non-blocking and this does not prove deployment or live convergence"
-  },
-  "externalLiveDeployment": {
-    "status": "unknown",
-    "reason": "no live KM deployment was inspected or exercised"
-  },
-  "ownerFiles": {
-    "km-system/contracts/deliberation-v2/v1/contract.json": "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
-    "km-system/contracts/deliberation-v2/v1/fixtures.json": "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
-    "km-system/lib/deliberation_wire.py": "a0e42e4fe54eedab6f9955e77f439a4e69c9614a60560ca46532ce0de9dbb528",
-    "km-system/lib/deliberation_spool_contracts.py": "47587e405d3e6b7f433eb7d450bd02969546860ff0d6822ad7bea9ff2478a0ca"
-  },
   "files": {
-    "km-wire-v1.json": "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
-    "cutover-controls-v1.json": "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
-    "openclaw-overlay-v1.json": "32c2215917b303b11639a724a6b95992a979a6ad551291d5b7a7785b6c812f9b",
+    "km-wire-v1.json": "4a09c6e11e410a5e360a1c7d752c52bfe90d1e99644c323a9ad3318956548930",
+    "cutover-controls-v1.json": "b1d845d1cda25bdba996c0fe4581963a80d1f62a37b0b5550fbc4d3ccf700b85",
+    "openclaw-overlay-v1.json": "25c28e3d61d262ce05d09d61de29735c86860a6355c2aea9cf2727c6c3f31af8",
     "source-identity-v1.json": "252f03184601f2f2fa8752c5df1b4bb7dd4a20b90bd47c932eee09b9c0bc3af6",
     "source-identity-fixtures-v1.json": "8e4f0373b5d986cb8098fbc7bf3565cfd3f88ef9b83e7189f4bbb53299a427fb"
   }

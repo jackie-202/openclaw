@@ -11,12 +11,11 @@ import {
   buildSanitizedChildEnvironment,
   candidateDigest,
   commandIdentityDigest,
+  DELIBERATION_CANDIDATE_LEAVES,
   DELIBERATION_FOCUSED_VITEST_CONFIG,
   DELIBERATION_LEAVES,
   DELIBERATION_VITEST_TIMEOUT_MS,
-  KM_AUTHORITY,
   LedgerValidationError,
-  parseJunitReport,
   parseVitestJsonReport,
   sha256,
   validateCandidateLedger,
@@ -44,9 +43,7 @@ type CommandSpec = {
 };
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
-const defaultOutput = path.join(repoRoot, "plans/checkpoints/bright-fork-2292.full-gate.json");
-const readinessPath = path.join(repoRoot, "plans/checkpoints/fresh-peak-7129.rollout-readiness.md");
-const finalNotePath = path.join(repoRoot, "plans/checkpoints/bright-fork-2292.final-note.md");
+const defaultOutput = path.join(repoRoot, ".artifacts/deliberation-full-gate.json");
 
 function fail(message: string): never {
   process.stderr.write(`${message}\n`);
@@ -61,50 +58,16 @@ function git(args: string[], cwd: string): string {
   return result.stdout.trim();
 }
 
-function hashFile(file: string): string {
-  return sha256(fs.readFileSync(file));
-}
-
 function preflight(): GateAuthority {
   const openclawRevision = git(["rev-parse", "HEAD"], repoRoot);
   const openclawStatus = git(["status", "--short"], repoRoot);
   if (openclawStatus) {
     throw new Error("preflight: OpenClaw checkout is dirty; commit the task before canonical run");
   }
-  const kmHead = git(["rev-parse", "HEAD"], KM_AUTHORITY.repositoryRoot);
-  const files = KM_AUTHORITY.files.map((expected) => {
-    const actual = hashFile(path.join(KM_AUTHORITY.root, expected.path));
-    if (actual !== expected.sha256) {
-      throw new Error(`preflight: KM hash mismatch: ${expected.path}`);
-    }
-    return { path: expected.path, sha256: actual };
-  });
-  const provenance = JSON.parse(
-    fs.readFileSync(
-      path.join(repoRoot, "extensions/deliberation/contracts/provenance.json"),
-      "utf8",
-    ),
-  ) as { ownerFiles?: Record<string, unknown> };
-  for (const file of files) {
-    const key = `km-system/${file.path}`;
-    if (provenance.ownerFiles?.[key] !== file.sha256) {
-      throw new Error(`preflight: Deliberation provenance hash mismatch: ${key}`);
-    }
-  }
   const authority: GateAuthority = {
     openclaw: { root: repoRoot, revision: openclawRevision, clean: true },
-    km: {
-      repositoryRoot: KM_AUTHORITY.repositoryRoot,
-      root: KM_AUTHORITY.root,
-      head: kmHead,
-      files,
-    },
   };
   process.stdout.write(`OpenClaw revision: ${openclawRevision}\n`);
-  process.stdout.write(`KM HEAD (provenance only): ${kmHead}\n`);
-  for (const file of files) {
-    process.stdout.write(`KM SHA-256 ${file.path}: ${file.sha256}\n`);
-  }
   return authority;
 }
 
@@ -129,9 +92,7 @@ function execute(
   const stderr = result.stderr ?? "";
   const report =
     spec.report && fs.existsSync(spec.report.path)
-      ? spec.report.format === "vitest-json"
-        ? parseVitestJsonReport(fs.readFileSync(spec.report.path))
-        : parseJunitReport(fs.readFileSync(spec.report.path))
+      ? parseVitestJsonReport(fs.readFileSync(spec.report.path))
       : null;
   const identity = {
     executable: spec.executable,
@@ -172,19 +133,21 @@ function execute(
   return command;
 }
 
-function leavesFromReport(command: GateCommand, start: number, end: number): GateLeaf[] {
+function leavesFromReport(command: GateCommand): GateLeaf[] {
   if (!command.report) {
     throw new Error(`${command.id}: machine-readable report is missing`);
   }
-  return DELIBERATION_LEAVES.slice(start, end).map(([id, selector, commandId]) => {
-    const occurrences = command.report!.selectors.filter(
-      (reported) => reported === selector,
-    ).length;
-    if (occurrences !== 1) {
-      throw new Error(`${command.id}: selector ${selector} occurred ${occurrences} times`);
-    }
-    return { id, selector, commandId, status: "Green", observedAt: command.finishedAt };
-  });
+  return DELIBERATION_LEAVES.filter((leaf) => leaf[2] === command.id).map(
+    ([id, selector, commandId]) => {
+      const occurrences = command.report!.selectors.filter(
+        (reported) => reported === selector,
+      ).length;
+      if (occurrences !== 1) {
+        throw new Error(`${command.id}: selector ${selector} occurred ${occurrences} times`);
+      }
+      return { id, selector, commandId, status: "Green", observedAt: command.finishedAt };
+    },
+  );
 }
 
 function vitestSpec(
@@ -215,28 +178,11 @@ function vitestSpec(
   };
 }
 
-function writeReadiness(final: FinalLedger, artifactSha256: string): void {
-  fs.writeFileSync(
-    readinessPath,
-    `# Deliberation Repository Readiness\n\n` +
-      `Generated only from \`plans/checkpoints/bright-fork-2292.full-gate.json\`.\n\n` +
-      `- Repository gate: **Green (${final.leaves.length}/23)**\n` +
-      `- Artifact SHA-256: \`${artifactSha256}\`\n` +
-      `- OpenClaw revision: \`${final.authority.openclaw.revision}\`\n` +
-      `- KM HEAD (provenance only): \`${final.authority.km.head}\`\n` +
-      `- Deployment: **unknown / not approved**\n` +
-      `- Live activation: **unknown / not approved**\n` +
-      `- Provider authenticity: **unknown / not proved by this gate**\n` +
-      `- Pilot readiness: **unknown / not approved**\n`,
-  );
-}
-
 function runGate(output: string): void {
   if (fs.existsSync(output)) {
     throw new LedgerValidationError("OUTPUT_EXISTS", `refusing to overwrite ${output}`);
   }
   assertNoLiveEnvironment(process.env);
-  const started = Date.now();
   const authority = preflight();
   const runId = randomUUID();
   const runStartedAt = new Date().toISOString();
@@ -262,7 +208,7 @@ function runGate(output: string): void {
   }
   try {
     const commands: GateCommand[] = [];
-    const leaves: GateLeaf[] = [];
+    const leavesById = new Map<string, GateLeaf>();
     const discord = execute(
       vitestSpec(
         "discord",
@@ -275,7 +221,9 @@ function runGate(output: string): void {
       isolatedEnv,
     );
     commands.push(discord);
-    leaves.push(...leavesFromReport(discord, 0, 4), ...leavesFromReport(discord, 5, 6));
+    for (const leaf of leavesFromReport(discord)) {
+      leavesById.set(leaf.id, leaf);
+    }
     const slack = execute(
       vitestSpec(
         "slack",
@@ -288,32 +236,9 @@ function runGate(output: string): void {
       isolatedEnv,
     );
     commands.push(slack);
-    leaves.splice(4, 0, ...leavesFromReport(slack, 4, 5));
-
-    const kmReport = path.join(reports, "km-integration.xml");
-    const kmIntegration = execute(
-      {
-        id: "km-integration",
-        role: "acceptance",
-        executable: process.execPath,
-        argv: [
-          "--import",
-          "tsx",
-          "--test",
-          "--test-reporter=junit",
-          `--test-reporter-destination=${kmReport}`,
-          "extensions/deliberation/scripts/km-listener.cross-repo.ts",
-        ],
-        cwd: repoRoot,
-        env: { OPENCLAW_DELIBERATION_KM_ROOT: KM_AUTHORITY.root },
-        report: { path: kmReport, format: "junit" },
-      },
-      runId,
-      authoritySha256,
-      isolatedEnv,
-    );
-    commands.push(kmIntegration);
-    leaves.push(...leavesFromReport(kmIntegration, 6, 21));
+    for (const leaf of leavesFromReport(slack)) {
+      leavesById.set(leaf.id, leaf);
+    }
 
     commands.push(
       execute(
@@ -362,7 +287,9 @@ function runGate(output: string): void {
       isolatedEnv,
     );
     commands.push(packageCommand);
-    leaves.push(...leavesFromReport(packageCommand, 21, 22));
+    for (const leaf of leavesFromReport(packageCommand)) {
+      leavesById.set(leaf.id, leaf);
+    }
 
     commands.push(
       execute(
@@ -373,6 +300,7 @@ function runGate(output: string): void {
             "extensions/deliberation/src/contract.test.ts",
             "extensions/deliberation/src/km-client.test.ts",
             "extensions/deliberation/src/final-adapter.test.ts",
+            "extensions/deliberation/src/delivery-probe.test.ts",
             "extensions/deliberation/scripts/intake-producer.test.ts",
           ],
           path.join(reports, "focused.json"),
@@ -392,7 +320,8 @@ function runGate(output: string): void {
           "scripts/deliberation-full-gate.ts",
           "scripts/lib/deliberation-full-gate-ledger.ts",
           "test/scripts/deliberation-full-gate.test.ts",
-          "extensions/deliberation/scripts/km-listener.cross-repo.ts",
+          "extensions/deliberation/src/km-client.ts",
+          "extensions/deliberation/src/contract.test.ts",
         ],
       },
       { id: "tsgo-production", executable: "pnpm", argv: ["tsgo:extensions"] },
@@ -405,6 +334,13 @@ function runGate(output: string): void {
       );
     }
 
+    const candidateLeaves = DELIBERATION_CANDIDATE_LEAVES.map(([id]) => {
+      const leaf = leavesById.get(id);
+      if (!leaf) {
+        throw new Error(`missing local acceptance leaf ${id}`);
+      }
+      return leaf;
+    });
     const provisional: CandidateLedger = {
       schemaVersion: 1,
       kind: "candidate",
@@ -414,7 +350,7 @@ function runGate(output: string): void {
       authority,
       authoritySha256,
       commands,
-      leaves,
+      leaves: candidateLeaves,
     };
     const negativeCases = [
       {
@@ -477,7 +413,7 @@ function runGate(output: string): void {
       ...provisional,
       candidateCreatedAt: new Date().toISOString(),
       commands: [...commands],
-      leaves: [...leaves],
+      leaves: [...candidateLeaves],
     };
     validateCandidateLedger(candidate, {
       runId,
@@ -504,7 +440,7 @@ function runGate(output: string): void {
       isolatedEnv,
     );
     commands.push(integrity);
-    leaves.push(...leavesFromReport(integrity, 22, 23));
+    const integrityLeaves = leavesFromReport(integrity);
     const final: FinalLedger = {
       schemaVersion: 1,
       kind: "final",
@@ -516,7 +452,7 @@ function runGate(output: string): void {
       authority,
       authoritySha256,
       commands,
-      leaves,
+      leaves: [...candidateLeaves, ...integrityLeaves],
     };
     validateFinalLedger(final, {
       runId,
@@ -525,34 +461,14 @@ function runGate(output: string): void {
       openclawRevision: authority.openclaw.revision,
     });
     writeLedgerExclusive(output, final);
-    const artifactSha256 = hashFile(output);
-    writeReadiness(final, artifactSha256);
-    fs.writeFileSync(
-      finalNotePath,
-      `# Deliberation Full Gate Result\n\n` +
-        `- Command: \`pnpm test:deliberation:full-gate\`\n` +
-        `- Result: **23/23 Green**\n` +
-        `- OpenClaw revision: \`${authority.openclaw.revision}\`\n` +
-        `- KM HEAD (provenance only): \`${authority.km.head}\`\n` +
-        authority.km.files
-          .map((file) => `- KM SHA-256 \`${file.path}\`: \`${file.sha256}\``)
-          .join("\n") +
-        `\n` +
-        `- Artifact SHA-256: \`${artifactSha256}\`\n` +
-        `- Negative verifier: missing, duplicate, stale, and malformed each exited nonzero with bounded diagnostics and no manufactured ledger\n` +
-        `- Support commands: ${final.commands
-          .filter((command) => command.role === "support")
-          .map((command) => `${command.id}=Green`)
-          .join(", ")}\n` +
-        `- Elapsed: ${Date.now() - started} ms\n\n` +
-        final.leaves.map((leaf) => `- ${leaf.id} Green: ${leaf.selector}`).join("\n") +
-        `\n\n` +
-        `This is repository readiness only. Deployment, live activation, provider authenticity, and pilot readiness were not established.\n`,
-    );
+    const artifactSha256 = sha256(fs.readFileSync(output));
     for (const leaf of final.leaves) {
       process.stdout.write(`${leaf.id} Green ${leaf.selector}\n`);
     }
-    process.stdout.write(`Ledger SHA-256: ${artifactSha256}\nElapsed: ${Date.now() - started}ms\n`);
+    process.stdout.write(
+      `Repository-local result: ${final.leaves.length}/${DELIBERATION_LEAVES.length} Green\n` +
+        `Ledger SHA-256: ${artifactSha256}\n`,
+    );
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }

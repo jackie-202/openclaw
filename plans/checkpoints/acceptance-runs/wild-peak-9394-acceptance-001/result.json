@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Restore the simpler Deliberation final-delivery service owner: goal-001: The plugin registers exactly o"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "wild-peak-9394-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "wild-peak-9394"
+}

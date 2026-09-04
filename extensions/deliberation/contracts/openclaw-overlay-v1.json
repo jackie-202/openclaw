@@ -76,6 +76,34 @@
       }
     }
   },
+  "senderIdentityHints": {
+    "authority": "optional channel-authenticated textual indicators only; senderId remains the opaque provider identity and names never affect source routing, deduplication, replay, or delivery",
+    "serializedShape": {
+      "senderDisplayName": "optional normalized display label",
+      "senderUsername": "optional normalized provider username or handle",
+      "senderAliases": "optional provider-ordered array of additional trusted aliases"
+    },
+    "bounds": {
+      "valueUtf8Bytes": 128,
+      "aliasCount": 8,
+      "serializedObjectUtf8Bytes": 2048,
+      "controls": "C0 and C1 control characters are rejected",
+      "deduplication": "aliases are deduplicated case-insensitively against direct indicators and earlier aliases"
+    },
+    "sources": {
+      "discord": {
+        "senderDisplayName": "resolved PluralKit member display/name, otherwise guild nickname or nick, then Discord global name, then username",
+        "senderUsername": "resolved PluralKit member native name, otherwise Discord author username",
+        "senderAliases": "formatted Discord author tag, or resolved PluralKit member native name"
+      },
+      "slack": {
+        "senderDisplayName": "message.username, otherwise authenticated users.info display name, real name, or account name",
+        "senderUsername": "message.username when present",
+        "senderAliases": "not populated"
+      }
+    },
+    "excludedSources": ["message content", "rendered envelopes", "quoted messages", "model inference"]
+  },
   "structuredDestinationVectors": {
     "threadedDiscord": {
       "provider": "discord",

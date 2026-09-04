@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import type { OpenClawPluginService } from "openclaw/plugin-sdk/plugin-entry";
 import { parseKmDeliveryTarget, type KmDeliveryTarget } from "./delivery-target.js";
 import {
   parseWireDeliveryTarget,
+  KmRequestError,
   type KmReadyItem,
   type KmReservation,
   type KmWireDeliveryTarget,
@@ -12,8 +14,25 @@ const FINAL_DELIVERY_OWNER = "openclaw-deliberation";
 const FINAL_DELIVERY_POLL_INTERVAL_MS = 5_000;
 const MAX_LOOP_WARNING_LENGTH = 256;
 
+function formatFinalDeliveryError(error: unknown): string {
+  if (error instanceof KmRequestError) {
+    const status = error.status === undefined ? "" : ` status=${error.status}`;
+    const cause = error.cause === undefined ? "" : ` cause=${error.cause}`;
+    return `operation=${error.operation} path=${error.path} stage=${error.stage}${status} code=${error.code}${cause}`;
+  }
+  const cause =
+    error instanceof FinalDeliveryOutcomeUnknownError ? "delivery_outcome_unknown" : "unexpected";
+  return `cause=${cause}`;
+}
+
 export function deriveProviderAttemptId(attemptId: string): string {
   return `provider:${attemptId}`;
+}
+
+export function deriveProviderIdempotencyKey(attemptId: string): string {
+  // 24 hex characters retain 96 bits: collisions stay negligible until roughly 2^48 attempts,
+  // while the key remains below Discord's 25-character nonce limit.
+  return createHash("sha256").update(attemptId).digest("hex").slice(0, 24);
 }
 
 export type FinalDeliveryProvider = {
@@ -114,6 +133,7 @@ export function createFinalDeliveryAdapter(params: {
         throw new Error("delivery envelope has an unsupported destination");
       }
       const providerAttemptId = deriveProviderAttemptId(reservation.attemptId);
+      const providerIdempotencyKey = deriveProviderIdempotencyKey(reservation.attemptId);
       await params.km.invoke(reservation, providerAttemptId);
 
       let result: { receiptId: string; messageId: string };
@@ -121,7 +141,7 @@ export function createFinalDeliveryAdapter(params: {
         result = await provider.send({
           ...targetForProvider,
           text: item.text,
-          idempotencyKey: providerAttemptId,
+          idempotencyKey: providerIdempotencyKey,
         });
       } catch (error) {
         if (error instanceof FinalDeliveryOutcomeUnknownError) {
@@ -173,22 +193,17 @@ export function createFinalDeliveryService(params: {
     if (stopped || activeTick) {
       return activeTick;
     }
-    const currentTick = adapter
+    activeTick = adapter
       .runOnce()
       .then(() => {})
       .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : "final delivery tick failed";
-        warn(
-          `deliberation: final delivery tick failed: ${message.slice(0, MAX_LOOP_WARNING_LENGTH)}`,
-        );
+        const detail = formatFinalDeliveryError(error).slice(0, MAX_LOOP_WARNING_LENGTH);
+        warn(`deliberation: final delivery tick failed: ${detail}`);
       })
       .finally(() => {
-        if (activeTick === currentTick) {
-          activeTick = undefined;
-        }
+        activeTick = undefined;
       });
-    activeTick = currentTick;
-    return currentTick;
+    return activeTick;
   };
 
   return {

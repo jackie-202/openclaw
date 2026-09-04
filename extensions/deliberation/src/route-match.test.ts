@@ -62,21 +62,29 @@ const context = {
 };
 
 describe("Deliberation source admission", () => {
-  it("selects the pipeline and anchors an omitted target to the root source message", () => {
-    expect(admitInboundSource(config, event, context)).toMatchObject({
+  it("keeps a Discord root message id out of the delivery destination", () => {
+    const result = admitInboundSource(config, event, context);
+
+    expect(result).toMatchObject({
       accepted: true,
       pipelineId: "discord-account-a",
+      providerEventId: "message-1",
       deliveryTarget: {
         provider: "discord",
         account: "account-a",
         channel: "source",
-        threadId: "message-1",
       },
     });
+    if (!result.accepted) {
+      throw new Error("expected Discord root admission");
+    }
+    expect(result.deliveryTarget).not.toHaveProperty("threadId");
   });
 
-  it("accepts one exact configured source identity", () => {
-    expect(admitInboundSource(config, event, context)).toMatchObject({
+  it("accepts one exact configured source identity without using its message id as a target", () => {
+    const result = admitInboundSource(config, event, context);
+
+    expect(result).toMatchObject({
       accepted: true,
       pipeline: config.pipelines[0],
       pipelineId: "discord-account-a",
@@ -84,7 +92,6 @@ describe("Deliberation source admission", () => {
         provider: "discord",
         account: "account-a",
         channel: "source",
-        threadId: "message-1",
       },
       route: { channel: "discord", accountId: "account-a", target: "source" },
       sourceTarget: "v1:discord:account-a:source",
@@ -93,6 +100,10 @@ describe("Deliberation source admission", () => {
       historyChannelId: "source",
       senderId: "sender-1",
     });
+    if (!result.accepted) {
+      throw new Error("expected Discord root admission");
+    }
+    expect(result.deliveryTarget).not.toHaveProperty("threadId");
   });
 
   it("keeps a Slack reply's child identity separate from its normalized thread identity", () => {
@@ -175,24 +186,24 @@ describe("Deliberation source admission", () => {
   });
 
   it("matches a Discord child through its authenticated parent and preserves the child thread", () => {
-    expect(
-      admitInboundSource(
-        config,
-        {
-          ...event,
-          conversationId: "thread-1",
-          parentConversationId: "source",
-          threadId: "thread-1",
-          messageId: "message-2",
-        },
-        {
-          ...context,
-          conversationId: "thread-1",
-          parentConversationId: "source",
-          messageId: "message-2",
-        },
-      ),
-    ).toMatchObject({
+    const result = admitInboundSource(
+      config,
+      {
+        ...event,
+        conversationId: "thread-1",
+        parentConversationId: "source",
+        threadId: "thread-1",
+        messageId: "message-2",
+      },
+      {
+        ...context,
+        conversationId: "thread-1",
+        parentConversationId: "source",
+        messageId: "message-2",
+      },
+    );
+
+    expect(result).toMatchObject({
       accepted: true,
       pipelineId: "discord-account-a",
       providerEventId: "message-2",
@@ -207,6 +218,10 @@ describe("Deliberation source admission", () => {
         threadId: "thread-1",
       },
     });
+    if (!result.accepted) {
+      throw new Error("expected Discord thread admission");
+    }
+    expect(result.deliveryTarget.threadId).not.toBe(result.providerEventId);
   });
 
   it("rejects Discord parent evidence that describes the root conversation", () => {

@@ -911,6 +911,33 @@ describe("handleSlackAction", () => {
     expect(requireMockArg(readSlackMessages, "readSlackMessages", 0, 0)).toBe("C_ALLOWED");
   });
 
+  it("reads an exact channel id from the configured default account allowlist", async () => {
+    readSlackMessages.mockResolvedValueOnce({ messages: [], hasMore: false });
+    const cfg = slackConfig({
+      groupPolicy: "allowlist",
+      channels: { C0BJW0FALSC: { enabled: true, requireMention: false } },
+      accounts: {
+        default: {
+          botToken: "xoxb-test",
+          appToken: "xapp-test",
+          userToken: "xoxp-read-test",
+        },
+      },
+    });
+
+    await handleSlackAction(
+      { action: "readMessages", accountId: "default", channelId: "C0BJW0FALSC" },
+      cfg,
+    );
+
+    expect(requireMockArg(readSlackMessages, "readSlackMessages", 0, 0)).toBe("C0BJW0FALSC");
+    expectRecordFields(requireRecordArg(readSlackMessages, "readSlackMessages", 0, 1), {
+      cfg,
+      accountId: "default",
+      token: "xoxp-read-test",
+    });
+  });
+
   it("rejects Slack reads for non-allowlisted target channels", async () => {
     const cfg = slackConfig({
       groupPolicy: "allowlist",

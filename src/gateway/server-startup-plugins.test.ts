@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
+import type { PluginRuntime } from "../plugins/runtime/types.js";
 
 const applyPluginAutoEnable = vi.hoisted(() =>
   vi.fn((params: { config: unknown }) => ({
@@ -203,6 +204,7 @@ function slackConfig(): OpenClawConfig {
 async function prepareBootstrapWithRuntimeConfig(
   cfg: OpenClawConfig,
   options: {
+    channelRuntime?: PluginRuntime["channel"];
     loadRuntimePlugins?: boolean;
     loadSetupRuntimePlugins?: boolean;
   } = {},
@@ -371,8 +373,10 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
 
   it("loads only deferred setup-runtime plugins during pre-bind bootstrap", async () => {
     mockDeferredSlackStartupPlugins();
+    const channelRuntime = {} as PluginRuntime["channel"];
 
     const result = await prepareBootstrapWithRuntimeConfig(slackConfig(), {
+      channelRuntime,
       loadRuntimePlugins: false,
       loadSetupRuntimePlugins: true,
     });
@@ -383,12 +387,17 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
       preferSetupRuntimeForChannelPlugins: true,
       suppressPluginInfoLogs: true,
     });
+    expect(
+      firstCallArg<{ channelRuntime?: PluginRuntime["channel"] }>(loadGatewayStartupPlugins)
+        .channelRuntime,
+    ).toBe(channelRuntime);
   });
 
   it("does not use setup-runtime preference for full bootstrap loads", async () => {
     mockDeferredSlackStartupPlugins();
+    const channelRuntime = {} as PluginRuntime["channel"];
 
-    const result = await prepareBootstrapWithRuntimeConfig(slackConfig());
+    const result = await prepareBootstrapWithRuntimeConfig(slackConfig(), { channelRuntime });
 
     expect(result.runtimePluginsLoaded).toBe(true);
     expectStartupPluginLoad({
@@ -396,6 +405,10 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
       preferSetupRuntimeForChannelPlugins: false,
       suppressPluginInfoLogs: false,
     });
+    expect(
+      firstCallArg<{ channelRuntime?: PluginRuntime["channel"] }>(loadGatewayStartupPlugins)
+        .channelRuntime,
+    ).toBe(channelRuntime);
   });
 
   it("bypasses plugin lookup when plugins are globally disabled", async () => {

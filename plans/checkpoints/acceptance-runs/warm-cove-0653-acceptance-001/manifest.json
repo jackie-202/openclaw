@@ -1,0 +1,45 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T15:46:07+00:00",
+    "implementingStartedAt": "2026-08-25T15:24:48+00:00",
+    "taskFile": "plans/tasks/2026-08-25_activate-latest-deliberation-idempotency-fix.md",
+    "taskId": "warm-cove-0653",
+    "title": "Activate and verify the latest Deliberation Discord idempotency-key fix"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Running Gateway PID/start time is newer than the final relevant build artifact."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Built/runtime code uses a provider idempotency key of at most 25 characters while KM attempt identity remains stable."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Relevant build and Deliberation tests pass."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Plugin and listener deployment/health verification passes after restart."
+    },
+    {
+      "id": "goal-005",
+      "summary": "No post-restart recurrence of the Discord idempotency-length rejection."
+    },
+    {
+      "id": "goal-006",
+      "summary": "If fresh traffic exists, it reaches `SENT` with receipt evidence exactly once. Otherwise the final note clearly states that fresh-traffic E2E proof is still pending."
+    },
+    {
+      "id": "goal-007",
+      "summary": "No terminal historical record is manually recovered or resent."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-cove-0653-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-cove-0653",
+  "tddRequired": false
+}

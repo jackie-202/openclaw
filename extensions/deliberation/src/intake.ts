@@ -20,6 +20,65 @@ type BeforeDispatchContext = {
 };
 
 const MIME_TYPE_PATTERN = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i;
+const MAX_SENDER_HINT_BYTES = 128;
+const MAX_SENDER_ALIASES = 8;
+const MAX_SENDER_HINTS_BYTES = 2048;
+
+function hasControlCharacter(value: string): boolean {
+  return Array.from(value).some((character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
+  });
+}
+
+function normalizeSenderHint(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const normalized = value.trim();
+  if (
+    !normalized ||
+    hasControlCharacter(normalized) ||
+    Buffer.byteLength(normalized, "utf8") > MAX_SENDER_HINT_BYTES
+  ) {
+    return undefined;
+  }
+  return normalized;
+}
+
+function resolveSenderIdentityHints(event: PluginHookInboundClaimEvent) {
+  const senderDisplayName = normalizeSenderHint(event.senderName);
+  const senderUsername = normalizeSenderHint(event.senderUsername);
+  const seen = new Set(
+    [senderDisplayName, senderUsername]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.toLocaleLowerCase("en-US")),
+  );
+  const senderAliases: string[] = [];
+  for (const candidate of event.senderAliases ?? []) {
+    const alias = normalizeSenderHint(candidate);
+    const key = alias?.toLocaleLowerCase("en-US");
+    if (!alias || !key || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    senderAliases.push(alias);
+    if (senderAliases.length === MAX_SENDER_ALIASES) {
+      break;
+    }
+  }
+  const hints = {
+    ...(senderDisplayName ? { senderDisplayName } : {}),
+    ...(senderUsername ? { senderUsername } : {}),
+    ...(senderAliases.length > 0 ? { senderAliases } : {}),
+  };
+  if (Object.keys(hints).length === 0) {
+    return undefined;
+  }
+  return Buffer.byteLength(JSON.stringify(hints), "utf8") <= MAX_SENDER_HINTS_BYTES
+    ? hints
+    : undefined;
+}
 
 function canonicalUtcTimestamp(date: Date): string {
   const timestamp = date.toISOString();
@@ -104,6 +163,7 @@ export function createInboundClaimHandler(
       }
       const occurredAt = canonicalUtcTimestamp(new Date(event.timestamp ?? Date.now()));
       const receivedAt = canonicalUtcTimestamp(new Date());
+      const senderIdentityHints = resolveSenderIdentityHints(event);
       await client.intake({
         pipelineId: admission.pipelineId,
         deliveryTarget: admission.deliveryTarget,
@@ -112,6 +172,7 @@ export function createInboundClaimHandler(
         sourceTarget: admission.sourceTarget,
         sourceThreadId: admission.sourceThreadId,
         senderId: admission.senderId,
+        ...(senderIdentityHints ? { senderIdentityHints } : {}),
         occurredAt,
         receivedAt,
         content,

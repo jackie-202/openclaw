@@ -1,0 +1,36 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/swift-dune-6107.evidence.md",
+      "provenance": "evidence_repair:swift-dune-6107-acceptance-001-evidence-repair-001",
+      "size": 741
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/swift-dune-6107.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/swift-dune-6107-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "c810e68835a128c4dbd5e77db2208ab7b43bcce2",
+  "escalationReason": "exact_command_outcome_evidence_unavailable",
+  "finishedAt": "2026-08-25T21:53:47.872716+00:00",
+  "gaps": [],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=swift-dune-6107 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/slack/src/monitor/provider.allowlist.test.ts",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=swift-dune-6107 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/slack/src/monitor/provider.allowlist.test.ts",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "swift-dune-6107-acceptance-001-evidence-repair-001",
+  "sourceRunId": "swift-dune-6107-acceptance-001",
+  "startedAt": "2026-08-25T21:53:46.133606+00:00",
+  "status": "escalated"
+}

@@ -1,0 +1,38 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/bold-wave-8562.evidence.md",
+      "provenance": "evidence_repair:bold-wave-8562-acceptance-001-evidence-repair-001",
+      "size": 828
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/bold-wave-8562.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/bold-wave-8562-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "c810e68835a128c4dbd5e77db2208ab7b43bcce2",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-25T10:33:57.210553+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=bold-wave-8562 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/delivery-probe.test.ts extensions/deliberation/src/km-c",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=bold-wave-8562 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/delivery-probe.test.ts extensions/deliberation/src/km",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "bold-wave-8562-acceptance-001-evidence-repair-001",
+  "sourceRunId": "bold-wave-8562-acceptance-001",
+  "startedAt": "2026-08-25T10:33:54.903911+00:00",
+  "status": "escalated"
+}

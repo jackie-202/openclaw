@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-24T20:19:02+00:00",
+    "implementingStartedAt": "2026-08-24T20:06:06+00:00",
+    "taskFile": "plans/tasks/restore-deliberation-final-delivery-service-owner.md",
+    "taskId": "quick-wave-8748",
+    "title": "Restore the simpler Deliberation final-delivery service owner"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "The plugin registers exactly one `deliberation-final-delivery` service when Deliberation is enabled and none when disabled."
+    },
+    {
+      "id": "goal-002",
+      "summary": "One service tick processes at most one ready delivery through the existing adapter; overlapping ticks cannot cause concurrent delivery attempts."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Discord and Slack routing/configuration matrix tests from the latest proposal remain green, including account-aware root/thread output."
+    },
+    {
+      "id": "goal-004",
+      "summary": "The production architecture needs only the existing OpenClaw plugin service plus the existing KM runner; no `deliberation-v2-final-sender` cron is required."
+    },
+    {
+      "id": "goal-005",
+      "summary": "The `deliver-once` CLI and callable-only replacement are absent unless the final note identifies an independently required contract and proves it does not create or imply a second scheduler."
+    },
+    {
+      "id": "goal-006",
+      "summary": "No live state or external provider is touched."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-wave-8748-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-wave-8748",
+  "tddRequired": true
+}

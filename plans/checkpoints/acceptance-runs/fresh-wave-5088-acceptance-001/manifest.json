@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-26T09:12:24+00:00",
+    "implementingStartedAt": "2026-08-26T08:58:59+00:00",
+    "taskFile": "plans/tasks/2026-08-26_followup-fresh-wave-5088-remove-openclaw-dependency-on-km-deliberation-source-layout.md",
+    "taskId": "fresh-wave-5088",
+    "title": "[acceptance-fix] Remove OpenClaw dependency on KM Deliberation source layout: goal-001: Remove OpenClaw dependency on KM"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Remove OpenClaw dependency on KM Deliberation source layout: goal-001: Remove OpenClaw dependency on KM"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-wave-5088-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-wave-5088",
+  "tddRequired": true
+}

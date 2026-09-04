@@ -42,6 +42,18 @@ export type SlackConfigAccessorAccount = {
   defaultTo: string | undefined;
 };
 
+export function resolveSlackReadToken(account: ResolvedSlackAccount, botToken: string): string;
+export function resolveSlackReadToken(account: ResolvedSlackAccount): string | undefined;
+export function resolveSlackReadToken(
+  account: ResolvedSlackAccount,
+  botToken?: string,
+): string | undefined {
+  return (
+    normalizeOptionalString(account.userToken) ??
+    normalizeOptionalString(botToken ?? account.botToken)
+  );
+}
+
 const { listAccountIds, resolveDefaultAccountId } = createAccountListHelpers("slack", {
   hasImplicitDefaultAccount: (cfg) => {
     const slack = cfg.channels?.slack;

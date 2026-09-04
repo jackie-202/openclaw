@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T16:20:59+00:00",
+    "implementingStartedAt": "2026-08-25T16:12:36+00:00",
+    "taskFile": "plans/tasks/2026-08-25_followup-calm-brook-4511-acceptance-fix-activate-and-verify-the-latest-deliberation-d.md",
+    "taskId": "calm-brook-4511",
+    "title": "[acceptance-fix] [acceptance-fix] Activate and verify the latest Deliberation Discord idempotency-key fix: goal-003: Rel"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Activate and verify the latest Deliberation Discord idempotency-key fix: goal-003: Rel"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "calm-brook-4511-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "calm-brook-4511",
+  "tddRequired": false
+}

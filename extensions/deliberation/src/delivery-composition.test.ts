@@ -5,7 +5,7 @@ import type { OpenClawPluginService } from "openclaw/plugin-sdk/plugin-entry";
 import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import plugin from "../index.js";
-import { deriveProviderAttemptId } from "./final-adapter.js";
+import { deriveProviderIdempotencyKey } from "./final-adapter.js";
 
 const mocks = vi.hoisted(() => ({
   createKmClient: vi.fn(),
@@ -145,7 +145,7 @@ describe("Deliberation native adapter composition", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
-      nonce: deriveProviderAttemptId("attempt-1"),
+      nonce: deriveProviderIdempotencyKey("attempt-1"),
       enforce_nonce: true,
       content: "reviewed reply",
     });

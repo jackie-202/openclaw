@@ -11,6 +11,7 @@ import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot
 import type { PluginRegistry, PluginRegistryParams } from "../plugins/registry-types.js";
 import { createEmptyPluginRegistry } from "../plugins/registry.js";
 import { getActivePluginRegistry, setActivePluginRegistry } from "../plugins/runtime.js";
+import type { PluginRuntime } from "../plugins/runtime/types.js";
 import { listCoreGatewayMethodNames } from "./methods/core-descriptors.js";
 import { mergeActivationSectionsIntoRuntimeConfig } from "./plugin-activation-runtime-config.js";
 import { listGatewayMethods } from "./server-methods-list.js";
@@ -50,6 +51,7 @@ export async function prepareGatewayPluginBootstrap(params: {
   pluginMetadataSnapshot?: PluginMetadataSnapshot;
   minimalTestGateway: boolean;
   log: GatewayPluginBootstrapLog;
+  channelRuntime?: PluginRuntime["channel"];
   loadRuntimePlugins?: boolean;
   loadSetupRuntimePlugins?: boolean;
 }) {
@@ -139,6 +141,7 @@ export async function prepareGatewayPluginBootstrap(params: {
         log: params.log,
         baseMethods,
         coreGatewayMethodNames,
+        ...(params.channelRuntime ? { channelRuntime: params.channelRuntime } : {}),
         startupPluginIds: deferredConfiguredChannelPluginIds,
         pluginLookUpTable,
         preferSetupRuntimeForChannelPlugins: true,
@@ -156,6 +159,7 @@ export async function prepareGatewayPluginBootstrap(params: {
         log: params.log,
         baseMethods,
         coreGatewayMethodNames,
+        ...(params.channelRuntime ? { channelRuntime: params.channelRuntime } : {}),
         startupPluginIds,
         pluginLookUpTable,
         preferSetupRuntimeForChannelPlugins: false,
@@ -225,6 +229,7 @@ export async function loadGatewayStartupPluginRuntime(params: {
   baseMethods: string[];
   coreGatewayMethodNames?: readonly string[];
   hostServices?: PluginRegistryParams["hostServices"];
+  channelRuntime?: PluginRuntime["channel"];
   startupPluginIds: string[];
   pluginLookUpTable?: ReturnType<typeof loadPluginLookUpTable>;
   preferSetupRuntimeForChannelPlugins?: boolean;
@@ -243,6 +248,9 @@ export async function loadGatewayStartupPluginRuntime(params: {
     baseMethods: params.baseMethods,
     ...(params.hostServices !== undefined && {
       hostServices: params.hostServices,
+    }),
+    ...(params.channelRuntime !== undefined && {
+      channelRuntime: params.channelRuntime,
     }),
     pluginIds: params.startupPluginIds,
     pluginLookUpTable: params.pluginLookUpTable,

@@ -74,6 +74,7 @@ import { resolveSlackMessageContent } from "./prepare-content.js";
 import { resolveSlackDmHistoryContext, resolveSlackDmHistoryLimit } from "./prepare-dm-history.js";
 import { resolveSlackRoutingContext } from "./prepare-routing.js";
 import { resolveSlackThreadContextData } from "./prepare-thread-context.js";
+import { resolveSlackSenderIdentity } from "./sender-identity.js";
 import { isSlackSubteamMentionForBot, normalizeSlackId } from "./subteam-mentions.js";
 import { resolveSlackTimestampMs } from "./timestamp.js";
 import type { PreparedSlackMessage } from "./types.js";
@@ -847,21 +848,13 @@ export async function prepareSlackMessage(params: {
           );
   }
 
-  let resolvedSenderName = normalizeOptionalString(message.username);
+  let resolvedSenderIdentity: Awaited<ReturnType<typeof resolveSlackSenderIdentity>> | undefined;
   const resolveSenderName = async (): Promise<string> => {
-    if (resolvedSenderName) {
-      return resolvedSenderName;
-    }
-    if (message.user) {
-      const sender = await ctx.resolveUserName(message.user);
-      const normalized = normalizeOptionalString(sender?.name);
-      if (normalized) {
-        resolvedSenderName = normalized;
-        return resolvedSenderName;
-      }
-    }
-    resolvedSenderName = message.user ?? message.bot_id ?? "unknown";
-    return resolvedSenderName;
+    resolvedSenderIdentity ??= await resolveSlackSenderIdentity({
+      message,
+      resolveUserName: ctx.resolveUserName,
+    });
+    return resolvedSenderIdentity.displayName ?? message.user ?? message.bot_id ?? "unknown";
   };
   const senderNameForAuth = ctx.allowNameMatching ? await resolveSenderName() : undefined;
 

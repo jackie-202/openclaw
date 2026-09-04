@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-30T23:22:14+00:00",
+    "implementingStartedAt": "2026-08-30T22:57:26+00:00",
+    "taskFile": "plans/tasks/2026-08-30_followup-wild-dune-0272-deliberation-intake-preserve-trusted-sender-names-for-people.md",
+    "taskId": "wild-dune-0272",
+    "title": "[acceptance-fix] Deliberation intake: preserve trusted sender names for People Intel identity resolution: goal-004: Exis"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation intake: preserve trusted sender names for People Intel identity resolution: goal-004: Exis"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "wild-dune-0272-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "wild-dune-0272",
+  "tddRequired": false
+}

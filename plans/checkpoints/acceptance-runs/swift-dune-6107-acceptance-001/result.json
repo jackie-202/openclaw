@@ -1,0 +1,67 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The required final verification note is absent from the supplied artifacts.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-002",
+        "goal-005"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied RED/GREEN proof records only pnpm test extensions/slack/src/monitor/provider.allowlist.test.ts, while the checkpoint states that focused verification completed without listing the exact Slack action, monitor/history, Deliberation history commands and deterministic outcomes; no supplied final note records those commands, the complete files-changed list, or remaining operator permission action.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Goal 002 explicitly requires the existing focused Slack and Deliberation test sets to pass, and goal 005 explicitly requires a final note containing commands, deterministic results, live-read result, files changed, and any operator action. A checkpoint summary and one-file TDD proof do not supply that required durable evidence.",
+      "required": "Supply the task final note with exact focused verification commands and deterministic outcomes, the bounded sanitized live-read result, the task files changed, and an explicit remaining operator permission action or none.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-dune-6107.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-dune-6107.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-08-25_fix-slack-deliberation-history-read-and-verify-against-the-c.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "A regression test fails before the fix and passes afterward for the configured allowlist/default-account shape."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "Existing focused Slack action, monitor/history, and Deliberation history tests pass."
+    },
+    {
+      "id": "goal-003",
+      "status": "MET",
+      "summary": "The configured real channel/root is read successfully through the fixed method, or a precise sanitized external permission blocker is proven without claiming success."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "No provider writes and no config/spool/cron mutation occur."
+    },
+    {
+      "id": "goal-005",
+      "status": "UNMET",
+      "summary": "Final note records commands, deterministic results, live-read result, files changed, and any remaining operator permission action."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-dune-6107-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "swift-dune-6107"
+}

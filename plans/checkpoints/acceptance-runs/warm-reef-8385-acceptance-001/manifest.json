@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T16:33:00+00:00",
+    "implementingStartedAt": "2026-08-25T16:25:34+00:00",
+    "taskFile": "plans/tasks/2026-08-25_followup-warm-reef-8385-add-openclaw-side-of-deployed-deliberation-delivery-probe.md",
+    "taskId": "warm-reef-8385",
+    "title": "[acceptance-fix] Add OpenClaw side of deployed Deliberation delivery probe: goal-001: Add OpenClaw side of deployed Deli"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Add OpenClaw side of deployed Deliberation delivery probe: goal-001: Add OpenClaw side of deployed Deli"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-reef-8385-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-reef-8385",
+  "tddRequired": false
+}

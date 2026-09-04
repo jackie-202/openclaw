@@ -1,0 +1,42 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The acceptance repair must preserve existing source-target, idempotency, replay, and delivery-routing behavior.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "implemented_behavior_incorrect",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff rewrites the Deliberation README's omitted-target Discord root behavior from source_anchor thread creation/reuse to mode root without threadId. This is a delivery-routing contract change, despite the supplied final note claiming the unrelated root-routing wording was removed.",
+      "policyRule": "catalog:implemented_behavior_incorrect:blocking",
+      "rationale": "Changing source-default Discord root delivery from source_anchor to root materially conflicts with the evaluated unchanged-routing goal. No concurrent context assignment was supplied that could attribute or exclude this changed path.",
+      "required": "Remove the routing-semantic rewrite from the evaluated task changes or supply task-scoped material that preserves the pre-task source-anchor/source-thread delivery contract.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/README.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/wild-dune-0272.final-note.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation intake: preserve trusted sender names for People Intel identity resolution: goal-004: Exis"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "wild-dune-0272-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "wild-dune-0272"
+}

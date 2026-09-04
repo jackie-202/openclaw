@@ -82,6 +82,8 @@ export type PluginHookInboundClaimEvent = {
   senderId?: string;
   senderName?: string;
   senderUsername?: string;
+  /** Additional host-authenticated sender labels; never provider identity authority. */
+  senderAliases?: string[];
   replyToId?: string;
   replyToBody?: string;
   replyToSender?: string;

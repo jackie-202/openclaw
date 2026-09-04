@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation intake: preserve trusted sender names for People Intel identity resolutio"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-brook-6464-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "fresh-brook-6464"
+}

@@ -448,6 +448,18 @@ describe("loadGatewayPlugins", () => {
     expect(getLastPluginLoadOption("preferBuiltPluginArtifacts")).toBe(true);
   });
 
+  test("passes the Gateway channel runtime to loaded plugins", () => {
+    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    const channelRuntime = runtimeModule.createPluginRuntime().channel;
+
+    loadGatewayPluginsForTest({ channelRuntime } as never);
+
+    const options = getLastMockFirstArg(loadOpenClawPlugins, "plugin load") as {
+      runtimeOptions?: { channel?: PluginRuntime["channel"] };
+    };
+    expect(options.runtimeOptions?.channel).toBe(channelRuntime);
+  });
+
   test("routes plugin registration logs through the plugin logger", () => {
     loadOpenClawPlugins.mockReturnValue(createRegistry([]));
     const log = loadGatewayPluginsForTest();

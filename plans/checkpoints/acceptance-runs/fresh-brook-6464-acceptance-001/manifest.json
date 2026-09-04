@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-30T23:42:28+00:00",
+    "implementingStartedAt": "2026-08-30T23:31:29+00:00",
+    "taskFile": "plans/tasks/2026-08-30_followup-fresh-brook-6464-acceptance-fix-deliberation-intake-preserve-trusted-sender-n.md",
+    "taskId": "fresh-brook-6464",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation intake: preserve trusted sender names for People Intel identity resolutio"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation intake: preserve trusted sender names for People Intel identity resolutio"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-brook-6464-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-brook-6464",
+  "tddRequired": false
+}

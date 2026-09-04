@@ -710,6 +710,7 @@ export function loadGatewayPlugins(params: {
   coreGatewayHandlers?: Record<string, GatewayRequestHandler>;
   coreGatewayMethodNames?: readonly string[];
   hostServices?: PluginRegistryParams["hostServices"];
+  channelRuntime?: PluginRuntime["channel"];
   baseMethods: string[];
   pluginIds?: string[];
   pluginLookUpTable?: PluginLookUpTable;
@@ -808,6 +809,7 @@ export function loadGatewayPlugins(params: {
     }),
     runtimeOptions: {
       allowGatewaySubagentBinding: true,
+      ...(params.channelRuntime ? { channel: params.channelRuntime } : {}),
     },
     preferSetupRuntimeForChannelPlugins: params.preferSetupRuntimeForChannelPlugins,
     preferBuiltPluginArtifacts: true,

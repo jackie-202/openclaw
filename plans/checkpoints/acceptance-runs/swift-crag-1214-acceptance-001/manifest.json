@@ -1,0 +1,33 @@
+{
+  "concurrentContext": [
+    {
+      "execution": {
+        "completedDuringEvaluation": false,
+        "finishedAt": "",
+        "overlappedEvaluation": true,
+        "startedAt": "2026-08-25T10:01:51+00:00"
+      },
+      "taskFile": "plans/tasks/2026-08-25_add-openclaw-side-of-deployed-deliberation-delivery-probe.md",
+      "taskId": "bold-wave-8562",
+      "title": "Add OpenClaw side of deployed Deliberation delivery probe"
+    }
+  ],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T10:19:54+00:00",
+    "implementingStartedAt": "2026-08-25T09:53:59+00:00",
+    "taskFile": "plans/tasks/2026-08-25_fix-deliberation-final-delivery-plugin-km-request-failure.md",
+    "taskId": "swift-crag-1214",
+    "title": "Fix Deliberation final-delivery plugin KM request failure"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Fix Deliberation final-delivery plugin KM request failure"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-crag-1214-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-crag-1214",
+  "tddRequired": true
+}

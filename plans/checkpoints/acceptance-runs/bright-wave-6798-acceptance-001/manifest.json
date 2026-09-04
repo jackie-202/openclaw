@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T17:30:31+00:00",
+    "implementingStartedAt": "2026-08-25T17:18:01+00:00",
+    "taskFile": "plans/tasks/2026-08-25_followup-bright-wave-6798-fix-deliberation-discord-root-channel-delivery-routing.md",
+    "taskId": "bright-wave-6798",
+    "title": "[acceptance-fix] Fix Deliberation Discord root-channel delivery routing: goal-001: The production `Unknown Channel` fail"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix Deliberation Discord root-channel delivery routing: goal-001: The production `Unknown Channel` fail"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-wave-6798-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-wave-6798",
+  "tddRequired": false
+}

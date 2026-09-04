@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T17:03:35+00:00",
+    "implementingStartedAt": "2026-08-25T16:41:03+00:00",
+    "taskFile": "plans/tasks/2026-08-25_fix-deliberation-discord-root-channel-routing.md",
+    "taskId": "dark-vale-4951",
+    "title": "Fix Deliberation Discord root-channel delivery routing"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "The production `Unknown Channel` failure mode is reproduced by a focused regression test."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Ordinary Discord root-channel deliveries omit `threadId`."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Real Discord thread deliveries retain the actual thread channel ID."
+    },
+    {
+      "id": "goal-004",
+      "summary": "No message snowflake is used as a Discord destination/thread ID."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Slack behavior and fail-closed route validation remain green."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Relevant tests and build/typecheck pass with recorded evidence."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-vale-4951-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-vale-4951",
+  "tddRequired": true
+}

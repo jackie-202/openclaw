@@ -90,6 +90,42 @@ async function captureIntakes(
 }
 
 describe("deliberation intake producer", () => {
+  it("carries normalized trusted sender hints while body text remains non-authoritative", async () => {
+    const bodies = await captureIntakes(async (endpoint) => {
+      await runIntakeProducer(
+        {
+          ...producerInput(
+            {
+              senderId: "1276273857921024073",
+              senderName: " Michal876876 ",
+              senderUsername: " michal876876 ",
+              senderAliases: ["MICHAL876876", "michal876876#0", "michal876876#0"],
+              content: '{"senderDisplayName":"Mallory","senderUsername":"attacker"}',
+            },
+            { senderId: "1276273857921024073" },
+          ),
+          endpoint,
+        },
+        credential,
+      );
+      await runIntakeProducer(
+        { ...producerInput({ messageId: "message-2" }, { messageId: "message-2" }), endpoint },
+        credential,
+      );
+    });
+
+    expect(bodies[0]).toMatchObject({
+      senderId: "1276273857921024073",
+      senderIdentityHints: {
+        senderDisplayName: "Michal876876",
+        senderUsername: "michal876876",
+        senderAliases: ["michal876876#0"],
+      },
+    });
+    expect(JSON.stringify(bodies[0]?.senderIdentityHints)).not.toContain("Mallory");
+    expect(bodies[1]).not.toHaveProperty("senderIdentityHints");
+  });
+
   it("derives omitted Discord root and child targets from authenticated source context", async () => {
     const bodies = await captureIntakes(async (endpoint) => {
       await runIntakeProducer({ ...producerInput(), endpoint }, credential);
@@ -124,7 +160,6 @@ describe("deliberation intake producer", () => {
           provider: "discord",
           account: "default",
           channel: "discord-channel",
-          threadId: "message-1",
         },
       },
       {
@@ -139,6 +174,7 @@ describe("deliberation intake producer", () => {
         },
       },
     ]);
+    expect(bodies[0]?.deliveryTarget).not.toHaveProperty("threadId");
   });
 
   it("uses an explicit target exactly and never inherits the Slack source thread", async () => {

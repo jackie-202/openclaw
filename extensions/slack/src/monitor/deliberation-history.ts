@@ -29,6 +29,22 @@ export function createSlackChannelHistoryContext(params: {
   token: string;
 }): ChannelHistoryRuntimeContext {
   return {
+    async readChannelPage({ channelId, cursor, limit, oldest, latest, inclusive }) {
+      const result = await params.client.conversations.history({
+        token: params.token,
+        channel: channelId,
+        ...(cursor ? { cursor } : {}),
+        ...(oldest ? { oldest } : {}),
+        ...(latest ? { latest } : {}),
+        ...(inclusive === undefined ? {} : { inclusive }),
+        limit,
+      });
+      const nextCursor = result.response_metadata?.next_cursor?.trim();
+      return {
+        messages: ((result.messages ?? []) as SlackHistoryMessage[]).map(normalizeMessage),
+        ...(nextCursor ? { nextCursor } : {}),
+      };
+    },
     async readMessage({ channelId, messageId }) {
       const result = await params.client.conversations.history({
         token: params.token,

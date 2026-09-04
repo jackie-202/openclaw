@@ -1,0 +1,42 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "The caller-required TDD proof must contain credible RED and GREEN evidence for the declared focused command.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied proof contains a RED phase with exit code 1 and failing target tests, but it provides no GREEN phase, passing command result, or other direct GREEN provenance; the checkpoint only asserts that GREEN exists.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "With tddRequired true, a checkpoint summary cannot substitute for the missing direct GREEN proof needed to establish the required red-green cycle from caller-supplied material.",
+      "required": "Supply the canonical TDD proof with the passing GREEN phase and its direct command outcome for the declared focused test command.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-reef-5098.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/cool-reef-5098.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Remove OpenClaw dependency on KM Deliberation source layout"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-reef-5098-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-reef-5098"
+}

@@ -10,24 +10,14 @@ export const DELIBERATION_LEAVES = [
   ["OR-04", "OR-04 discord-system-room-event-claimed-before-enqueue", "discord"],
   ["OR-05", "OR-05 slack-root-child-claim-before-thread-effects", "slack"],
   ["OR-06", "OR-06 command-abort-empty-autothread-claim-matrix", "discord"],
-  ["OR-07", "OR-07 authenticated-event-creates-one-record", "km-integration"],
-  ["OR-08", "OR-08 duplicate-idempotent-conflict-zero-mutation", "km-integration"],
-  ["OR-09", "OR-09 account-channel-source-isolation", "km-integration"],
-  ["OR-10", "OR-10 history-context-only-pending-event-singular", "km-integration"],
-  ["OR-11", "OR-11 pipeline-source-target-immutable-end-to-end", "km-integration"],
-  ["OR-12", "OR-12 reservation-no-target-override-cas-replay", "km-integration"],
-  ["OR-13", "OR-13 invocation-marker-before-one-provider-call", "km-integration"],
-  ["OR-14", "OR-14 sent-completion-exact-immutable-receipt", "km-integration"],
-  ["OR-15", "OR-15 authoritative-provider-rejection-terminal", "km-integration"],
-  ["OR-16", "OR-16 timeout-transport-remain-delivery-unknown", "km-integration"],
-  ["OR-17", "OR-17 invoked-unknown-nonreservable-after-restart", "km-integration"],
-  ["OR-18", "OR-18 never-invoked-abandonment-fresh-attempt-id", "km-integration"],
-  ["OR-19", "OR-19 legacy-not-sent-unknown-never-authorize-retry", "km-integration"],
-  ["OR-20", "OR-20 historical-attempt-drift-and-tamper-fail-closed", "km-integration"],
-  ["OR-21", "OR-21 atomic-bounded-legacy-migration-audit-only", "km-integration"],
   ["OR-22", "OR-22 doctor-package-writeback-built-five-hook-runtime", "package"],
   ["OR-23", "OR-23 full-gate-integrity", "integrity"],
 ] as const;
+
+export const DELIBERATION_CANDIDATE_LEAVES = DELIBERATION_LEAVES.filter(
+  (leaf) => leaf[2] !== "integrity",
+);
+type DeliberationLeafDefinition = (typeof DELIBERATION_LEAVES)[number];
 
 export const DELIBERATION_SUPPORT_COMMANDS = [
   "build",
@@ -49,47 +39,17 @@ export const DELIBERATION_SUPPORT_COMMANDS = [
 export const DELIBERATION_VITEST_TIMEOUT_MS = "1200000";
 export const DELIBERATION_FOCUSED_VITEST_CONFIG = "test/vitest/vitest.extensions.config.ts";
 
-export const KM_AUTHORITY = {
-  repositoryRoot: "/Users/michal/.openclaw",
-  root: "/Users/michal/.openclaw/workspace/km-system",
-  files: [
-    {
-      path: "contracts/deliberation-v2/v1/contract.json",
-      sha256: "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
-    },
-    {
-      path: "contracts/deliberation-v2/v1/fixtures.json",
-      sha256: "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
-    },
-    {
-      path: "lib/deliberation_wire.py",
-      sha256: "a0e42e4fe54eedab6f9955e77f439a4e69c9614a60560ca46532ce0de9dbb528",
-    },
-    {
-      path: "lib/deliberation_spool_contracts.py",
-      sha256: "47587e405d3e6b7f433eb7d450bd02969546860ff0d6822ad7bea9ff2478a0ca",
-    },
-  ],
-} as const;
-
 const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
 const timestampSchema = z.string().datetime({ offset: true });
-const authorityFileSchema = z.strictObject({ path: z.string().min(1), sha256: sha256Schema });
 const authoritySchema = z.strictObject({
   openclaw: z.strictObject({
     root: z.string().min(1),
     revision: z.string().regex(/^[a-f0-9]{40}$/u),
     clean: z.literal(true),
   }),
-  km: z.strictObject({
-    repositoryRoot: z.literal(KM_AUTHORITY.repositoryRoot),
-    root: z.literal(KM_AUTHORITY.root),
-    head: z.string().regex(/^[a-f0-9]{40}$/u),
-    files: z.array(authorityFileSchema).length(KM_AUTHORITY.files.length),
-  }),
 });
 const reportSchema = z.strictObject({
-  format: z.enum(["vitest-json", "junit"]),
+  format: z.literal("vitest-json"),
   sha256: sha256Schema,
   bytes: z.number().int().nonnegative(),
   passed: z.number().int().nonnegative(),
@@ -169,40 +129,6 @@ export function parseVitestJsonReport(bytes: Buffer): GateReport {
     skipped: statusCount("pending") + statusCount("skipped") + statusCount("todo"),
     selectors: assertions.flatMap((assertion) =>
       assertion.status === "passed" && typeof assertion.title === "string" ? [assertion.title] : [],
-    ),
-  };
-}
-
-function decodeXml(value: string): string {
-  return value
-    .replaceAll("&quot;", '"')
-    .replaceAll("&apos;", "'")
-    .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">")
-    .replaceAll("&amp;", "&");
-}
-
-export function parseJunitReport(bytes: Buffer): GateReport {
-  const xml = bytes.toString("utf8");
-  const testcases = [
-    ...xml.matchAll(
-      /<testcase\b([^>]*\bname="([^"]+)"[^>]*)>([\s\S]*?)<\/testcase>|<testcase\b([^>]*\bname="([^"]+)"[^>]*)\/>/gu,
-    ),
-  ].map((match) => ({
-    name: decodeXml(match[2] ?? match[5] ?? ""),
-    body: match[3] ?? "",
-  }));
-  const failed = testcases.filter(({ body }) => /<(?:failure|error)\b/u.test(body)).length;
-  const skipped = testcases.filter(({ body }) => /<skipped\b/u.test(body)).length;
-  return {
-    format: "junit",
-    sha256: sha256(bytes),
-    bytes: bytes.length,
-    passed: testcases.length - failed - skipped,
-    failed,
-    skipped,
-    selectors: testcases.flatMap(({ name, body }) =>
-      /<(?:failure|error|skipped)\b/u.test(body) ? [] : [name],
     ),
   };
 }
@@ -318,10 +244,10 @@ function rawLeaves(input: unknown): Array<Record<string, unknown>> {
   );
 }
 
-function precheckLeaves(input: unknown, expectedCount: number): void {
+function precheckLeaves(input: unknown, expected: readonly DeliberationLeafDefinition[]): void {
   const leaves = rawLeaves(input);
   const ids = leaves.map((leaf) => leaf.id).filter((id): id is string => typeof id === "string");
-  for (const [id] of DELIBERATION_LEAVES.slice(0, expectedCount)) {
+  for (const [id] of expected) {
     if (!ids.includes(id)) {
       throw new LedgerValidationError("MISSING_LEAF", `missing leaf ${id}`);
     }
@@ -346,15 +272,6 @@ function validateAuthority(authority: GateAuthority, context: LedgerValidationCo
     authority.openclaw.revision !== context.openclawRevision
   ) {
     throw new LedgerValidationError("WRONG_AUTHORITY", "wrong OpenClaw authority");
-  }
-  for (const [index, expected] of KM_AUTHORITY.files.entries()) {
-    const actual = authority.km.files[index];
-    if (actual?.path !== expected.path || actual.sha256 !== expected.sha256) {
-      throw new LedgerValidationError(
-        "WRONG_AUTHORITY",
-        `wrong KM authority file ${expected.path}`,
-      );
-    }
   }
 }
 
@@ -430,17 +347,17 @@ function validateCommands(
   }
 }
 
-function validateManifest(leaves: GateLeaf[], expectedCount: number): void {
-  if (leaves.length !== expectedCount) {
+function validateManifest(
+  leaves: GateLeaf[],
+  expected: readonly DeliberationLeafDefinition[],
+): void {
+  if (leaves.length !== expected.length) {
     throw new LedgerValidationError(
       "CONTRADICTORY_EVIDENCE",
-      `expected ${expectedCount} leaves, received ${leaves.length}`,
+      `expected ${expected.length} leaves, received ${leaves.length}`,
     );
   }
-  for (const [index, [id, selector, commandId]] of DELIBERATION_LEAVES.slice(
-    0,
-    expectedCount,
-  ).entries()) {
+  for (const [index, [id, selector, commandId]] of expected.entries()) {
     const leaf = leaves[index];
     if (leaf?.id !== id || leaf.selector !== selector || leaf.commandId !== commandId) {
       throw new LedgerValidationError("CONTRADICTORY_EVIDENCE", `wrong manifest row ${id}`);
@@ -455,7 +372,7 @@ export function validateCandidateLedger(
   input: unknown,
   context: LedgerValidationContext,
 ): CandidateLedger {
-  precheckLeaves(input, 22);
+  precheckLeaves(input, DELIBERATION_CANDIDATE_LEAVES);
   const parsed = candidateSchema.safeParse(input);
   if (!parsed.success) {
     throw new LedgerValidationError(
@@ -481,7 +398,7 @@ export function validateCandidateLedger(
   ) {
     throw new LedgerValidationError("STALE_RUN", "candidate is stale or future-dated");
   }
-  validateManifest(ledger.leaves, 22);
+  validateManifest(ledger.leaves, DELIBERATION_CANDIDATE_LEAVES);
   validateCommands(
     ledger.commands,
     ledger.leaves,
@@ -495,7 +412,7 @@ export function validateCandidateLedger(
 }
 
 export function validateFinalLedger(input: unknown, context: LedgerValidationContext): FinalLedger {
-  precheckLeaves(input, 23);
+  precheckLeaves(input, DELIBERATION_LEAVES);
   const parsed = finalSchema.safeParse(input);
   if (!parsed.success) {
     throw new LedgerValidationError(
@@ -527,7 +444,7 @@ export function validateFinalLedger(input: unknown, context: LedgerValidationCon
   ) {
     throw new LedgerValidationError("STALE_RUN", "candidate is stale or future-dated");
   }
-  validateManifest(ledger.leaves, 23);
+  validateManifest(ledger.leaves, DELIBERATION_LEAVES);
   validateCommands(
     ledger.commands,
     ledger.leaves,
@@ -546,7 +463,7 @@ export function validateFinalLedger(input: unknown, context: LedgerValidationCon
     authority: ledger.authority,
     authoritySha256: ledger.authoritySha256,
     commands: ledger.commands.filter((command) => command.id !== "integrity"),
-    leaves: ledger.leaves.slice(0, 22),
+    leaves: ledger.leaves.slice(0, DELIBERATION_CANDIDATE_LEAVES.length),
   };
   if (ledger.candidateSha256 !== candidateDigest(candidate)) {
     throw new LedgerValidationError("CONTRADICTORY_EVIDENCE", "candidate digest mismatch");

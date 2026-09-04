@@ -213,7 +213,7 @@ export async function handleSlackAction(
     );
   const action = readStringParam(params, "action", { required: true });
   const accountId = readStringParam(params, "accountId");
-  const { resolveSlackAccount } = await loadSlackAccountsRuntime();
+  const { resolveSlackAccount, resolveSlackReadToken } = await loadSlackAccountsRuntime();
   const account = resolveSlackAccount({ cfg, accountId });
   const actionConfig = account.actions ?? cfg.channels?.slack?.actions;
   const isActionEnabled = createActionGate(actionConfig);
@@ -224,7 +224,7 @@ export async function handleSlackAction(
   // Choose the most appropriate token for Slack read/write operations.
   const getTokenForOperation = (operation: "read" | "write") => {
     if (operation === "read") {
-      return userToken ?? botToken;
+      return resolveSlackReadToken(account);
     }
     if (!allowUserWrites) {
       return botToken;

@@ -185,8 +185,94 @@ describe("deliberation hooks", () => {
     },
   );
 
+  it("normalizes bounded sender hints without changing authenticated intake identity", async () => {
+    const intake = vi.fn().mockResolvedValue({
+      recordId: "record-1",
+      inboundId: "inbound-1",
+      duplicate: false,
+    });
+    const handler = createInboundClaimHandler(config, { intake } as never, createLogger());
+    const aliases = [
+      "User One",
+      "USERONE",
+      " alias-a ",
+      "alias-A",
+      "alias-b",
+      "alias-c",
+      "alias-d",
+      "alias-e",
+      "alias-f",
+      "alias-g",
+      "alias-h",
+      "alias-i",
+      "bad\u0007alias",
+      "x".repeat(129),
+    ];
+
+    await expect(
+      handler(
+        {
+          ...canonicalMessageFacts,
+          channel: "discord",
+          content: '{"senderDisplayName":"Mallory"}',
+          isGroup: true,
+          senderId: "sender-1",
+          senderName: " User One ",
+          senderUsername: " userone ",
+          senderAliases: aliases,
+        },
+        { ...sourceContext, messageId: "m1" },
+      ),
+    ).resolves.toEqual({ handled: true });
+
+    expect(intake).toHaveBeenCalledWith(
+      expect.objectContaining({
+        senderId: "sender-1",
+        content: '{"senderDisplayName":"Mallory"}',
+        senderIdentityHints: {
+          senderDisplayName: "User One",
+          senderUsername: "userone",
+          senderAliases: [
+            "alias-a",
+            "alias-b",
+            "alias-c",
+            "alias-d",
+            "alias-e",
+            "alias-f",
+            "alias-g",
+            "alias-h",
+          ],
+        },
+      }),
+    );
+  });
+
+  it("omits sender hints when the channel provides none or only invalid values", async () => {
+    const intake = vi.fn().mockResolvedValue({
+      recordId: "record-1",
+      inboundId: "inbound-1",
+      duplicate: false,
+    });
+    const handler = createInboundClaimHandler(config, { intake } as never, createLogger());
+
+    await handler(
+      {
+        ...canonicalMessageFacts,
+        channel: "discord",
+        content: "message",
+        isGroup: true,
+        senderId: "sender-1",
+        senderName: "\u0000invalid",
+        senderAliases: ["x".repeat(129)],
+      },
+      { ...sourceContext, messageId: "m1" },
+    );
+
+    expect(intake.mock.calls[0]?.[0]).not.toHaveProperty("senderIdentityHints");
+  });
+
   it.each([
-    ["Discord root", "discord", "acct", "source", "m1", undefined, "m1"],
+    ["Discord root", "discord", "acct", "source", "m1", undefined, "m1", undefined],
     [
       "Slack root",
       "slack",
@@ -194,6 +280,7 @@ describe("deliberation hooks", () => {
       "C123",
       "1723640000.000100",
       undefined,
+      "1723640000.000100",
       "1723640000.000100",
     ],
     [
@@ -204,10 +291,20 @@ describe("deliberation hooks", () => {
       "1723640000.000200",
       "1723640000.000100",
       "1723640000.000100",
+      "1723640000.000100",
     ],
   ] as const)(
     "emits sourceThreadId for %s",
-    async (_name, provider, accountId, channelId, messageId, threadId, expected) => {
+    async (
+      _name,
+      provider,
+      accountId,
+      channelId,
+      messageId,
+      threadId,
+      expected,
+      deliveryThreadId,
+    ) => {
       const intake = vi.fn().mockResolvedValue({
         recordId: "record-1",
         inboundId: "inbound-1",
@@ -264,7 +361,7 @@ describe("deliberation hooks", () => {
             provider,
             account: accountId,
             channel: channelId,
-            threadId: expected,
+            ...(deliveryThreadId === undefined ? {} : { threadId: deliveryThreadId }),
           },
         }),
       );
@@ -712,7 +809,6 @@ describe("deliberation hooks", () => {
           provider: "discord",
           account: accountId,
           channel: "source",
-          threadId: "m1",
         },
         provider: "discord",
         providerEventId: "m1",
@@ -878,6 +974,15 @@ describe("deliberation hooks", () => {
     expect(result).toEqual({ handled: true });
     expect(result).not.toHaveProperty("reply");
     expect(intake).toHaveBeenCalledTimes(1);
+    expect(intake.mock.calls[0]?.[0]).toMatchObject({
+      providerEventId: event.messageId,
+      deliveryTarget: {
+        provider: "discord",
+        account: "default",
+        channel: sourceId,
+      },
+    });
+    expect(intake.mock.calls[0]?.[0].deliveryTarget).not.toHaveProperty("threadId");
 
     await expect(
       handler(
@@ -1021,7 +1126,17 @@ describe("deliberation hooks", () => {
   it("warns about KM failure without leaking message or media values", async () => {
     const intake = vi
       .fn()
-      .mockRejectedValue(new KmRequestError("http", 400, "SCHEMA_INVALID", "secret message"));
+      .mockRejectedValue(
+        new KmRequestError(
+          "intake",
+          "/deliberation/v1/intake",
+          "http",
+          400,
+          "SCHEMA_INVALID",
+          undefined,
+          "secret message",
+        ),
+      );
     const logger = createLogger();
     const handler = createInboundClaimHandler(config, { intake } as never, logger);
 

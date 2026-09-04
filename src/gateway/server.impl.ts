@@ -675,7 +675,7 @@ export async function startGatewayServer(
   }
   setRuntimeConfigSnapshot(cfgAtStart, startupLastGoodSnapshot.sourceConfig);
   const { prepareGatewayPluginBootstrap } = await loadStartupPluginsModule();
-  const pluginBootstrap = await startupTrace.measure("plugins.bootstrap", () =>
+  const pluginBootstrap = await startupTrace.measure("plugins.bootstrap", async () =>
     prepareGatewayPluginBootstrap({
       cfgAtStart,
       activationSourceConfig: startupActivationSourceConfig,
@@ -683,6 +683,7 @@ export async function startGatewayServer(
       pluginMetadataSnapshot: startupConfigLoad.pluginMetadataSnapshot,
       minimalTestGateway,
       log,
+      ...(!minimalTestGateway ? { channelRuntime: await getChannelRuntime() } : {}),
       loadRuntimePlugins: false,
       loadSetupRuntimePlugins: true,
     }),
@@ -1324,6 +1325,7 @@ export async function startGatewayServer(
         log,
         coreGatewayMethodNames,
         hostServices: pluginHostServices,
+        channelRuntime: await getChannelRuntime(),
         baseMethods,
         pluginLookUpTable: nextPluginLookUpTable,
       });
@@ -1459,7 +1461,7 @@ export async function startGatewayServer(
     if (!minimalTestGateway) {
       if (runtimePluginsLoaded && deferredConfiguredChannelPluginIds.length > 0) {
         const { reloadDeferredGatewayPlugins } = await loadGatewayPluginBootstrapModule();
-        const loaded = await startupTrace.measure("gateway.deferred-plugins", () =>
+        const loaded = await startupTrace.measure("gateway.deferred-plugins", async () =>
           reloadDeferredGatewayPlugins({
             cfg: gatewayPluginConfigAtStart,
             activationSourceConfig: startupActivationSourceConfig,
@@ -1467,6 +1469,7 @@ export async function startGatewayServer(
             log,
             coreGatewayMethodNames,
             hostServices: pluginHostServices,
+            channelRuntime: await getChannelRuntime(),
             baseMethods,
             pluginIds: startupPluginIds,
             pluginLookUpTable,
@@ -1599,6 +1602,7 @@ export async function startGatewayServer(
                     baseMethods,
                     coreGatewayMethodNames,
                     hostServices: pluginHostServices,
+                    channelRuntime: await getChannelRuntime(),
                     startupPluginIds,
                     pluginLookUpTable,
                     startupTrace,

@@ -1,0 +1,37 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T21:51:45+00:00",
+    "implementingStartedAt": "2026-08-25T20:49:01+00:00",
+    "taskFile": "plans/tasks/2026-08-25_fix-slack-deliberation-history-read-and-verify-against-the-c.md",
+    "taskId": "swift-dune-6107",
+    "title": "Fix Slack Deliberation history read and verify against the configured channel"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A regression test fails before the fix and passes afterward for the configured allowlist/default-account shape."
+    },
+    {
+      "id": "goal-002",
+      "summary": "Existing focused Slack action, monitor/history, and Deliberation history tests pass."
+    },
+    {
+      "id": "goal-003",
+      "summary": "The configured real channel/root is read successfully through the fixed method, or a precise sanitized external permission blocker is proven without claiming success."
+    },
+    {
+      "id": "goal-004",
+      "summary": "No provider writes and no config/spool/cron mutation occur."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Final note records commands, deterministic results, live-read result, files changed, and any remaining operator permission action."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-dune-6107-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-dune-6107",
+  "tddRequired": true
+}

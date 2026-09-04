@@ -101,14 +101,6 @@ function validHealthResponse() {
     listener: {
       protocolVersion: 1,
       startedAt: "2026-08-09T12:00:00Z",
-      sourceIdentity: {
-        status: "ok",
-        modules: {
-          "lib/deliberation_source_identity.py": { status: "ok", sha256: "a".repeat(64) },
-          "lib/deliberation_wire.py": { status: "ok", sha256: "b".repeat(64) },
-          "lib/deliberation_spool_contracts.py": { status: "ok", sha256: "c".repeat(64) },
-        },
-      },
     },
     controls: { "source-intake": true, claims: true, review: true, sender: false },
     runner: {
@@ -286,6 +278,11 @@ describe("KM contract parsing", () => {
       sourceTarget: "v1:discord:account-1:channel-1",
       sourceThreadId: "message-1",
       senderId: "sender-1",
+      senderIdentityHints: {
+        senderDisplayName: "Michal876876",
+        senderUsername: "michal876876",
+        senderAliases: ["michal876876#0"],
+      },
       occurredAt: "2026-08-04T12:50:19.483Z",
       receivedAt: "2026-08-04T12:50:21.838Z",
       content: "message",
@@ -295,24 +292,87 @@ describe("KM contract parsing", () => {
     expect(body.sourceThreadId).toBe("message-1");
     expect(body.pipelineId).toBe("discord-source");
     expect(body.deliveryTarget).toStrictEqual(producerAuthority.deliveryTarget);
+    expect(body.senderIdentityHints).toEqual({
+      senderDisplayName: "Michal876876",
+      senderUsername: "michal876876",
+      senderAliases: ["michal876876#0"],
+    });
     expect(body).not.toHaveProperty("source_thread_id");
+  });
+
+  it("returns duplicate intake identity from a local public-boundary response", async () => {
+    const client = createClient({
+      protocolVersion: 1,
+      recordId: "record-1",
+      inboundId: "inbound-1",
+      duplicate: true,
+    });
+
+    await expect(
+      client.intake({
+        ...producerAuthority,
+        provider: "discord",
+        providerEventId: "message-1",
+        sourceTarget: "v1:discord:account-1:channel-1",
+        sourceThreadId: "message-1",
+        senderId: "sender-1",
+        occurredAt: "2026-08-04T12:50:19.483Z",
+        receivedAt: "2026-08-04T12:50:21.838Z",
+        content: "message",
+      }),
+    ).resolves.toEqual({
+      recordId: "record-1",
+      inboundId: "inbound-1",
+      duplicate: true,
+    });
   });
 
   it("reports an unavailable credential at the credential stage", async () => {
     const client = createKmClient({ config, openclawConfig: {} as never, env: {} });
 
     await expect(client.health()).rejects.toMatchObject({
+      operation: "health",
+      path: "/deliberation/v1/health",
       stage: "credential",
       status: undefined,
       code: "UNKNOWN",
     });
   });
 
+  it("identifies a failed ready request without exposing listener data", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          protocolVersion: 1,
+          error: { code: "AUTH_INVALID", message: "credential and reviewed text" },
+        }),
+        { status: 401 },
+      ),
+    );
+    const client = createKmClient({
+      config,
+      openclawConfig: {} as never,
+      fetchImpl,
+      env: { KM_TOKEN: "test-only" },
+    });
+
+    const error = await client.ready().catch((caught: unknown) => caught);
+    expect(error).toMatchObject({
+      operation: "ready",
+      path: "/deliberation/v1/ready",
+      stage: "http",
+      status: 401,
+      code: "AUTH_INVALID",
+    });
+    expect(JSON.stringify(error)).not.toContain("credential and reviewed text");
+    expect(JSON.stringify(error)).not.toContain("test-only");
+  });
+
   it.each([
     {
       name: "transport",
       fetchImpl: vi.fn().mockRejectedValue(new Error("socket contains secret")),
-      expected: { stage: "transport", status: undefined, code: "UNKNOWN" },
+      expected: { stage: "transport", status: undefined, code: "UNKNOWN", cause: "transport" },
     },
     {
       name: "response-json",
@@ -356,6 +416,94 @@ describe("KM contract parsing", () => {
     await expect(client.health()).rejects.toMatchObject(expected);
   });
 
+  it("classifies Node transport caller aborts without exposing the error", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchImpl = vi.fn().mockRejectedValue(
+      Object.assign(new Error("abort contains secret"), {
+        name: "AbortError",
+        code: "ABORT_ERR",
+      }),
+    );
+    const client = createKmClient({
+      config,
+      openclawConfig: {} as never,
+      fetchImpl,
+      env: { KM_TOKEN: "test-only" },
+    });
+
+    await expect(client.health(controller.signal)).rejects.toMatchObject({
+      stage: "transport",
+      cause: "aborted",
+    });
+  });
+
+  it("gives caller cancellation precedence when the timeout also expires", async () => {
+    const controller = new AbortController();
+    let rejectTransport: ((reason: unknown) => void) | undefined;
+    const fetchImpl = vi.fn(
+      () =>
+        new Promise<Response>((_resolve, reject) => {
+          rejectTransport = reject;
+        }),
+    );
+    const client = createKmClient({
+      config: { ...config, km: { ...config.km, requestTimeoutMs: 100 } },
+      openclawConfig: {} as never,
+      fetchImpl,
+      env: { KM_TOKEN: "test-only" },
+    });
+
+    const result = client.health(controller.signal).catch((error: unknown) => error);
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce());
+    controller.abort();
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 110);
+    });
+    rejectTransport?.(
+      Object.assign(new Error("abort contains secret"), {
+        name: "AbortError",
+        code: "ABORT_ERR",
+      }),
+    );
+
+    await expect(result).resolves.toMatchObject({
+      stage: "transport",
+      cause: "aborted",
+    });
+  });
+
+  it("classifies Node transport timeout aborts without exposing the error", async () => {
+    const fetchImpl = vi.fn((_input: string | URL | Request, init?: RequestInit) => {
+      return new Promise<Response>((_resolve, reject) => {
+        const rejectAbort = () => {
+          reject(
+            Object.assign(new Error("timeout contains secret"), {
+              name: "AbortError",
+              code: "ABORT_ERR",
+            }),
+          );
+        };
+        if (init?.signal?.aborted) {
+          rejectAbort();
+        } else {
+          init?.signal?.addEventListener("abort", rejectAbort, { once: true });
+        }
+      });
+    });
+    const client = createKmClient({
+      config: { ...config, km: { ...config.km, requestTimeoutMs: 100 } },
+      openclawConfig: {} as never,
+      fetchImpl,
+      env: { KM_TOKEN: "test-only" },
+    });
+
+    await expect(client.health()).rejects.toMatchObject({
+      stage: "transport",
+      cause: "timeout",
+    });
+  });
+
   it("reports response-schema after a successful malformed intake response", async () => {
     const client = createClient({ protocolVersion: 1, recordId: "record-1" });
 
@@ -397,6 +545,32 @@ describe("KM contract parsing", () => {
         debounceSeconds: 17,
       } as never),
     ).rejects.toThrow("unsupported fields");
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("rejects unsupported nested sender hint fields before transport", async () => {
+    const fetchImpl = vi.fn();
+    const client = createKmClient({
+      config,
+      openclawConfig: {} as never,
+      fetchImpl,
+      env: { KM_TOKEN: "test-only" },
+    });
+
+    await expect(
+      client.intake({
+        ...producerAuthority,
+        provider: "discord",
+        providerEventId: "message-1",
+        sourceTarget: "v1:discord:account-1:channel-1",
+        sourceThreadId: "message-1",
+        senderId: "sender-1",
+        senderIdentityHints: { inferredFromContent: "Mallory" },
+        occurredAt: "2026-08-04T12:50:19.483Z",
+        receivedAt: "2026-08-04T12:50:21.838Z",
+        content: "message",
+      } as never),
+    ).rejects.toThrow();
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -650,6 +824,47 @@ describe("KM contract parsing", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  it("accepts persisted messages with optional sender hints", async () => {
+    const client = createClient({
+      protocolVersion: 1,
+      record: {
+        ...validRecordAuthority(),
+        recordId: "record-1",
+        state: "SENT",
+        version: 9,
+        messages: [
+          {
+            inboundId: "inbound-1",
+            provider: "discord",
+            providerEventId: "message-1",
+            pipelineId: "discord-source",
+            deliveryTarget: validDeliveryEnvelope().deliveryTarget,
+            senderId: "1276273857921024073",
+            senderIdentityHints: {
+              senderDisplayName: "Michal876876",
+              senderUsername: "michal876876",
+            },
+            eventType: "message",
+            occurredAt: "2026-08-30T12:00:00Z",
+            receivedAt: "2026-08-30T12:00:01Z",
+            content: "message",
+          },
+        ],
+        delivery: { attempts: [validTerminalAttempt()] },
+      },
+    });
+
+    await expect(
+      client.completeDelivery({
+        reservation: validReservation(),
+        providerAttemptId: "provider-1",
+        outcome: "SENT",
+        providerReceiptId: "receipt-1",
+        providerMessageId: "message-1",
+      }),
+    ).resolves.toMatchObject({ recordId: "record-1", state: "SENT" });
+  });
+
   it("emits only transport metadata accepted by the closed KM contract", async () => {
     const contract = JSON.parse(
       await readFile(new URL("../contracts/km-wire-v1.json", import.meta.url), "utf8"),
@@ -702,6 +917,64 @@ describe("KM contract parsing", () => {
     }
   });
 
+  it("does not duplicate the canonical API prefix from a configured endpoint", async () => {
+    let requestedPath: string | undefined;
+    const server = createServer((request, response) => {
+      requestedPath = request.url;
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({ protocolVersion: 1, items: [], nextCursor: null }));
+    });
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", resolve);
+    });
+
+    try {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        throw new Error("missing test listener address");
+      }
+      const client = createKmClient({
+        config: {
+          ...config,
+          km: {
+            ...config.km,
+            endpoint: `http://127.0.0.1:${address.port}/deliberation/v1`,
+          },
+        },
+        openclawConfig: {} as never,
+        env: { KM_TOKEN: "test-only" },
+      });
+
+      await expect(client.ready()).resolves.toEqual({ items: [], nextCursor: null });
+      expect(requestedPath).toBe("/deliberation/v1/ready");
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  });
+
+  it("preserves a noncanonical endpoint parent prefix", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ protocolVersion: 1, items: [], nextCursor: null })),
+      );
+    const client = createKmClient({
+      config: {
+        ...config,
+        km: { ...config.km, endpoint: "https://km.invalid/api" },
+      },
+      openclawConfig: {} as never,
+      fetchImpl,
+      env: { KM_TOKEN: "test-only" },
+    });
+
+    await client.ready();
+
+    expect(requestUrl(fetchImpl.mock.calls[0]?.[0]).pathname).toBe("/api/deliberation/v1/ready");
+  });
+
   it("uses the canonical protocol header and reservations route", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       new Response(
@@ -747,15 +1020,31 @@ describe("KM contract parsing", () => {
     await expect(client.health()).rejects.toThrow("invalid health response");
   });
 
-  it("accepts a degraded listener identity as a valid health response", async () => {
+  it("accepts health without source-file identity metadata", async () => {
+    const health = validHealthResponse();
+    const client = createClient({
+      ...health,
+      listener: {
+        protocolVersion: health.listener.protocolVersion,
+        startedAt: health.listener.startedAt,
+      },
+    });
+
+    await expect(client.health()).resolves.toMatchObject({
+      protocolVersion: 1,
+      status: "ok",
+      listener: {
+        protocolVersion: 1,
+        startedAt: "2026-08-09T12:00:00Z",
+      },
+    });
+  });
+
+  it("accepts a degraded public health response", async () => {
     const health = validHealthResponse();
     const client = createClient({
       ...health,
       status: "degraded",
-      listener: {
-        ...health.listener,
-        sourceIdentity: { ...health.listener.sourceIdentity, status: "unavailable" },
-      },
     });
 
     await expect(client.health()).resolves.toMatchObject({

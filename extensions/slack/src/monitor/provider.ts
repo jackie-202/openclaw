@@ -30,6 +30,7 @@ import {
   resolveSlackAccount,
   resolveSlackAccountAllowFrom,
   resolveSlackAccountDmPolicy,
+  resolveSlackReadToken,
 } from "../accounts.js";
 import { isSlackAnyNativeApprovalClientEnabled } from "../approval-native-gates.js";
 import { resolveSlackWebClientOptions } from "../client-options.js";
@@ -232,7 +233,7 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
     log: (message) => runtime.log?.(warn(message)),
   });
 
-  const resolveToken = account.userToken || botToken;
+  const resolveToken = resolveSlackReadToken(account, botToken);
   const useAccessGroups = cfg.commands?.useAccessGroups !== false;
   const reactionMode = slackCfg.reactionNotifications ?? "own";
   const reactionAllowlist = slackCfg.reactionAllowlist ?? [];
@@ -550,7 +551,7 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
     channelId: "slack",
     accountId: account.accountId,
     capability: CHANNEL_HISTORY_RUNTIME_CONTEXT_CAPABILITY,
-    context: createSlackChannelHistoryContext({ client: app.client, token: botToken }),
+    context: createSlackChannelHistoryContext({ client: app.client, token: resolveToken }),
     abortSignal: opts.abortSignal,
   });
 

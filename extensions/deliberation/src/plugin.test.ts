@@ -2,7 +2,8 @@ import type { OpenClawPluginService } from "openclaw/plugin-sdk/plugin-entry";
 import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import plugin from "../index.js";
-import { deriveProviderAttemptId } from "./final-adapter.js";
+import { deriveProviderIdempotencyKey } from "./final-adapter.js";
+import { KmRequestError } from "./km-client.js";
 
 const { createKmClientMock } = vi.hoisted(() => ({ createKmClientMock: vi.fn() }));
 
@@ -107,17 +108,25 @@ function registerPlugin(
   const loadAdapter = vi.fn((provider: string) => ({
     sendTextAttempt: provider === "slack" ? slackSendTextAttempt : sendTextAttempt,
   }));
+  const logger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
   const api = createTestPluginApi({
     config: {
       channels: { slack: { accounts: { "workspace-delivery": {} } } },
     } as never,
     pluginConfig,
+    logger,
     registerService: (service) => services.push(service),
     runtime: { channel: { outbound: { loadAdapter } }, state: createStateRuntime() } as never,
   });
   plugin.register(api);
   return {
     api,
+    logger,
     services,
     loadAdapter,
     sendText: sendTextAttempt,
@@ -136,6 +145,7 @@ describe("deliberation plugin boundary", () => {
     createKmClientMock.mockReturnValue(km);
     const on = vi.fn();
     const registerService = vi.fn();
+    const registerCli = vi.fn();
     const registerGatewayMethod = vi.fn();
 
     plugin.register(
@@ -143,6 +153,7 @@ describe("deliberation plugin boundary", () => {
         pluginConfig,
         on,
         registerService,
+        registerCli,
         registerGatewayMethod,
         runtime: {
           channel: { outbound: { loadAdapter: vi.fn().mockReturnValue({ sendText: vi.fn() }) } },
@@ -165,7 +176,10 @@ describe("deliberation plugin boundary", () => {
       { priority: 1000 },
       { priority: 1000 },
     ]);
-    expect(registerService).toHaveBeenCalledTimes(1);
+    expect(registerService.mock.calls.map(([service]) => service.id)).toEqual([
+      "deliberation-final-delivery",
+    ]);
+    expect(registerCli).toHaveBeenCalledTimes(1);
     expect(registerGatewayMethod.mock.calls.map(([name]) => name)).toEqual([
       "deliberation.status",
       "deliberation.health",
@@ -176,6 +190,104 @@ describe("deliberation plugin boundary", () => {
       { scope: "operator.read" },
       { scope: "operator.read" },
     ]);
+  });
+
+  it.each([
+    {
+      classification: "missing_scope",
+      needed: "channels:history,groups:history,not a scope",
+      provided: "chat:write,channels:read,xoxp-secret",
+      expectedScopes: {
+        neededScopes: ["channels:history", "groups:history"],
+        providedScopes: ["chat:write", "channels:read"],
+      },
+    },
+    { classification: "not_in_channel" },
+    { classification: "channel_not_found" },
+    {
+      classification: "identity_mapping_unavailable",
+      internalMessage: "Slack thread identity mapping is unavailable or conflicting",
+    },
+    {
+      classification: "runtime_context_unavailable",
+      internalMessage: "Slack account history runtime is unavailable",
+    },
+    {
+      classification: "root_not_found",
+      internalMessage: "Slack thread root is unavailable or conflicting",
+    },
+  ])("returns only safe Slack $classification history failure diagnostics", async (testCase) => {
+    const registerGatewayMethod = vi.fn();
+    const sourceTarget = "v1:slack:default:C0BJW0FALSC";
+    const providerError = testCase.internalMessage
+      ? new Error(testCase.internalMessage)
+      : Object.assign(new Error("request failed with xoxp-secret and unrelated message content"), {
+          code: "slack_webapi_platform_error",
+          data: {
+            error: testCase.classification,
+            ...(testCase.needed ? { needed: testCase.needed } : {}),
+            ...(testCase.provided ? { provided: testCase.provided } : {}),
+          },
+          headers: { authorization: "Bearer xoxp-secret" },
+        });
+    createKmClientMock.mockReturnValue(createKm());
+    plugin.register(
+      createTestPluginApi({
+        pluginConfig: {
+          ...pluginConfig,
+          pipelines: [
+            {
+              id: "slack-default-configured-channel",
+              source: { channel: "slack", accountId: "default", target: "C0BJW0FALSC" },
+            },
+          ],
+        },
+        registerGatewayMethod,
+        runtime: {
+          channel: {
+            outbound: { loadAdapter: vi.fn() },
+            runtimeContexts: {
+              get: vi.fn().mockReturnValue({
+                readMessage: vi.fn().mockRejectedValue(providerError),
+                readThreadPage: vi.fn(),
+              }),
+            },
+          },
+          state: {
+            openKeyedStore: vi.fn().mockReturnValue({
+              lookup: vi.fn().mockResolvedValue({
+                sourceTarget,
+                providerEventId: "1787683185.523829",
+                threadId: "1787683185.523829",
+              }),
+              registerIfAbsent: vi.fn(),
+            }),
+          },
+        } as never,
+      }),
+    );
+    const handler = registerGatewayMethod.mock.calls.find(
+      ([method]) => method === "deliberation.history.read",
+    )?.[1];
+    const respond = vi.fn();
+
+    await handler?.({
+      params: { schemaVersion: 2, sourceTarget, after: "1787683185.523829" },
+      respond,
+    });
+
+    expect(respond).toHaveBeenCalledWith(false, undefined, {
+      code: "SOURCE_HISTORY_UNAVAILABLE",
+      message: `source history read failed: ${testCase.classification}`,
+      details: {
+        provider: "slack",
+        classification: testCase.classification,
+        ...testCase.expectedScopes,
+      },
+    });
+    expect(JSON.stringify(respond.mock.calls)).not.toMatch(
+      /xoxp-secret|authorization|message content/,
+    );
   });
 
   it("does not register final delivery while Deliberation is disabled", () => {
@@ -220,7 +332,7 @@ describe("deliberation plugin boundary", () => {
       to: "channel:channel-2",
       threadId: "thread-2",
       text: "reply",
-      idempotencyKey: deriveProviderAttemptId("attempt-1"),
+      idempotencyKey: deriveProviderIdempotencyKey("attempt-1"),
     });
     expect(km.completeDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -273,7 +385,7 @@ describe("deliberation plugin boundary", () => {
         to: "channel:C222",
         threadId: "1712345678.123456",
         text: "reply",
-        idempotencyKey: deriveProviderAttemptId("attempt-1"),
+        idempotencyKey: deriveProviderIdempotencyKey("attempt-1"),
       });
       expect(km.completeDelivery).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -314,13 +426,12 @@ describe("deliberation plugin boundary", () => {
     expect(km.completeDelivery).toHaveBeenCalledWith(expect.objectContaining({ outcome: "SENT" }));
   });
 
-  it("delivers a Discord source anchor through the channel-owned anchor operation", async () => {
+  it("delivers a Discord root target without forwarding a message id as threadId", async () => {
     vi.useFakeTimers();
     const target = {
       provider: "discord",
       account: "acct-2",
       channel: "channel-2",
-      threadId: "source-message-1",
     } as const;
     const km = createKm();
     km.ready.mockResolvedValue({
@@ -340,14 +451,14 @@ describe("deliberation plugin boundary", () => {
     await services[0]?.stop?.({ config: api.config, stateDir: "/tmp", logger: api.logger });
 
     expect(sendText).toHaveBeenCalledTimes(1);
-    expect(sendText).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: "channel:channel-2",
-        threadId: "source-message-1",
-        text: "reply",
-        idempotencyKey: deriveProviderAttemptId("attempt-1"),
-      }),
-    );
+    expect(sendText).toHaveBeenCalledWith({
+      cfg: api.config,
+      accountId: "acct-2",
+      to: "channel:channel-2",
+      text: "reply",
+      idempotencyKey: deriveProviderIdempotencyKey("attempt-1"),
+    });
+    expect(sendText.mock.calls[0]?.[0]).not.toHaveProperty("threadId");
   });
 
   it("fails an oversized result without sending multiple Discord messages", async () => {
@@ -473,6 +584,32 @@ describe("deliberation plugin boundary", () => {
 
     expect(sendText).not.toHaveBeenCalled();
     expect(km.reserve).not.toHaveBeenCalled();
+  });
+
+  it("logs safe KM request metadata and retries after a ready failure", async () => {
+    vi.useFakeTimers();
+    const km = createKm();
+    const failure = new KmRequestError(
+      "ready",
+      "/deliberation/v1/ready",
+      "http",
+      401,
+      "AUTH_INVALID",
+    );
+    km.ready.mockRejectedValueOnce(failure).mockResolvedValue({ items: [] });
+    const { api, logger, services, sendText } = registerPlugin(km);
+
+    await services[0]?.start({ config: api.config, stateDir: "/tmp", logger: api.logger });
+    await vi.advanceTimersByTimeAsync(5_000);
+    await services[0]?.stop?.({ config: api.config, stateDir: "/tmp", logger: api.logger });
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      "deliberation: final delivery tick failed: operation=ready path=/deliberation/v1/ready stage=http status=401 code=AUTH_INVALID",
+    );
+    expect(JSON.stringify(logger.warn.mock.calls)).not.toContain("reply");
+    expect(km.ready).toHaveBeenCalledTimes(2);
+    expect(km.reserve).not.toHaveBeenCalled();
+    expect(sendText).not.toHaveBeenCalled();
   });
 
   it("leaves a thrown provider outcome unresolved", async () => {

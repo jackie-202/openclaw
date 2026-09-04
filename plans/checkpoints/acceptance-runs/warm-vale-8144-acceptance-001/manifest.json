@@ -1,0 +1,33 @@
+{
+  "concurrentContext": [
+    {
+      "execution": {
+        "completedDuringEvaluation": true,
+        "finishedAt": "2026-08-25T10:34:01+00:00",
+        "overlappedEvaluation": true,
+        "startedAt": "2026-08-25T10:01:51+00:00"
+      },
+      "taskFile": "plans/tasks/2026-08-25_add-openclaw-side-of-deployed-deliberation-delivery-probe.md",
+      "taskId": "bold-wave-8562",
+      "title": "Add OpenClaw side of deployed Deliberation delivery probe"
+    }
+  ],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T10:40:08+00:00",
+    "implementingStartedAt": "2026-08-25T10:28:23+00:00",
+    "taskFile": "plans/tasks/2026-08-25_followup-warm-vale-8144-fix-deliberation-final-delivery-plugin-km-request-failure.md",
+    "taskId": "warm-vale-8144",
+    "title": "[acceptance-fix] Fix Deliberation final-delivery plugin KM request failure: goal-001: Fix Deliberation final-delivery pl"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Fix Deliberation final-delivery plugin KM request failure: goal-001: Fix Deliberation final-delivery pl"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-vale-8144-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-vale-8144",
+  "tddRequired": true
+}

@@ -9,12 +9,11 @@ import {
   buildSanitizedChildEnvironment,
   candidateDigest,
   commandIdentityDigest,
+  DELIBERATION_CANDIDATE_LEAVES,
   DELIBERATION_FOCUSED_VITEST_CONFIG,
   DELIBERATION_LEAVES,
   DELIBERATION_SUPPORT_COMMANDS,
   DELIBERATION_VITEST_TIMEOUT_MS,
-  KM_AUTHORITY,
-  parseJunitReport,
   parseVitestJsonReport,
   validateCandidateLedger,
   validateFinalLedger,
@@ -39,15 +38,13 @@ it("routes focused Deliberation support through the generic extensions project",
   expect(DELIBERATION_FOCUSED_VITEST_CONFIG).toBe("test/vitest/vitest.extensions.config.ts");
 });
 
-function fixtureAuthority(kmHead = "f".repeat(40)): GateAuthority {
+it("contains no external KM implementation command", () => {
+  expect(DELIBERATION_LEAVES.map((leaf) => leaf[2])).not.toContain("km-integration");
+});
+
+function fixtureAuthority(): GateAuthority {
   return {
     openclaw: { root, revision, clean: true },
-    km: {
-      repositoryRoot: KM_AUTHORITY.repositoryRoot,
-      root: KM_AUTHORITY.root,
-      head: kmHead,
-      files: KM_AUTHORITY.files.map((file) => ({ path: file.path, sha256: file.sha256 })),
-    },
   };
 }
 
@@ -80,7 +77,7 @@ function fixtureCommand(
     stderrSha256: "0".repeat(64),
     report: selectors.length
       ? {
-          format: id === "km-integration" ? "junit" : "vitest-json",
+          format: "vitest-json",
           sha256: "0".repeat(64),
           bytes: 1,
           passed: selectors.length,
@@ -92,17 +89,15 @@ function fixtureCommand(
   };
 }
 
-function validCandidate(options: { kmHead?: string } = {}): CandidateLedger {
-  const authority = fixtureAuthority(options.kmHead);
+function validCandidate(): CandidateLedger {
+  const authority = fixtureAuthority();
   const authoritySha256 = authorityDigest(authority);
-  const acceptanceIds = ["discord", "slack", "km-integration", "package"];
+  const acceptanceIds = [...new Set(DELIBERATION_CANDIDATE_LEAVES.map((leaf) => leaf[2]))];
   const commands = acceptanceIds.map((id, index) =>
     fixtureCommand(
       id,
       "acceptance",
-      DELIBERATION_LEAVES.slice(0, 22)
-        .filter((leaf) => leaf[2] === id)
-        .map((leaf) => leaf[1]),
+      DELIBERATION_CANDIDATE_LEAVES.filter((leaf) => leaf[2] === id).map((leaf) => leaf[1]),
       authoritySha256,
       index,
     ),
@@ -122,7 +117,7 @@ function validCandidate(options: { kmHead?: string } = {}): CandidateLedger {
     authority,
     authoritySha256,
     commands,
-    leaves: DELIBERATION_LEAVES.slice(0, 22).map(([id, selector, commandId]) => ({
+    leaves: DELIBERATION_CANDIDATE_LEAVES.map(([id, selector, commandId]) => ({
       id,
       selector,
       commandId,
@@ -157,7 +152,7 @@ function validFinal(): FinalLedger {
   const integrity = fixtureCommand(
     "integrity",
     "acceptance",
-    [DELIBERATION_LEAVES[22][1]],
+    [DELIBERATION_LEAVES.at(-1)![1]],
     candidate.authoritySha256,
     candidate.commands.length + 1,
   );
@@ -177,22 +172,15 @@ function validFinal(): FinalLedger {
     leaves: [
       ...candidate.leaves,
       {
-        id: DELIBERATION_LEAVES[22][0],
-        selector: DELIBERATION_LEAVES[22][1],
-        commandId: DELIBERATION_LEAVES[22][2],
+        id: DELIBERATION_LEAVES.at(-1)![0],
+        selector: DELIBERATION_LEAVES.at(-1)![1],
+        commandId: DELIBERATION_LEAVES.at(-1)![2],
         status: "Green",
         observedAt: integrity.finishedAt,
       },
     ],
   };
 }
-
-it("accepts moving KM HEAD when all authoritative hashes match", () => {
-  const kmHead = "a".repeat(40);
-  expect(validateCandidateLedger(validCandidate({ kmHead }), context()).authority.km.head).toBe(
-    kmHead,
-  );
-});
 
 it("rejects a live execution environment before running children", () => {
   expect(() => assertNoLiveEnvironment({ OPENCLAW_LIVE_TEST: "1" })).toThrow(
@@ -308,31 +296,16 @@ it("normalizes nested Vitest names to exact leaf titles", () => {
   expect(report.selectors).toEqual(["OR-01 exclusive-owner-before-ordinary-side-effects"]);
 });
 
-it("keeps only passed JUnit testcase selectors", () => {
-  const report = parseJunitReport(
-    Buffer.from(`<?xml version="1.0"?>
-      <testsuites><testsuite name="support OR-99 parent">
-        <testcase name="OR-07 authenticated-event-creates-one-record"></testcase>
-        <testcase name="OR-08 skipped"><skipped/></testcase>
-        <testcase name="OR-09 failed"><failure>no</failure></testcase>
-        <testcase name="support self closing"/>
-      </testsuite></testsuites>`),
+it("accepts only the exact local candidate manifest", () => {
+  expect(validateCandidateLedger(validCandidate(), context()).leaves).toHaveLength(
+    DELIBERATION_CANDIDATE_LEAVES.length,
   );
-  expect(report).toMatchObject({ passed: 2, failed: 1, skipped: 1 });
-  expect(report.selectors).toEqual([
-    "OR-07 authenticated-event-creates-one-record",
-    "support self closing",
-  ]);
 });
 
-it("accepts only the exact fresh 22-row candidate", () => {
-  expect(validateCandidateLedger(validCandidate(), context()).leaves).toHaveLength(22);
-});
-
-it("accepts only the exact 23-row final ledger bound to its candidate", () => {
+it("accepts only the exact local final ledger bound to its candidate", () => {
   expect(
     validateFinalLedger(validFinal(), context("2026-08-23T12:10:03.000Z")).leaves,
-  ).toHaveLength(23);
+  ).toHaveLength(DELIBERATION_LEAVES.length);
 });
 
 it("rejects unknown fields", () => {
@@ -343,14 +316,14 @@ it("rejects unknown fields", () => {
 
 it("rejects a final ledger whose candidate evidence changed", () => {
   const final = validFinal();
-  final.leaves[10].observedAt = final.commands[0].finishedAt;
+  final.leaves[0].observedAt = final.commands[1].finishedAt;
   expect(() => validateFinalLedger(final, context())).toThrow();
 });
 
 it("rejects duplicate reporter results", () => {
   const candidate = validCandidate();
-  const command = candidate.commands.find(({ id }) => id === "km-integration");
-  command!.report!.selectors.push(DELIBERATION_LEAVES[6][1]);
+  const command = candidate.commands.find(({ id }) => id === "discord");
+  command!.report!.selectors.push(DELIBERATION_LEAVES[0][1]);
   expect(() => validateCandidateLedger(candidate, context())).toThrow(
     "exactly one reporter result",
   );
@@ -368,17 +341,19 @@ it("allows expected skips in supporting suites without skipping an OR leaf", () 
     skipped: 1,
     selectors: ["supporting test"],
   };
-  expect(validateCandidateLedger(candidate, context()).leaves).toHaveLength(22);
+  expect(validateCandidateLedger(candidate, context()).leaves).toHaveLength(
+    DELIBERATION_CANDIDATE_LEAVES.length,
+  );
 });
 
 it.each([
-  ["duplicate", (value: CandidateLedger) => value.leaves.push(value.leaves[6])],
-  ["skipped", (value: CandidateLedger) => (value.leaves[11].status = "Skipped")],
-  ["red", (value: CandidateLedger) => (value.leaves[15].status = "Red")],
+  ["duplicate", (value: CandidateLedger) => value.leaves.push(value.leaves[0])],
+  ["skipped", (value: CandidateLedger) => (value.leaves[1].status = "Skipped")],
+  ["red", (value: CandidateLedger) => (value.leaves[2].status = "Red")],
   ["contradictory", (value: CandidateLedger) => (value.commands[0].exitCode = 1)],
   [
     "wrong authority",
-    (value: CandidateLedger) => (value.authority.km.files[0].sha256 = "f".repeat(64)),
+    (value: CandidateLedger) => (value.authority.openclaw.root = "/tmp/other-checkout"),
   ],
 ])("rejects %s candidate evidence", (_name, mutate) => {
   const candidate = validCandidate();
@@ -403,7 +378,7 @@ it("rejects a fresh finalization around stale candidate evidence", () => {
   const integrity = final.commands.find(({ id }) => id === "integrity")!;
   integrity.startedAt = "2026-08-24T12:10:01.100Z";
   integrity.finishedAt = "2026-08-24T12:10:01.500Z";
-  final.leaves[22].observedAt = integrity.finishedAt;
+  final.leaves.at(-1)!.observedAt = integrity.finishedAt;
   final.finalizedAt = "2026-08-24T12:10:02.000Z";
   expect(() => validateFinalLedger(final, context("2026-08-24T12:10:03.000Z"))).toThrow(
     "candidate is stale",
@@ -439,7 +414,7 @@ it.runIf(Boolean(process.env.OPENCLAW_DELIBERATION_GATE_CANDIDATE))(
       openclawRevision: expectedRevision,
     });
     expect(validated.leaves.map((leaf) => leaf.id)).toEqual(
-      DELIBERATION_LEAVES.slice(0, 22).map((leaf) => leaf[0]),
+      DELIBERATION_CANDIDATE_LEAVES.map((leaf) => leaf[0]),
     );
   },
 );

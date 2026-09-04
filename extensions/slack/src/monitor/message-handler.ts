@@ -26,6 +26,7 @@ import {
   buildSlackDebounceKey,
   buildTopLevelSlackConversationKey,
 } from "./message-handler/debounce-key.js";
+import { resolveSlackSenderIdentity } from "./message-handler/sender-identity.js";
 import { resolveSlackTimestampMs } from "./message-handler/timestamp.js";
 import { createSlackThreadTsResolver } from "./thread-resolution.js";
 
@@ -292,6 +293,10 @@ export function createSlackMessageHandler(params: {
     }
     if (policy.kind === "exclusive" || policy.kind === "ambiguous") {
       const text = message.text ?? "";
+      const senderIdentity = await resolveSlackSenderIdentity({
+        message,
+        resolveUserName: ctx.resolveUserName,
+      });
       const textForCommandDetection = stripSlackMentionsForCommandDetection(text);
       const isDirectMessage =
         message.channel_type === "im" || (!message.channel_type && message.channel.startsWith("D"));
@@ -319,6 +324,8 @@ export function createSlackMessageHandler(params: {
           accountId: ctx.accountId,
           conversationId: message.channel,
           senderId: message.user ?? message.bot_id,
+          senderName: senderIdentity.displayName,
+          senderUsername: senderIdentity.username,
           threadId: message.thread_ts ?? ambiguousThreadId,
           messageId: providerEventId,
           isGroup: !isDirectMessage,

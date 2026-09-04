@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Fix Deliberation Discord root-channel delivery routing: goal-001: The production `Unknown Channel` fail"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-wave-6798-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bright-wave-6798"
+}

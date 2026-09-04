@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T11:06:30+00:00",
+    "implementingStartedAt": "2026-08-25T10:48:46+00:00",
+    "taskFile": "plans/tasks/2026-08-25_followup-dark-cove-9893-acceptance-fix-fix-deliberation-final-delivery-plugin-km-req.md",
+    "taskId": "dark-cove-9893",
+    "title": "[acceptance-fix] [acceptance-fix] Fix Deliberation final-delivery plugin KM request failure: goal-001: Fix Deliberation "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Fix Deliberation final-delivery plugin KM request failure: goal-001: Fix Deliberation"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "dark-cove-9893-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "dark-cove-9893",
+  "tddRequired": true
+}

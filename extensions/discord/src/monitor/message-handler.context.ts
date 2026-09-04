@@ -112,12 +112,8 @@ export async function buildDiscordMessageProcessContext(params: {
   const forumContextLine = isForumStarter ? `[Forum parent: #${forumParentSlug}]` : null;
   const groupChannel = isGuildMessage && displayChannelSlug ? `#${displayChannelSlug}` : undefined;
   const groupSubject = isDirectMessage ? undefined : groupChannel;
-  const senderName = sender.isPluralKit
-    ? (sender.name ?? author.username)
-    : (data.member?.nickname ?? author.globalName ?? author.username);
-  const senderUsername = sender.isPluralKit
-    ? (sender.tag ?? sender.name ?? author.username)
-    : author.username;
+  const senderName = sender.displayName ?? sender.name ?? author.username;
+  const senderUsername = sender.username ?? sender.tag ?? sender.name ?? author.username;
   const { groupSystemPrompt, ownerAllowFrom, untrustedContext } = buildDiscordInboundAccessContext({
     channelConfig,
     guildInfo,

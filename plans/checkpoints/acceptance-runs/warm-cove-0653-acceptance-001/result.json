@@ -1,0 +1,72 @@
+{
+  "classification": "evidence_reject",
+  "findings": [
+    {
+      "claim": "Relevant build and Deliberation tests pass with canonical verification evidence.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-003"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied final note reports local build and test passes, but the canonical Test Gate status is not run and no Test Gate evidence exists.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The caller assigns test execution and interpretation exclusively to Test Gate, so agent-authored local test summaries cannot establish the explicit test goal for acceptance.",
+      "required": "Provide canonical Test Gate evidence establishing the relevant build and Deliberation test result.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-cove-0653.final-note.md:Verification"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Running Gateway PID/start time is newer than the final relevant build artifact."
+    },
+    {
+      "id": "goal-002",
+      "status": "MET",
+      "summary": "Built/runtime code uses a provider idempotency key of at most 25 characters while KM attempt identity remains stable."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "Relevant build and Deliberation tests pass."
+    },
+    {
+      "id": "goal-004",
+      "status": "MET",
+      "summary": "Plugin and listener deployment/health verification passes after restart."
+    },
+    {
+      "id": "goal-005",
+      "status": "MET",
+      "summary": "No post-restart recurrence of the Discord idempotency-length rejection."
+    },
+    {
+      "id": "goal-006",
+      "status": "MET",
+      "summary": "If fresh traffic exists, it reaches `SENT` with receipt evidence exactly once. Otherwise the final note clearly states that fresh-traffic E2E proof is still pending."
+    },
+    {
+      "id": "goal-007",
+      "status": "MET",
+      "summary": "No terminal historical record is manually recovered or resent."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-cove-0653-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "warm-cove-0653"
+}

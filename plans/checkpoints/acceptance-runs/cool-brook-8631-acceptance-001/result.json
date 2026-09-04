@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Fix: Deliberation final delivery \u2014 Discord idempotency key exceeds 25 chars"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "cool-brook-8631-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "cool-brook-8631"
+}

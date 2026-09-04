@@ -1,5 +1,53 @@
 # Agent Changelog
 
+## 2026-08-31
+
+**Slack Deliberation freshness now sees newer top-level channel messages**
+
+Freshness evaluation now includes newer top-level channel messages, so channel activity advances the deliberation freshness signal instead of being ignored.
+
+## 2026-08-30
+
+**Trusted Discord sender names are preserved in Deliberation intake**
+
+The Deliberation listener request now carries the opaque sender ID together with bounded display-name and username indicators when trusted sender metadata is present. That keeps the identity-resolution signal available instead of stripping it away at intake.
+
+**Deliberation intake keeps trusted sender names with the opaque ID**
+
+A Discord event with trusted sender metadata now reaches the Deliberation listener request with the opaque sender ID plus bounded display-name and username indicators. That preserves the trusted identity signal for People Intel resolution instead of collapsing the payload to ID-only data.
+
+## 2026-08-26
+
+**OpenClaw removes its reverse dependency on KM Deliberation source layout**
+
+## 2026-08-25
+
+**Slack Deliberation history read now uses the configured channel**
+
+The history-read path is bound to the configured Slack channel for the deliberation flow, so lookups follow the intended channel configuration.
+
+**Discord root-channel deliveries route without threadId**
+
+Ordinary Discord root-channel deliveries are handled on the root channel path instead of requiring a threadId, removing the production Unknown Channel failure for root-post delivery.
+
+**Deliberation Discord idempotency keys are capped at 25 characters**
+
+The Deliberation Discord path now constrains the provider idempotency key to 25 characters, matching the downstream limit called out in the evidence. This makes the built runtime align with the accepted delivery boundary instead of emitting overlong keys.
+
+**Discord idempotency keys stay within the 25-character limit**
+
+The deliberation final-delivery path now constrains the Discord idempotency key to the platform's 25-character limit, preventing overlong keys from reaching the API and being rejected.
+
+**Deliberation plugin completes KM requests instead of failing**
+
+The plugin's KM request path now returns successfully instead of aborting with a failure at request time.
+
+## 2026-08-24
+
+**Deliberation final-delivery service registers one owner and processes one ready item per tick**
+
+When Deliberation is enabled, the plugin registers exactly one `deliberation-final-delivery` service; when disabled, it registers none. Each service tick handles at most one ready item, keeping the delivery loop single-step and bounded.
+
 ## 2026-08-23
 
 **OpenClaw Deliberation converges on the canonical KM owner behind a cross-repository gate**

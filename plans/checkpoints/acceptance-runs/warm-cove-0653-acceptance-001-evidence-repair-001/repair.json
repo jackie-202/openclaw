@@ -1,0 +1,27 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/warm-cove-0653.evidence.md",
+      "provenance": "evidence_repair:warm-cove-0653-acceptance-001-evidence-repair-001",
+      "size": 332
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/warm-cove-0653.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/warm-cove-0653-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "c810e68835a128c4dbd5e77db2208ab7b43bcce2",
+  "escalationReason": "exact_command_outcome_evidence_unavailable",
+  "finishedAt": "2026-08-25T15:48:11.276745+00:00",
+  "gaps": [],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [],
+  "repairRunId": "warm-cove-0653-acceptance-001-evidence-repair-001",
+  "sourceRunId": "warm-cove-0653-acceptance-001",
+  "startedAt": "2026-08-25T15:48:09.398936+00:00",
+  "status": "escalated"
+}

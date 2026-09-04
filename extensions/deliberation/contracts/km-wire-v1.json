@@ -1,8 +1,8 @@
 {
-  "name": "km-deliberation-v2-wire",
+  "name": "openclaw-deliberation-adapter-v1",
   "protocolVersion": 1,
-  "authority": "state/deliberation-v2/spool.sqlite3",
-  "initializationCommand": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts:lib .venv/bin/python3 scripts/deliberation-v2.py health",
+  "owner": "OpenClaw",
+  "scope": "public HTTP adapter contract consumed by the OpenClaw Deliberation plugin",
   "mediaType": "application/json",
   "closedSchemas": true,
   "readinessPolicy": {"fixedSeconds": 60, "deadlineAuthority": "authenticatedEvent.receivedAt + 60 seconds", "freshOrder": ["readyAt", "recordId"], "closedAt": "scheduler observation only"},
@@ -10,8 +10,6 @@
   "transportHeaders": ["Host", "Content-Length", "Connection", "User-Agent", "Accept-Encoding", "Accept-Language", "Sec-Fetch-Mode"],
   "authentication": {
     "comparison": "constant-time",
-    "credentialArguments": ["--credential-file", "DELIBERATION_V2_CREDENTIAL_FILE"],
-    "credentialFile": "regular file, no symlink, mode 0600 or stricter, one UTF-8 line, 16..256 bytes",
     "diagnostics": "credential value and path are never returned or logged"
   },
   "sourceIdentity": {
@@ -40,14 +38,6 @@
     "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$",
     "historicalMarker": "__historical_v1__",
     "historicalRule": "the reserved historical marker is assigned only by startup migration and is rejected on live intake"
-  },
-  "listener": {
-    "hosts": ["127.0.0.1", "::1"],
-    "explicitHostRequired": true,
-    "maxBodyBytes": 65536,
-    "headerReadSeconds": 5,
-    "bodyReadSeconds": 10,
-    "sqliteBusyTimeoutSeconds": 30
   },
   "schemas": {
     "getHeaders": {
@@ -94,6 +84,17 @@
       "additionalProperties": false
     },
     "nullableDeliveryTarget": {"oneOf": [{"$ref": "#/schemas/deliveryTarget"}, {"type": "null"}]},
+    "senderIdentityHints": {
+      "type": "object",
+      "description": "Optional channel-authenticated textual identity indicators. Each value is also limited to 128 UTF-8 bytes and the serialized object to 2048 UTF-8 bytes by the OpenClaw adapter.",
+      "properties": {
+        "senderDisplayName": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]+$"},
+        "senderUsername": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]+$"},
+        "senderAliases": {"type": "array", "maxItems": 8, "items": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]+$"}}
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
     "intakeBody": {
       "type": "object",
       "properties": {
@@ -104,6 +105,7 @@
         "pipelineId": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,95}$", "not": {"const": "__historical_v1__"}},
         "deliveryTarget": {"$ref": "#/schemas/deliveryTarget"},
         "senderId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "senderIdentityHints": {"$ref": "#/schemas/senderIdentityHints"},
         "occurredAt": {"type": "string", "minLength": 20, "maxLength": 64},
         "receivedAt": {"type": "string", "minLength": 20, "maxLength": 64},
         "content": {"type": "string", "minLength": 1, "maxLength": 65536},
@@ -274,7 +276,7 @@
         "pipelineId": {"type": "string", "minLength": 1, "maxLength": 96},
         "deliveryTarget": {"$ref": "#/schemas/deliveryTarget"},
         "sourceSequence": {"type": "integer", "minimum": 1},
-        "messages": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "object", "properties": {"inboundId": {"type": "string"}, "provider": {"type": "string"}, "providerEventId": {"type": "string"}, "pipelineId": {"type": "string"}, "deliveryTarget": {"$ref": "#/schemas/deliveryTarget"}, "senderId": {"type": "string"}, "eventType": {"type": "string"}, "occurredAt": {"type": "string"}, "receivedAt": {"type": "string"}, "content": {"type": "string"}}, "required": ["inboundId", "provider", "providerEventId", "pipelineId", "deliveryTarget", "senderId", "eventType", "occurredAt", "receivedAt", "content"], "additionalProperties": false}},
+        "messages": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "object", "properties": {"inboundId": {"type": "string"}, "provider": {"type": "string"}, "providerEventId": {"type": "string"}, "pipelineId": {"type": "string"}, "deliveryTarget": {"$ref": "#/schemas/deliveryTarget"}, "senderId": {"type": "string"}, "senderIdentityHints": {"$ref": "#/schemas/senderIdentityHints"}, "eventType": {"type": "string"}, "occurredAt": {"type": "string"}, "receivedAt": {"type": "string"}, "content": {"type": "string"}}, "required": ["inboundId", "provider", "providerEventId", "pipelineId", "deliveryTarget", "senderId", "eventType", "occurredAt", "receivedAt", "content"], "additionalProperties": false}},
         "openedAt": {"type": "string"},
         "updatedAt": {"type": "string"},
         "debounceUntil": {"type": "string"},
@@ -305,10 +307,7 @@
     },
     "passTransition": {"type": ["object", "null"], "properties": {"recordId": {"type": "string", "maxLength": 128}, "state": {"type": "string", "maxLength": 64}, "code": {"type": "string", "maxLength": 64}}, "required": ["recordId", "state", "code"], "additionalProperties": false},
     "passSummary": {"type": ["object", "null"], "properties": {"schemaVersion": {"type": "integer", "const": 1}, "startedAt": {"type": "string"}, "completedAt": {"type": "string"}, "durationMs": {"type": "integer", "minimum": 0, "maximum": 90000}, "owner": {"type": "string", "maxLength": 128}, "buildId": {"type": "string", "maxLength": 64}, "phases": {"type": "object", "properties": {"reconciled": {"type": "integer", "minimum": 0}, "closed": {"type": "integer", "minimum": 0}, "selected": {"type": "integer", "minimum": 0, "maximum": 1}}, "required": ["reconciled", "closed", "selected"], "additionalProperties": false}, "transition": {"$ref": "#/schemas/passTransition"}, "hasMore": {"type": "boolean"}, "stopReason": {"type": "string", "enum": ["idle", "completed", "processing_pending", "reconciliation_budget", "closure_budget", "selection_budget", "monotonic_guard"]}}, "required": ["schemaVersion", "startedAt", "completedAt", "durationMs", "owner", "buildId", "phases", "transition", "hasMore", "stopReason"], "additionalProperties": false},
-    "listenerModuleIdentity": {"oneOf": [{"type": "object", "properties": {"status": {"type": "string", "const": "ok"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}, "required": ["status", "sha256"], "additionalProperties": false}, {"type": "object", "properties": {"status": {"type": "string", "const": "unavailable"}, "sha256": {"type": "null"}}, "required": ["status", "sha256"], "additionalProperties": false}]},
-    "listenerModules": {"type": "object", "properties": {"lib/deliberation_source_identity.py": {"$ref": "#/schemas/listenerModuleIdentity"}, "lib/deliberation_wire.py": {"$ref": "#/schemas/listenerModuleIdentity"}, "lib/deliberation_spool_contracts.py": {"$ref": "#/schemas/listenerModuleIdentity"}}, "required": ["lib/deliberation_source_identity.py", "lib/deliberation_wire.py", "lib/deliberation_spool_contracts.py"], "additionalProperties": false},
-    "listenerSourceIdentity": {"type": "object", "properties": {"status": {"type": "string", "enum": ["ok", "unavailable"]}, "modules": {"$ref": "#/schemas/listenerModules"}}, "required": ["status", "modules"], "additionalProperties": false},
-    "listenerIdentity": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "startedAt": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"}, "sourceIdentity": {"$ref": "#/schemas/listenerSourceIdentity"}}, "required": ["protocolVersion", "startedAt", "sourceIdentity"], "additionalProperties": false},
+    "listenerIdentity": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "startedAt": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"}}, "required": ["protocolVersion", "startedAt"], "additionalProperties": false},
     "runnerInstallation": {"type": "object", "properties": {"status": {"type": "string", "enum": ["ok", "missing", "drift", "duplicate", "unknown"]}, "candidateCount": {"type": "integer", "minimum": 0, "maximum": 100}, "liveId": {"type": "string", "maxLength": 128}, "drift": {"type": "array", "maxItems": 16, "items": {"type": "string", "maxLength": 64}}, "code": {"type": "string", "maxLength": 64}}, "required": ["status", "candidateCount"], "additionalProperties": false},
     "operationalStatus": {"type": "object", "properties": {"queueCounts": {"type": "object", "properties": {"dueClosure": {"type": "integer", "minimum": 0}, "readyDraft": {"type": "integer", "minimum": 0}, "processingPending": {"type": "integer", "minimum": 0}, "reviewReady": {"type": "integer", "minimum": 0}, "retry": {"type": "integer", "minimum": 0}, "readyToSend": {"type": "integer", "minimum": 0}, "deliveryInFlight": {"type": "integer", "minimum": 0}}, "required": ["dueClosure", "readyDraft", "processingPending", "reviewReady", "retry", "readyToSend", "deliveryInFlight"], "additionalProperties": false}, "oldestReadyAgeSeconds": {"type": ["integer", "null"], "minimum": 0}, "activeSlot": {"type": ["object", "null"], "properties": {"recordId": {"type": "string", "maxLength": 128}, "correlationId": {"type": "string", "maxLength": 128}, "phase": {"type": "string", "maxLength": 32}, "acknowledgedAt": {"type": ["string", "null"]}, "resultDeadline": {"type": ["string", "null"]}, "ageSeconds": {"type": "integer", "minimum": 0}, "deadlineInSeconds": {"type": ["integer", "null"]}}, "required": ["recordId", "correlationId", "phase", "acknowledgedAt", "resultDeadline", "ageSeconds", "deadlineInSeconds"], "additionalProperties": false}, "timeoutCount": {"type": "integer", "minimum": 0}, "lateResultCount": {"type": "integer", "minimum": 0}, "lastPass": {"$ref": "#/schemas/passSummary"}}, "required": ["queueCounts", "oldestReadyAgeSeconds", "activeSlot", "timeoutCount", "lateResultCount", "lastPass"], "additionalProperties": false},
     "healthResponse": {"type": "object", "properties": {"protocolVersion": {"type": "integer", "const": 1}, "status": {"type": "string", "enum": ["ok", "degraded"]}, "listener": {"$ref": "#/schemas/listenerIdentity"}, "controls": {"$ref": "#/schemas/controls"}, "runner": {"type": "object", "properties": {"owner": {"type": "string", "const": "deliberation-v2-cron"}, "buildId": {"type": "string", "const": "deliberation-v2-runtime-v1"}, "installation": {"$ref": "#/schemas/runnerInstallation"}}, "required": ["owner", "buildId", "installation"], "additionalProperties": false}, "runtime": {"$ref": "#/schemas/operationalStatus"}}, "required": ["protocolVersion", "status", "listener", "controls", "runner", "runtime"], "additionalProperties": false},
@@ -336,6 +335,5 @@
   "recovery": {"owner": "existing reconciliation-first runtime pass", "neverInvoked": "RESERVATION_ABANDONED audit and READY_TO_SEND under a fresh reservation only", "invokedWithoutReceipt": "FAILED with terminal reason delivery_outcome_unknown; never reservable"},
   "transitions": ["READY_TO_SEND -> SENDING", "SENDING -> SENT", "SENDING -> FAILED (delivery_failed)", "expired never-invoked SENDING -> READY_TO_SEND (reservation_abandoned)", "expired invoked SENDING -> FAILED (delivery_outcome_unknown)"],
   "errors": {"400": ["SCHEMA_INVALID"], "401": ["AUTH_MISSING", "AUTH_INVALID"], "404": ["ROUTE_NOT_FOUND", "RECORD_NOT_FOUND"], "406": ["MEDIA_TYPE_INVALID"], "409": ["CAS_CONFLICT", "CONTROL_DISABLED"], "415": ["MEDIA_TYPE_INVALID"], "426": ["VERSION_UNSUPPORTED"]},
-  "controls": {"defaults": {"source-intake": false, "claims": true, "review": true, "sender": false}, "commands": ["health", "synthetic-intake", "list-ready", "reserve", "invoke", "complete", "control source-intake|claims|review|sender enable|disable|status", "inflight", "quarantine", "unquarantine"]},
-  "listenerCommand": "scripts/deliberation-v2-listener.py --host 127.0.0.1 --port 8765 --credential-file FILE"
+  "controls": {"defaults": {"source-intake": false, "claims": true, "review": true, "sender": false}}
 }

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-25T16:04:09+00:00",
+    "implementingStartedAt": "2026-08-25T15:54:47+00:00",
+    "taskFile": "plans/tasks/2026-08-25_followup-quick-peak-3668-activate-and-verify-the-latest-deliberation-discord-idempote.md",
+    "taskId": "quick-peak-3668",
+    "title": "[acceptance-fix] Activate and verify the latest Deliberation Discord idempotency-key fix: goal-003: Relevant build and D"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Activate and verify the latest Deliberation Discord idempotency-key fix: goal-003: Relevant build and D"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-peak-3668-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-peak-3668",
+  "tddRequired": false
+}

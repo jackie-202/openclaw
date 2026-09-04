@@ -12,7 +12,7 @@ Současná konfigurace používá globální `sources[]` a nejvýše jeden glob�
 
 Aktuální live konfigurace má jeden Discord source, globální Discord `processingSource` a žádný `deliveryTarget`. Nově připojený Slack má sloužit nejprve jako source-only pilot, ale cílové chování musí být obecné, explicitní a auditovatelné.
 
-## Configuration Model <!-- section:configuration-model -->
+## Configuration Model <!-- section:configuration-model type:context -->
 
 Nahradit top-level `sources[]` a globální `deliveryTarget` polem `pipelines[]`:
 
@@ -71,7 +71,7 @@ Rules:
 - Per-pipeline `processingSource` overrides are deliberately excluded; revisit only if independent projects or isolation boundaries are introduced later.
 - The resolved `pipelineId` and effective delivery target are fixed early in the lifecycle and may not drift during reservation, invocation or completion.
 
-## Thread Semantics <!-- section:thread-semantics -->
+## Thread Semantics <!-- section:thread-semantics type:context -->
 
 Thread inheritance follows a narrow rule:
 
@@ -152,27 +152,22 @@ Runtime configuration changes and Gateway restart require explicit operator appr
 
 ## Corrective Completion Plan <!-- section:corrective-completion type:context -->
 
-The previous implementation/remediation batches exposed an orchestration defect rather than a need for another broad redesign. Repository-local tasks could pass while the cross-repository boundary remained inconsistent, and later acceptance follow-ups repeatedly asked agents to prove a Green owner integration without a stable, usable authority input.
+The earlier corrective sequence coupled OpenClaw acceptance to another
+repository's checkout, implementation files, and fixed scenario count. That
+sequence is superseded.
 
-The chosen completion strategy is therefore a small, bounded corrective sequence rather than another full remediation batch:
+OpenClaw acceptance now covers only OpenClaw-owned behavior: channel ownership,
+intake and history adapters, public request/response validation, provider and
+delivery behavior, package integrity, and local fail-closed cases. The local
+gate derives its result set from those retained checks rather than preserving a
+historical count.
 
-1. **OpenClaw owner convergence.** Complete the missing producer/client/adapter and contract-provenance work against the current canonical KM checkout using read-only access and isolated temporary listener/SQLite state.
-2. **Executable Definition of Done.** Run one caller-owned gate with exactly one executable result for every scenario `OR-01` through `OR-23`. Missing, skipped, duplicated, stale, contradictory or synthetic results must fail the gate.
-3. **Independent final audit.** Audit only the fixed proposal requirements and the `OR-01…OR-23` evidence, issuing `SAFE` or a finite `NOT SAFE` blocker list. The audit may identify a genuinely new safety contradiction, but it must not silently expand the product scope after implementation.
-
-### KM authority rule
-
-A moving repository HEAD is provenance, not semantic authority. The corrective work must **not** require the live canonical KM checkout to remain on an older whole-repository commit. Before using KM, it must instead verify the SHA-256 values of the specific authoritative owner artifacts required by the integration boundary—at minimum the canonical contract, fixtures, wire implementation and spool contract implementation—and record the current HEAD for traceability only.
-
-If those authoritative artifact hashes match the accepted bundle, unrelated KM commits must not block implementation. If a relevant hash differs, the task must stop with the exact changed artifact and require an explicit new authority decision. A separate historical worktree is unnecessary unless exact whole-repository historical reproduction is itself the property under test.
-
-KM access remains read-only from OpenClaw tasks. Listener execution must use a random loopback port, temporary credentials and temporary SQLite storage with deterministic cleanup. No production spool, live provider traffic, deployment, Gateway restart or live activation is part of this corrective sequence.
-
-### Sequencing decision
-
-The existing broad batch is allowed to finish as historical evidence, including its unsuccessful follow-up chains. It is not a valid completion signal. After its final audit, it must be treated as unsuccessful rather than extended with more same-lineage acceptance fixes.
-
-The next corrective batch contains only the three steps above. The owner-convergence task must finish before the full gate; the full gate must reach `23/23` before the final audit. Rollout remains separately approval-gated.
+The dependency is one-way. OpenClaw publishes the provider/channel hooks and
+public adapter interface; an external orchestrator may depend on that interface.
+Cross-repository end-to-end validation and implementation-level storage,
+restart, reconciliation, and migration tests are caller-owned and must run in
+the caller's repository. They are not prerequisites for OpenClaw build or
+acceptance. Rollout remains separately approval-gated.
 
 ## Acceptance Criteria <!-- section:acceptance type:context -->
 

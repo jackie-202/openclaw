@@ -4,7 +4,7 @@ import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
 import { withServer } from "openclaw/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import plugin from "../index.js";
-import { deriveProviderAttemptId } from "./final-adapter.js";
+import { deriveProviderAttemptId, deriveProviderIdempotencyKey } from "./final-adapter.js";
 
 const sourceTarget = "v1:slack:workspace-a:C123";
 const rootId = "1723640000.000100";
@@ -193,7 +193,7 @@ describe("Deliberation cross-provider orchestration", () => {
       expectedHistoryIds: [rootId],
     },
   ])(
-    "delivers one $name through bounded thread history and KM to the exact Discord target",
+    "delivers one $name through bounded source history and KM to the exact Discord target",
     async ({ providerEventId, threadId, expectedHistoryIds }) => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2026-08-17T12:00:00Z"));
@@ -225,12 +225,24 @@ describe("Deliberation cross-provider orchestration", () => {
         { id: childId, threadId: rootId, content: "admitted child", senderId: "U2" },
         { id: laterId, threadId: rootId, content: "later child", senderId: "U3" },
       ];
+      const newerChannelRoot = {
+        id: "1723640000.000400",
+        content: "newer channel root",
+        senderId: "U4",
+      };
       const historyContext = {
         readMessage: vi.fn(async ({ channelId, messageId }) => {
           historyReads.push({ operation: "message", channelId, messageId });
           return messageId === rootId
             ? { ...selectedMessages[0], latestReplyId: laterId }
             : unrelatedThread;
+        }),
+        readChannelPage: vi.fn(async (params: Record<string, unknown>) => {
+          historyReads.push({ operation: "channel", ...params });
+          return {
+            messages:
+              params.limit === 1 ? [newerChannelRoot] : [newerChannelRoot, selectedMessages[0]],
+          };
         }),
         readThreadPage: vi.fn(async (params: Record<string, unknown>) => {
           historyReads.push({ operation: "thread", ...params });
@@ -394,7 +406,7 @@ describe("Deliberation cross-provider orchestration", () => {
             expectedHistoryIds,
           );
           expect(freshness.messages.map((message) => message.providerEventId)).toEqual(
-            providerEventId === rootId ? [childId, laterId] : [laterId],
+            providerEventId === rootId ? [childId, laterId, newerChannelRoot.id] : [laterId],
           );
           expect(JSON.stringify({ boundedHistory, freshness })).not.toContain(unrelatedThread.id);
           expect(freshness.complete).toBe(true);
@@ -448,6 +460,9 @@ describe("Deliberation cross-provider orchestration", () => {
       expect(
         historyReads.every((read) => read.threadId === undefined || read.threadId === rootId),
       ).toBe(true);
+      expect(historyContext.readChannelPage).toHaveBeenCalledTimes(
+        providerEventId === rootId ? 2 : 0,
+      );
       expect(discordSendText).toHaveBeenCalledTimes(1);
       expect(discordSendText).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -455,7 +470,7 @@ describe("Deliberation cross-provider orchestration", () => {
           to: "channel:test-deliberation",
           threadId: "delivery-thread",
           text: "reviewed reply",
-          idempotencyKey: deriveProviderAttemptId("attempt-1"),
+          idempotencyKey: deriveProviderIdempotencyKey("attempt-1"),
         }),
       );
       expect(slackSendText).not.toHaveBeenCalled();

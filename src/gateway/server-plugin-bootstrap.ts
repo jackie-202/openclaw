@@ -11,6 +11,7 @@ import {
   setGatewayNodesRuntime,
   setGatewaySubagentRuntime,
 } from "../plugins/runtime/gateway-bindings.js";
+import type { PluginRuntime } from "../plugins/runtime/types.js";
 import { mergeActivationSectionsIntoRuntimeConfig } from "./plugin-activation-runtime-config.js";
 import type { GatewayRequestHandler } from "./server-methods/types.js";
 import {
@@ -42,6 +43,7 @@ type GatewayPluginBootstrapParams = {
   coreGatewayHandlers?: Record<string, GatewayRequestHandler>;
   coreGatewayMethodNames?: readonly string[];
   hostServices?: PluginRegistryParams["hostServices"];
+  channelRuntime?: PluginRuntime["channel"];
   baseMethods: string[];
   pluginIds?: string[];
   pluginLookUpTable?: PluginLookUpTable;
@@ -117,6 +119,9 @@ export function prepareGatewayPluginLoad(params: GatewayPluginBootstrapParams) {
     }),
     ...(params.hostServices !== undefined && {
       hostServices: params.hostServices,
+    }),
+    ...(params.channelRuntime !== undefined && {
+      channelRuntime: params.channelRuntime,
     }),
     baseMethods: params.baseMethods,
     pluginIds: params.pluginIds,

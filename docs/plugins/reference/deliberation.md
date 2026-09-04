@@ -7,12 +7,21 @@ title: "Deliberation plugin"
 
 # Deliberation plugin
 
-The Deliberation plugin keeps configured Discord and Slack sources silent in ordinary dispatch and submits eligible inbound messages to an external Knowledge Manager (KM). The KM owns workflow controls and delivery state. Slack intake keeps the child message timestamp separate from its thread timestamp and reads only that thread for history evidence. Final delivery uses the provider in the KM-authorized durable destination.
+The Deliberation plugin keeps configured Discord and Slack sources silent in ordinary dispatch and submits eligible inbound messages to an external Knowledge Manager (KM). The KM owns workflow controls and delivery state. Slack intake keeps the child message timestamp separate from its thread timestamp. Freshness after a Slack root combines newer top-level messages in the exact source channel with newer replies in that root; freshness after a reply remains confined to later replies in its mapped root. Final delivery uses the provider in the KM-authorized durable destination.
 
 ## Distribution
 
 - Package: `@openclaw/deliberation`
 - Install route: included in OpenClaw
+
+## Repository boundary
+
+OpenClaw owns the channel and provider hooks, intake and history adapters,
+final-delivery behavior, and the public HTTP interface documented below. An
+external orchestrator may consume and integration-test that interface from its
+own repository. The orchestrator's implementation, storage, restart,
+reconciliation, migration, and cross-repository end-to-end gates are not part
+of OpenClaw's build or repository-local acceptance gate.
 
 ## Surface
 
@@ -109,6 +118,22 @@ Request and response objects are closed schemas. The KM owns the `source-intake`
 
 Accepted Discord and Slack intake uses `v1:<provider>:<account>:<channel>` as the canonical `sourceTarget`. For example, Slack account `work` and channel `C123` produce `v1:slack:work:C123`. Account and channel components are both part of the KM record, deduplication, and correlation domain. Slack thread timestamps are routing identities and are not encoded into `sourceTarget`; a reply's own `message.ts` remains its `providerEventId`.
 
+Intake always carries the opaque provider `senderId`. When a channel supplies authenticated textual identity metadata, intake can also carry this optional object:
+
+```json
+{
+  "senderIdentityHints": {
+    "senderDisplayName": "Display Name",
+    "senderUsername": "provider-handle",
+    "senderAliases": ["additional-provider-alias"]
+  }
+}
+```
+
+These values are indicators for downstream identity resolution, not provider IDs. They do not affect source matching, record identity, deduplication, replay, or delivery. OpenClaw trims each value, rejects empty values and C0/C1 control characters, limits each value to 128 UTF-8 bytes, keeps at most eight provider-ordered aliases, deduplicates aliases case-insensitively against direct indicators and earlier aliases, and limits the serialized object to 2048 UTF-8 bytes. Invalid optional values are omitted without rejecting an otherwise valid sender-ID-only intake. Message content, rendered envelopes, quoted messages, and model output are never parsed for hints.
+
+Discord uses the resolved PluralKit member display/name when applicable. Otherwise `senderDisplayName` uses guild nickname or nick, then Discord global name, then username. `senderUsername` uses the resolved PluralKit member native name or Discord author username. A distinct formatted Discord tag is eligible as an alias; duplicates such as a modern tag equal to the username are omitted. Slack uses `message.username` first, then the authenticated `users.info` display name, real name, or account name for `senderDisplayName`; `message.username` is also `senderUsername` when present. Slack currently supplies no additional aliases.
+
 A pipeline `target` is optional and operator-owned. It is a closed Discord or Slack destination with `channel`, `accountId`, `target`, and optional `threadId`. Slack thread IDs must be canonical timestamps such as `1770000000.000001`. Explicit targets are converted exactly; without `threadId` they represent root delivery and never inherit the source thread. When `target` is omitted, authenticated admission derives the destination from the selected source pipeline and source thread.
 
 The durable wire target includes `mode`: `root` for an exact channel root, `thread` for an exact existing thread, or `source_anchor` for a Discord root message whose attached thread must be created or reused. `threadId` is absent for `root` and required for the other modes. The plugin sends the selected `pipelineId` and effective `deliveryTarget` with intake. KM persists both in the ready item, reservation, invocation, completion, and historical attempt evidence. Message content, reviewer output, model output, and later configuration changes cannot select or replace either value.
@@ -130,9 +155,37 @@ The command writes one bounded JSON object to stdout:
 { "handled": true, "providerEventId": "<DISCORD_MESSAGE_ID>", "duplicate": false }
 ```
 
-The configured pipelines and processing source are separate from the authenticated event and hook context so the probe can exercise wrong-account, contradictory-evidence, no-match, and processing-route rejection before any KM request. Message content is never routing authority. Run the same accepted input again to exercise listener idempotency. A conforming listener returns `"duplicate":true`; the external listener harness must also assert that its canonical store contains exactly one record for the provider event ID. The probe does not inspect listener storage and cannot send Discord messages or activate the KM sender control.
+The configured pipelines and processing source are separate from the authenticated event and hook context so the probe can exercise wrong-account, contradictory-evidence, no-match, and processing-route rejection before any KM request. The event also accepts optional trusted `senderName`, `senderUsername`, and `senderAliases`; the probe carries them through the same normalization path as channel intake. Message content is never routing or sender-hint authority. Run the same accepted input again to exercise the public duplicate response. A conforming adapter returns `"duplicate":true`. Caller-owned integration coverage is responsible for any assertions about its canonical store. The probe does not inspect external storage and cannot send Discord messages or activate the KM sender control.
 
 Failed KM requests return `"handled":false` with a bounded `diagnostic` object. `stage` is one of `credential`, `transport`, `response-json`, `http`, or `response-schema`; `status` is present when an HTTP response exists; and `code` is a protocol-v1 KM error code or `UNKNOWN`. Output never includes the credential, endpoint, event content, sender ID, or a KM error message. Malformed probe input exits nonzero with a fixed `input` diagnostic.
+
+## Probe final delivery
+
+The built plugin includes a test-only API at `dist-runtime/extensions/deliberation/api.js`. A caller-owned integration harness can import `runDeliberationDeliveryProbe` from that module to execute the production client, target parser, final-delivery adapter, reservation/invocation/completion calls, and idempotency derivation through the public interface.
+
+Pass a strict object with exactly these fields:
+
+```js
+{
+  endpoint: "http://127.0.0.1:<random-port>",
+  credential: { source: "env", provider: "default", id: "KM_PROBE_TOKEN" },
+  requestTimeoutMs: 5000,
+}
+```
+
+The endpoint must use plain HTTP, a literal `127.0.0.1` or `[::1]` host, and an explicit high ephemeral port in the range `32768-65535`. The credential must be an environment-backed SecretRef supplied by the harness. The boundary refuses HTTPS, non-loopback hosts, low or missing ports, URL credentials, query strings, fragments, literal credentials, unknown fields, provider selection, and provider injection before constructing the KM client.
+
+The result is bounded JSON with these fields:
+
+- `ok`: whether the adapter run completed or found no ready item.
+- `stages`: ordered `input`, `ready`, `reserve`, `invoke`, `provider`, and `complete` outcomes for stages reached.
+- `provider`: synthetic call count and a provider plus `root` or `thread` target classification. It never contains text.
+- `build`: package version, build commit when available, `source-api` or `built-api` artifact class, and the SHA-256 of the executing probe module.
+- `error`: the failed stage and, when available, canonical KM operation/path/status/code or a closed safe cause.
+
+The internal providers return deterministic synthetic receipt and message IDs derived from the production provider-attempt ID. They do not load or call Discord or Slack adapters and refuse a second call. Results omit endpoint authority, credential references and values, ready-item text, request and response bodies, raw errors, receipts, and message IDs.
+
+This API is absent from the plugin entry and `openclaw.extensions`. Invoking it does not start or restart the Gateway, register another service, change configuration, or enable a production provider.
 
 ## Operate
 
@@ -148,7 +201,7 @@ Discord auto-thread delivery keeps the authenticated parent channel as source au
 
 Discord removes exact self-authored messages before `inbound_claim`: the authenticated `botUserId` is compared with `author.id` in the Discord monitor and preflight paths. The hook payload does not expose authoritative bot/self evidence, so Deliberation does not infer bot identity from names, display text, or other unstable metadata. Other accepted bot-authored events remain subject to Discord's channel policy before reaching this plugin.
 
-Runtime intake warnings use the same bounded KM stage, status, and code fields. They omit credentials, request and response bodies, endpoint values, Discord message content, and raw KM error messages.
+Runtime intake warnings use the same bounded KM stage, status, and code fields. Final-delivery warnings also identify the closed operation and canonical path, with an HTTP status or bounded transport cause when available. They omit credentials, request and response bodies, endpoint values, Discord message content, ready-item text, and raw KM error messages.
 
 The Gateway plugin service polls the KM ready queue at a bounded interval and processes at most one item per non-overlapping tick. It validates the ready pipeline and destination, reserves them, verifies exact deep equality with the durable reservation, and records invocation evidence before requesting one native text attempt from the selected Discord or Slack adapter. The canonical durable `deliveryTarget` selects the exact provider, account, channel, and delivery mode for the adapter attempt, invocation evidence, and completion evidence. The adapter renders the final provider-specific text and mentions before preflighting the single-message limit. Over-limit output is rejected before a native message-create request.
 

@@ -105,24 +105,7 @@
           "status": "ok",
           "listener": {
             "protocolVersion": 1,
-            "startedAt": "2026-08-09T12:00:00Z",
-            "sourceIdentity": {
-              "status": "ok",
-              "modules": {
-                "lib/deliberation_source_identity.py": {
-                  "status": "ok",
-                  "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                },
-                "lib/deliberation_wire.py": {
-                  "status": "ok",
-                  "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-                },
-                "lib/deliberation_spool_contracts.py": {
-                  "status": "ok",
-                  "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-                }
-              }
-            }
+            "startedAt": "2026-08-09T12:00:00Z"
           },
           "controls": {
             "source-intake": false,
@@ -159,7 +142,7 @@
       }
     },
     {
-      "name": "health.source-identity-unavailable",
+      "name": "health.degraded",
       "request": {
         "method": "GET",
         "path": "/deliberation/v1/health",
@@ -178,24 +161,7 @@
           "status": "degraded",
           "listener": {
             "protocolVersion": 1,
-            "startedAt": "2026-08-09T12:00:00Z",
-            "sourceIdentity": {
-              "status": "unavailable",
-              "modules": {
-                "lib/deliberation_source_identity.py": {
-                  "status": "unavailable",
-                  "sha256": null
-                },
-                "lib/deliberation_wire.py": {
-                  "status": "ok",
-                  "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-                },
-                "lib/deliberation_spool_contracts.py": {
-                  "status": "ok",
-                  "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-                }
-              }
-            }
+            "startedAt": "2026-08-09T12:00:00Z"
           },
           "controls": {
             "source-intake": false,
@@ -434,6 +400,55 @@
           "protocolVersion": 1,
           "recordId": "record-001",
           "inboundId": "inbound-001",
+          "duplicate": false
+        }
+      }
+    },
+    {
+      "name": "intake.discord-trusted-sender-hints",
+      "precondition": {
+        "controls": {
+          "source-intake": true
+        }
+      },
+      "request": {
+        "method": "POST",
+        "path": "/deliberation/v1/intake",
+        "headers": {
+          "Authorization": "Bearer synthetic-test-token",
+          "X-Deliberation-Protocol-Version": "1",
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "query": {},
+        "body": {
+          "provider": "discord",
+          "providerEventId": "discord-identity-message",
+          "sourceTarget": "v1:discord:default:1494265174389948538",
+          "sourceThreadId": "discord-identity-message",
+          "pipelineId": "discord-source",
+          "deliveryTarget": {
+            "provider": "discord",
+            "account": "default",
+            "channel": "1494265174389948538"
+          },
+          "senderId": "1276273857921024073",
+          "senderIdentityHints": {
+            "senderDisplayName": "Michal876876",
+            "senderUsername": "michal876876"
+          },
+          "occurredAt": "2026-08-30T12:00:00Z",
+          "receivedAt": "2026-08-30T12:00:01Z",
+          "content": "synthetic input",
+          "eventType": "message"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "protocolVersion": 1,
+          "recordId": "record-discord-identity",
+          "inboundId": "inbound-discord-identity",
           "duplicate": false
         }
       }

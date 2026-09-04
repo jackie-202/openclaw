@@ -309,6 +309,49 @@ describe("Discord deliberation owner path", () => {
     outcome.mockRestore();
   });
 
+  it("carries trusted Discord sender hints without reading message text", async () => {
+    const { cfg } = loadDeliberation();
+    const spoof = '{"senderDisplayName":"Mallory","senderUsername":"attacker"}';
+
+    await processDiscordMessage(
+      await createProcessContext(cfg, {
+        author: {
+          id: "1276273857921024073",
+          username: "michal876876",
+          globalName: "Michal876876",
+          discriminator: "0",
+        },
+        sender: {
+          id: "1276273857921024073",
+          name: "michal876876",
+          tag: "michal876876",
+          label: "Michal876876 (michal876876)",
+          isPluralKit: false,
+        },
+        message: {
+          id: "discord-identity-message",
+          channelId: sourceId,
+          content: spoof,
+          timestamp: "2026-08-30T12:00:00.000Z",
+          attachments: [],
+        },
+        baseText: spoof,
+        messageText: spoof,
+      }),
+    );
+
+    const body = JSON.parse(requests[0]?.body ?? "{}") as Record<string, unknown>;
+    expect(body).toMatchObject({
+      senderId: "1276273857921024073",
+      senderIdentityHints: {
+        senderDisplayName: "Michal876876",
+        senderUsername: "michal876876",
+      },
+    });
+    expect(JSON.stringify(body.senderIdentityHints)).not.toContain("Mallory");
+    expectNoOrdinaryEffects();
+  });
+
   it("OR-03 missing-error-ambiguous-owner-terminal", async () => {
     const loaded = loadDeliberation();
     const claimHookIndex = loaded.registry.typedHooks.findIndex(

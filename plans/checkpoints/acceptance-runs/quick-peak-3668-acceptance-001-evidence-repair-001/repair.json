@@ -1,0 +1,38 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/quick-peak-3668.evidence.md",
+      "provenance": "evidence_repair:quick-peak-3668-acceptance-001-evidence-repair-001",
+      "size": 978
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/quick-peak-3668.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/quick-peak-3668-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "c810e68835a128c4dbd5e77db2208ab7b43bcce2",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-25T16:06:15.709605+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "node scripts/crabbox-wrapper.mjs run --provider blacksmith-testbox --blacksmith-org openclaw --blacksmith-workflow .github/workflows/ci-check-testbox.yml --blacksmith-job check --blacksmith-ref main -",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "node scripts/crabbox-wrapper.mjs run --provider aws --idle-timeout 90m --ttl 240m --timing-json -- npm test",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "quick-peak-3668-acceptance-001-evidence-repair-001",
+  "sourceRunId": "quick-peak-3668-acceptance-001",
+  "startedAt": "2026-08-25T16:06:12.110381+00:00",
+  "status": "escalated"
+}

@@ -24,6 +24,14 @@ export type ChannelHistoryRuntimeContext = {
     channelId: string;
     messageId: string;
   }): Promise<ChannelHistoryMessage | undefined>;
+  readChannelPage?(params: {
+    channelId: string;
+    cursor?: string;
+    limit: number;
+    oldest?: string;
+    latest?: string;
+    inclusive?: boolean;
+  }): Promise<{ messages: ChannelHistoryMessage[]; nextCursor?: string }>;
   readThreadPage(params: {
     channelId: string;
     threadId: string;

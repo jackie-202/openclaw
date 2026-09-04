@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-24T20:39:34+00:00",
+    "implementingStartedAt": "2026-08-24T20:27:40+00:00",
+    "taskFile": "plans/tasks/2026-08-24_followup-wild-peak-9394-restore-the-simpler-deliberation-final-delivery-service-owne.md",
+    "taskId": "wild-peak-9394",
+    "title": "[acceptance-fix] Restore the simpler Deliberation final-delivery service owner: goal-001: The plugin registers exactly o"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Restore the simpler Deliberation final-delivery service owner: goal-001: The plugin registers exactly o"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "wild-peak-9394-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "wild-peak-9394",
+  "tddRequired": true
+}

@@ -169,6 +169,24 @@ assert.deepEqual(result, { text: "paired:now" });
 const deliberationRuntimeDir = path.join(repoRoot, "dist-runtime", "extensions", deliberationId);
 const deliberationRuntimeEntry = path.join(deliberationRuntimeDir, "index.js");
 assert.ok(fs.existsSync(deliberationRuntimeEntry), "built Deliberation runtime entry missing");
+const deliberationApiEntry = path.join(deliberationRuntimeDir, "api.js");
+assert.ok(fs.existsSync(deliberationApiEntry), "built Deliberation probe API missing");
+const deliberationApi = await import(pathToFileURL(deliberationApiEntry).href);
+assert.equal(
+  typeof deliberationApi.runDeliberationDeliveryProbe,
+  "function",
+  "built Deliberation probe export missing",
+);
+const refusedProbe = await deliberationApi.runDeliberationDeliveryProbe({
+  endpoint: "https://km.invalid",
+  credential: "production-credential",
+  requestTimeoutMs: 1000,
+});
+assert.equal(refusedProbe.ok, false);
+assert.equal(refusedProbe.error?.cause, "invalid_input");
+assert.equal(refusedProbe.provider.callCount, 0);
+assert.equal(refusedProbe.build.artifactClass, "built-api");
+assert.match(refusedProbe.build.moduleSha256, /^[0-9a-f]{64}$/);
 
 const deliberationRegistry = loadOpenClawPlugins({
   cache: false,

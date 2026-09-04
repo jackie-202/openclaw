@@ -35,6 +35,10 @@ const config = parseDeliberationConfig({
       id: "slack-workspace-a-c456",
       source: { channel: "slack", accountId: "workspace-a", target: "C456" },
     },
+    {
+      id: "slack-default-configured-channel",
+      source: { channel: "slack", accountId: "default", target: "C0BJW0FALSC" },
+    },
   ],
   processingSource: { channel: "discord", accountId: "acct-a", target: "processing" },
   km: {
@@ -417,7 +421,10 @@ describe("Deliberation history read", () => {
         },
       ],
     });
-    const resolveChannelHistory = vi.fn().mockReturnValue({ readMessage, readThreadPage });
+    const readChannelPage = vi.fn();
+    const resolveChannelHistory = vi
+      .fn()
+      .mockReturnValue({ readMessage, readChannelPage, readThreadPage });
 
     const result = await createHistoryReadHandler({
       config,
@@ -446,6 +453,7 @@ describe("Deliberation history read", () => {
       inclusive: true,
       limit: 50,
     });
+    expect(readChannelPage).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       schemaVersion: 2,
       sourceTarget: "v1:slack:workspace-a:C123",
@@ -464,6 +472,177 @@ describe("Deliberation history read", () => {
         content: "later child",
       },
     ]);
+  });
+
+  it("merges newer channel roots and same-thread replies for a root cutoff", async () => {
+    const sourceTarget = "v1:slack:workspace-a:C123";
+    const cutoff = "1723640000.000100";
+    const replyId = "1723640000.000200";
+    const newerRootId = "1723640000.000300";
+    const readChannelPage = vi
+      .fn()
+      .mockResolvedValueOnce({
+        messages: [
+          {
+            id: newerRootId,
+            threadId: newerRootId,
+            content: "new root",
+            senderId: "U3",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        messages: [
+          {
+            id: newerRootId,
+            threadId: newerRootId,
+            content: "new root",
+            senderId: "U3",
+          },
+          { id: cutoff, content: "cutoff root", senderId: "U1" },
+        ],
+      });
+    const readThreadPage = vi.fn().mockResolvedValue({
+      messages: [
+        { id: cutoff, content: "cutoff root", senderId: "U1" },
+        { id: replyId, threadId: cutoff, content: "reply", senderId: "U2" },
+      ],
+    });
+
+    const result = await createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      historyStore: {
+        lookup: vi.fn().mockResolvedValue({
+          sourceTarget,
+          providerEventId: cutoff,
+          threadId: cutoff,
+        }),
+      } as never,
+      resolveChannelHistory: vi.fn().mockReturnValue({
+        readMessage: vi.fn().mockResolvedValue({
+          id: cutoff,
+          content: "cutoff root",
+          senderId: "U1",
+          latestReplyId: replyId,
+        }),
+        readChannelPage,
+        readThreadPage,
+      }),
+    })({ schemaVersion: 2, sourceTarget, after: cutoff });
+
+    expect(readChannelPage).toHaveBeenNthCalledWith(1, {
+      channelId: "C123",
+      oldest: cutoff,
+      inclusive: false,
+      limit: 1,
+    });
+    expect(readChannelPage).toHaveBeenNthCalledWith(2, {
+      channelId: "C123",
+      oldest: cutoff,
+      latest: newerRootId,
+      inclusive: true,
+      limit: 50,
+    });
+    expect(readThreadPage).toHaveBeenCalledWith({
+      channelId: "C123",
+      threadId: cutoff,
+      oldest: cutoff,
+      latest: newerRootId,
+      inclusive: true,
+      limit: 50,
+    });
+    expect(result.watermarkProviderEventId).toBe(newerRootId);
+    expect(result.messages.map((message) => message.providerEventId)).toEqual([
+      replyId,
+      newerRootId,
+    ]);
+    expect(result.complete).toBe(true);
+  });
+
+  it("rejects threaded rows returned by root-cutoff channel history", async () => {
+    const sourceTarget = "v1:slack:workspace-a:C123";
+    const cutoff = "1723640000.000100";
+    const newerRootId = "1723640000.000200";
+    const handler = createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      historyStore: {
+        lookup: vi.fn().mockResolvedValue({
+          sourceTarget,
+          providerEventId: cutoff,
+          threadId: cutoff,
+        }),
+      } as never,
+      resolveChannelHistory: vi.fn().mockReturnValue({
+        readMessage: vi.fn().mockResolvedValue({
+          id: cutoff,
+          content: "cutoff root",
+          senderId: "U1",
+        }),
+        readChannelPage: vi.fn().mockResolvedValue({
+          messages: [
+            {
+              id: newerRootId,
+              threadId: "1723640000.000050",
+              content: "unrelated reply",
+              senderId: "U9",
+            },
+          ],
+        }),
+        readThreadPage: vi.fn().mockResolvedValue({ messages: [] }),
+      }),
+    });
+
+    await expect(handler({ schemaVersion: 2, sourceTarget, after: cutoff })).rejects.toThrow(
+      "invalid or threaded channel message",
+    );
+  });
+
+  it("resolves the configured default Slack account and exact channel root", async () => {
+    const sourceTarget = "v1:slack:default:C0BJW0FALSC";
+    const readMessage = vi.fn().mockResolvedValue({
+      id: "1787683185.523829",
+      content: "root",
+      senderId: "U1",
+    });
+    const readThreadPage = vi.fn();
+    const readChannelPage = vi.fn().mockResolvedValue({ messages: [] });
+    const resolveChannelHistory = vi
+      .fn()
+      .mockReturnValue({ readMessage, readChannelPage, readThreadPage });
+
+    const result = await createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      historyStore: {
+        lookup: vi.fn().mockResolvedValue({
+          sourceTarget,
+          providerEventId: "1787683185.523829",
+          threadId: "1787683185.523829",
+        }),
+      } as never,
+      resolveChannelHistory,
+    })({ schemaVersion: 2, sourceTarget, after: "1787683185.523829" });
+
+    expect(resolveChannelHistory).toHaveBeenCalledWith({ provider: "slack", accountId: "default" });
+    expect(readMessage).toHaveBeenCalledWith({
+      channelId: "C0BJW0FALSC",
+      messageId: "1787683185.523829",
+    });
+    expect(readChannelPage).toHaveBeenCalledWith({
+      channelId: "C0BJW0FALSC",
+      oldest: "1787683185.523829",
+      inclusive: false,
+      limit: 1,
+    });
+    expect(readThreadPage).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      sourceTarget,
+      provenance: { provider: "slack", account: "default", channel: "C0BJW0FALSC" },
+      watermarkProviderEventId: "1787683185.523829",
+      complete: true,
+    });
   });
 
   it("orders Slack decimal timestamps exactly instead of lexically or as floats", async () => {
@@ -485,6 +664,7 @@ describe("Deliberation history read", () => {
           senderId: "U1",
           latestReplyId: "1723640000.9",
         }),
+        readChannelPage: vi.fn().mockResolvedValue({ messages: [] }),
         readThreadPage: vi.fn().mockResolvedValue({
           messages: [
             { id: "1723640000.9", threadId: "1723640000.01", content: "later", senderId: "U1" },
@@ -572,6 +752,7 @@ describe("Deliberation history read", () => {
             senderId: "U1",
             latestReplyId: "1723640000.3",
           }),
+          readChannelPage: vi.fn().mockResolvedValue({ messages: [] }),
           readThreadPage: vi.fn().mockResolvedValue({ messages: [message] }),
         }),
       });
@@ -620,6 +801,7 @@ describe("Deliberation history read", () => {
           senderId: "U1",
           latestReplyId: "1723640000.3",
         }),
+        readChannelPage: vi.fn().mockResolvedValue({ messages: [] }),
         readThreadPage: vi
           .fn()
           .mockResolvedValueOnce({ messages: [], nextCursor: "same" })
@@ -630,6 +812,40 @@ describe("Deliberation history read", () => {
     await expect(
       handler({ schemaVersion: 2, sourceTarget, after: "1723640000.1" }),
     ).rejects.toThrow("pagination did not advance");
+  });
+
+  it("rejects repeated Slack channel pagination cursors", async () => {
+    const sourceTarget = "v1:slack:workspace-a:C123";
+    const cutoff = "1723640000.000100";
+    const newerRoot = { id: "1723640000.000200", content: "new root", senderId: "U2" };
+    const handler = createHistoryReadHandler({
+      config,
+      openclawConfig: {},
+      historyStore: {
+        lookup: vi.fn().mockResolvedValue({
+          sourceTarget,
+          providerEventId: cutoff,
+          threadId: cutoff,
+        }),
+      } as never,
+      resolveChannelHistory: vi.fn().mockReturnValue({
+        readMessage: vi.fn().mockResolvedValue({
+          id: cutoff,
+          content: "root",
+          senderId: "U1",
+        }),
+        readChannelPage: vi
+          .fn()
+          .mockResolvedValueOnce({ messages: [newerRoot] })
+          .mockResolvedValueOnce({ messages: [newerRoot], nextCursor: "same" })
+          .mockResolvedValueOnce({ messages: [], nextCursor: "same" }),
+        readThreadPage: vi.fn(),
+      }),
+    });
+
+    await expect(handler({ schemaVersion: 2, sourceTarget, after: cutoff })).rejects.toThrow(
+      "pagination did not advance",
+    );
   });
 
   it("stops a distinct-cursor Slack chain at the page budget and marks evidence incomplete", async () => {
@@ -655,6 +871,7 @@ describe("Deliberation history read", () => {
           senderId: "U1",
           latestReplyId: "1723640000.000002",
         }),
+        readChannelPage: vi.fn().mockResolvedValue({ messages: [] }),
         readThreadPage,
       }),
     })({ schemaVersion: 2, sourceTarget, after: "1723640000.000001" });
@@ -689,6 +906,7 @@ describe("Deliberation history read", () => {
           senderId: "U1",
           latestReplyId: "1723640000.000052",
         }),
+        readChannelPage: vi.fn().mockResolvedValue({ messages: [] }),
         readThreadPage: vi.fn().mockResolvedValue({ messages: replies }),
       }),
     })({ schemaVersion: 2, sourceTarget, after: "1723640000.000001" });
@@ -717,6 +935,7 @@ describe("Deliberation history read", () => {
           senderId: "U1",
           latestReplyId: "1723640000.000002",
         }),
+        readChannelPage: vi.fn().mockResolvedValue({ messages: [] }),
         readThreadPage: vi.fn().mockResolvedValue({
           messages: [
             {
@@ -755,6 +974,7 @@ describe("Deliberation history read", () => {
           senderId: "U1",
           latestReplyId: "1723640000.000002",
         }),
+        readChannelPage: vi.fn().mockResolvedValue({ messages: [] }),
         readThreadPage: vi.fn().mockResolvedValue({
           messages: [
             {

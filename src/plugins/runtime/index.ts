@@ -246,7 +246,7 @@ export function createPluginRuntime(_options: CreatePluginRuntimeOptions = {}): 
       listProviders: listWebSearchProviders,
       search: runWebSearch,
     },
-    channel: createRuntimeChannel(),
+    channel: _options.channel ?? createRuntimeChannel(),
     events: createRuntimeEvents(),
     logging: createRuntimeLogging(),
     state: {

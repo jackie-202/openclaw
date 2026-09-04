@@ -5,6 +5,7 @@ import { CHANNEL_HISTORY_RUNTIME_CONTEXT_CAPABILITY } from "openclaw/plugin-sdk/
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   flush,
+  getSlackClient,
   getSlackHandlerOrThrow,
   getSlackTestState,
   resetSlackTestState,
@@ -22,7 +23,7 @@ beforeEach(() => {
 
 function createRuntimeContextCapture(): {
   channelRuntime: ChannelRuntimeSurface;
-  register: ChannelRuntimeSurface["runtimeContexts"]["register"];
+  register: ReturnType<typeof vi.fn>;
   dispose: ReturnType<typeof vi.fn>;
 } {
   const dispose = vi.fn();
@@ -96,6 +97,62 @@ describe("slack startup user allowlist resolution", () => {
       await stopSlackMonitor(monitor);
     }
     expect(dispose).toHaveBeenCalledOnce();
+  });
+
+  it("uses the default account read credential for configured allowlist history", async () => {
+    resetSlackTestState({
+      channels: {
+        slack: {
+          groupPolicy: "allowlist",
+          channels: { C0BJW0FALSC: { enabled: true, requireMention: false } },
+          accounts: {
+            default: {
+              botToken: "xoxb-test",
+              appToken: "xapp-test",
+              userToken: "xoxp-read-test",
+            },
+          },
+        },
+      },
+    });
+    slackTestState.replyMock.mockResolvedValue({ text: "ok" });
+    const { channelRuntime, register } = createRuntimeContextCapture();
+
+    const monitor = startSlackMonitor(monitorSlackProvider, { channelRuntime });
+    try {
+      const handler = await getSlackHandlerOrThrow("message");
+      await handler({
+        event: {
+          type: "message",
+          user: "U123",
+          text: "hello",
+          ts: "1787683185.523829",
+          channel: "C0BJW0FALSC",
+          channel_type: "channel",
+        },
+      });
+      expect(slackTestState.replyMock).toHaveBeenCalledOnce();
+
+      const registration = register.mock.calls.find(
+        ([value]) => value.capability === CHANNEL_HISTORY_RUNTIME_CONTEXT_CAPABILITY,
+      )?.[0];
+      expect(registration).toBeDefined();
+      await registration?.context.readMessage({
+        channelId: "C0BJW0FALSC",
+        messageId: "1787683185.523829",
+      });
+
+      expect(getSlackClient().conversations.history).toHaveBeenCalledWith({
+        token: "xoxp-read-test",
+        channel: "C0BJW0FALSC",
+        oldest: "1787683185.523829",
+        latest: "1787683185.523829",
+        inclusive: true,
+        limit: 1,
+      });
+    } finally {
+      await stopSlackMonitor(monitor);
+    }
   });
 
   it("registers the native approval runtime for plugin-only Slack approvals", async () => {

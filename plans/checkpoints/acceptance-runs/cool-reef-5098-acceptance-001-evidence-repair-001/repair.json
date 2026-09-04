@@ -1,0 +1,38 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/cool-reef-5098.evidence.md",
+      "provenance": "evidence_repair:cool-reef-5098-acceptance-001-evidence-repair-001",
+      "size": 829
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/cool-reef-5098.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/cool-reef-5098-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "c810e68835a128c4dbd5e77db2208ab7b43bcce2",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-08-26T08:50:43.208729+00:00",
+  "gaps": [
+    "command_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=cool-reef-5098 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test test/scripts/deliberation-full-gate.test.ts extensions/deliberation/src/km-client.t",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=cool-reef-5098 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test test/scripts/deliberation-full-gate.test.ts extensions/deliberation/src/km-client",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "cool-reef-5098-acceptance-001-evidence-repair-001",
+  "sourceRunId": "cool-reef-5098-acceptance-001",
+  "startedAt": "2026-08-26T08:50:30.506192+00:00",
+  "status": "escalated"
+}

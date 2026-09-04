@@ -1,0 +1,97 @@
+{
+  "findings": [
+    {
+      "claim": "The task must restore the registered bounded final-delivery service and remove the rejected deliver-once/callable-only architecture.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001",
+        "goal-002",
+        "goal-004",
+        "goal-005"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task-scoped diff changes only extensions/deliberation/src/plugin.test.ts to assert one service and one CLI registration and adds a learning artifact entry; it contains no production service wrapper or registration change and no deletion of the three callable-only artifacts named by the plan.",
+      "rationale": "Plans, checkpoint claims, and RED/GREEN stdout do not deliver the required production implementation in the caller-supplied task-scoped changes, so the service ownership, non-overlap behavior, single-scheduler architecture, and callable removal cannot be accepted.",
+      "required": "Supply task-scoped production changes that register exactly one enabled final-delivery service, implement the bounded non-overlapping adapter loop, and remove the deliver-once/callable-only residue without introducing a second scheduler.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "task-scoped diff:extensions/deliberation/src/plugin.test.ts"
+        },
+        {
+          "kind": "plan",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/2026-08-24_quick-wave-8748_restore-the-simpler-deliberation-final-delivery-service.md"
+        }
+      ]
+    },
+    {
+      "claim": "The final note must provide exact verification results, identify preserved Discord/Slack matrix behavior and removed callable artifacts, and confirm prohibited live/build/deployment actions did not occur.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-003",
+        "goal-004",
+        "goal-005",
+        "goal-006"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "No final note is supplied. The checkpoint gives aggregate pass counts and a brief no-build statement, but it does not list the exact commands/results, enumerate the preserved account-aware root/thread matrix cases, enumerate the three removed callable artifacts, or provide the required complete no-live-state/provider/config/install/restart/deployment declaration. Test Gate was not run and supplies no canonical evidence.",
+      "rationale": "These details are explicitly required verification evidence; summary claims and a single plugin-test RED/GREEN proof do not establish the matrix, architecture cleanup, and no-live-touch boundaries.",
+      "required": "Supply the required final note with exact commands and outcomes, preserved Discord/Slack routing cases, removed second-cron/callable artifacts, any repository-local follow-up, and explicit confirmation that no live send/state/config mutation, build/install, Gateway restart, or deployment occurred.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/checkpoints/quick-wave-8748.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "/Users/michal/Projects/openclaw-fork/plans/checkpoints/quick-wave-8748.red-green-proof.md"
+        },
+        {
+          "kind": "test-gate",
+          "reference": "status:not-run"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "The plugin registers exactly one `deliberation-final-delivery` service when Deliberation is enabled and none when disabled."
+    },
+    {
+      "id": "goal-002",
+      "status": "UNMET",
+      "summary": "One service tick processes at most one ready delivery through the existing adapter; overlapping ticks cannot cause concurrent delivery attempts."
+    },
+    {
+      "id": "goal-003",
+      "status": "UNMET",
+      "summary": "Discord and Slack routing/configuration matrix tests from the latest proposal remain green, including account-aware root/thread output."
+    },
+    {
+      "id": "goal-004",
+      "status": "UNMET",
+      "summary": "The production architecture needs only the existing OpenClaw plugin service plus the existing KM runner; no `deliberation-v2-final-sender` cron is required."
+    },
+    {
+      "id": "goal-005",
+      "status": "UNMET",
+      "summary": "The `deliver-once` CLI and callable-only replacement are absent unless the final note identifies an independently required contract and proves it does not create or imply a second scheduler."
+    },
+    {
+      "id": "goal-006",
+      "status": "UNMET",
+      "summary": "No live state or external provider is touched."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-wave-8748-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-wave-8748"
+}

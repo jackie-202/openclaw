@@ -1,5 +1,6 @@
 import type { ChannelOutboundTextAttemptResult } from "openclaw/plugin-sdk/channel-send-result";
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { parseDeliberationConfig } from "./src/config.js";
 import {
   createFinalDeliveryService,
@@ -14,12 +15,59 @@ import {
   createInboundEventPolicyHandler,
 } from "./src/intake.js";
 import { createKmClient } from "./src/km-client.js";
+import { parseSourceIdentity } from "./src/source-identity.js";
 import type { SourceHistoryIdentity } from "./src/thread-identity-store.js";
 
 export { createFinalDeliveryAdapter, type FinalDeliveryProvider } from "./src/final-adapter.js";
 
 const FAIL_CLOSED_HOOK_PRIORITY = 1000;
 const INVALID_PLATFORM_MESSAGE_IDS = new Set(["unknown", "suppressed"]);
+const SAFE_SLACK_HISTORY_FAILURES = new Set([
+  "missing_scope",
+  "not_in_channel",
+  "channel_not_found",
+]);
+const SAFE_SLACK_HISTORY_INTERNAL_FAILURES = new Map<string, string>([
+  ["Slack thread identity mapping is unavailable or conflicting", "identity_mapping_unavailable"],
+  ["Slack account history runtime is unavailable", "runtime_context_unavailable"],
+  ["Slack thread root is unavailable or conflicting", "root_not_found"],
+]);
+const SLACK_SCOPE_PATTERN = /^[a-z][a-z0-9._-]*:[a-z][a-z0-9._-]*$/i;
+
+function readSlackScopes(value: unknown): string[] | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const scopes = [
+    ...new Set(value.split(/[\s,]+/).filter((scope) => SLACK_SCOPE_PATTERN.test(scope))),
+  ];
+  return scopes.length > 0 ? scopes : undefined;
+}
+
+function classifySlackHistoryFailure(error: unknown) {
+  const internalClassification =
+    error instanceof Error ? SAFE_SLACK_HISTORY_INTERNAL_FAILURES.get(error.message) : undefined;
+  if (internalClassification) {
+    return { provider: "slack" as const, classification: internalClassification };
+  }
+  if (
+    !isRecord(error) ||
+    error.code !== "slack_webapi_platform_error" ||
+    !isRecord(error.data) ||
+    typeof error.data.error !== "string" ||
+    !SAFE_SLACK_HISTORY_FAILURES.has(error.data.error)
+  ) {
+    return undefined;
+  }
+  const neededScopes = readSlackScopes(error.data.needed);
+  const providedScopes = readSlackScopes(error.data.provided);
+  return {
+    provider: "slack" as const,
+    classification: error.data.error,
+    ...(neededScopes ? { neededScopes } : {}),
+    ...(providedScopes ? { providedScopes } : {}),
+  };
+}
 
 function requireSingleAttemptReceipt(result: ChannelOutboundTextAttemptResult): {
   receiptId: string;
@@ -74,64 +122,65 @@ export default definePluginEntry({
       let slackOutboundPromise:
         | ReturnType<typeof api.runtime.channel.outbound.loadAdapter>
         | undefined;
-      const finalDeliveryService = createFinalDeliveryService({
-        km: client,
-        providers: {
-          discord: {
-            async send({ accountId, channelId, threadId, text, idempotencyKey }) {
-              discordOutboundPromise ??= api.runtime.channel.outbound.loadAdapter("discord");
-              const discordOutbound = await discordOutboundPromise;
-              if (!discordOutbound?.sendTextAttempt) {
-                throw new FinalDeliveryRejectedError(
-                  "Discord outbound adapter does not support single-attempt text delivery",
-                  "rejection",
-                );
-              }
-              const result = await discordOutbound.sendTextAttempt({
-                cfg: api.config,
-                accountId,
-                to: `channel:${channelId}`,
-                text,
-                idempotencyKey,
-                ...(threadId ? { threadId } : {}),
-              });
-              return requireSingleAttemptReceipt(result);
+      api.registerService(
+        createFinalDeliveryService({
+          km: client,
+          providers: {
+            discord: {
+              async send({ accountId, channelId, threadId, text, idempotencyKey }) {
+                discordOutboundPromise ??= api.runtime.channel.outbound.loadAdapter("discord");
+                const discordOutbound = await discordOutboundPromise;
+                if (!discordOutbound?.sendTextAttempt) {
+                  throw new FinalDeliveryRejectedError(
+                    "Discord outbound adapter does not support single-attempt text delivery",
+                    "rejection",
+                  );
+                }
+                const result = await discordOutbound.sendTextAttempt({
+                  cfg: api.config,
+                  accountId,
+                  to: `channel:${channelId}`,
+                  text,
+                  idempotencyKey,
+                  ...(threadId ? { threadId } : {}),
+                });
+                return requireSingleAttemptReceipt(result);
+              },
+            },
+            slack: {
+              async send({ accountId, channelId, threadId, text, idempotencyKey }) {
+                const slackAccounts = api.config.channels?.slack?.accounts;
+                if (
+                  accountId !== "default" &&
+                  (!slackAccounts || !Object.hasOwn(slackAccounts, accountId))
+                ) {
+                  throw new FinalDeliveryRejectedError(
+                    "Slack final delivery requires a configured explicit account",
+                    "rejection",
+                  );
+                }
+                slackOutboundPromise ??= api.runtime.channel.outbound.loadAdapter("slack");
+                const slackOutbound = await slackOutboundPromise;
+                if (!slackOutbound?.sendTextAttempt) {
+                  throw new FinalDeliveryRejectedError(
+                    "Slack outbound adapter does not support single-attempt text delivery",
+                    "rejection",
+                  );
+                }
+                const result = await slackOutbound.sendTextAttempt({
+                  cfg: api.config,
+                  accountId,
+                  to: `channel:${channelId}`,
+                  ...(threadId ? { threadId } : {}),
+                  text,
+                  idempotencyKey,
+                });
+                return requireSingleAttemptReceipt(result);
+              },
             },
           },
-          slack: {
-            async send({ accountId, channelId, threadId, text, idempotencyKey }) {
-              const slackAccounts = api.config.channels?.slack?.accounts;
-              if (
-                accountId !== "default" &&
-                (!slackAccounts || !Object.hasOwn(slackAccounts, accountId))
-              ) {
-                throw new FinalDeliveryRejectedError(
-                  "Slack final delivery requires a configured explicit account",
-                  "rejection",
-                );
-              }
-              slackOutboundPromise ??= api.runtime.channel.outbound.loadAdapter("slack");
-              const slackOutbound = await slackOutboundPromise;
-              if (!slackOutbound?.sendTextAttempt) {
-                throw new FinalDeliveryRejectedError(
-                  "Slack outbound adapter does not support single-attempt text delivery",
-                  "rejection",
-                );
-              }
-              const result = await slackOutbound.sendTextAttempt({
-                cfg: api.config,
-                accountId,
-                to: `channel:${channelId}`,
-                ...(threadId ? { threadId } : {}),
-                text,
-                idempotencyKey,
-              });
-              return requireSingleAttemptReceipt(result);
-            },
-          },
-        },
-      });
-      api.registerService(finalDeliveryService);
+        }),
+      );
     }
     const hookOptions = { priority: FAIL_CLOSED_HOOK_PRIORITY };
     api.on("inbound_event_policy", createInboundEventPolicyHandler(config), hookOptions);
@@ -172,10 +221,19 @@ export default definePluginEntry({
       async ({ params, respond }) => {
         try {
           respond(true, await readHistory(params));
-        } catch {
+        } catch (error) {
+          const sourceIdentity =
+            isRecord(params) && typeof params.sourceTarget === "string"
+              ? parseSourceIdentity(params.sourceTarget)
+              : undefined;
+          const details =
+            sourceIdentity?.provider === "slack" ? classifySlackHistoryFailure(error) : undefined;
           respond(false, undefined, {
             code: "SOURCE_HISTORY_UNAVAILABLE",
-            message: "source history read failed",
+            message: details
+              ? `source history read failed: ${details.classification}`
+              : "source history read failed",
+            ...(details ? { details } : {}),
           });
         }
       },

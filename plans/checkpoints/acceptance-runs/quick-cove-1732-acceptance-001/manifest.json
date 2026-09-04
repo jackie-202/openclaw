@@ -1,0 +1,45 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-08-30T22:46:45+00:00",
+    "implementingStartedAt": "2026-08-30T22:06:47+00:00",
+    "taskFile": "plans/tasks/2026-08-30_deliberation-preserve-trusted-sender-names-in-intake-envelope.md",
+    "taskId": "quick-cove-1732",
+    "title": "Deliberation intake: preserve trusted sender names for People Intel identity resolution"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "A Discord event with trusted sender metadata reaches the Deliberation listener request with the opaque ID plus bounded display-name/username indicators."
+    },
+    {
+      "id": "goal-002",
+      "summary": "No sender indicator is sourced from user-controlled envelope text."
+    },
+    {
+      "id": "goal-003",
+      "summary": "Missing display-name/username fields remain valid and preserve current behavior."
+    },
+    {
+      "id": "goal-004",
+      "summary": "Existing source-target, idempotency, replay, and delivery routing behavior is unchanged."
+    },
+    {
+      "id": "goal-005",
+      "summary": "Canonical contract generation/provenance verification passes."
+    },
+    {
+      "id": "goal-006",
+      "summary": "Focused Deliberation intake/contract tests pass."
+    },
+    {
+      "id": "goal-007",
+      "summary": "Final note documents exact source fields used for every supported indicator and the serialized contract shape consumed by KM."
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-cove-1732-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-cove-1732",
+  "tddRequired": true
+}

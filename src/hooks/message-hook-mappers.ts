@@ -42,6 +42,7 @@ export type CanonicalInboundMessageHookContext = {
   senderId?: string;
   senderName?: string;
   senderUsername?: string;
+  senderAliases?: string[];
   senderE164?: string;
   replyToId?: string;
   replyToBody?: string;
@@ -124,6 +125,7 @@ export function deriveInboundMessageHookContext(
         (value): value is string => typeof value === "string" && value.length > 0,
       )
     : undefined;
+  const senderTag = readNonBlankString(ctx.SenderTag);
   return {
     from: ctx.From ?? "",
     to: ctx.To,
@@ -148,6 +150,7 @@ export function deriveInboundMessageHookContext(
     senderId: ctx.SenderId,
     senderName: ctx.SenderName,
     senderUsername: ctx.SenderUsername,
+    senderAliases: senderTag ? [senderTag] : undefined,
     senderE164: ctx.SenderE164,
     replyToId: ctx.ReplyToId,
     replyToBody: ctx.ReplyToBody,
@@ -360,6 +363,7 @@ export function toPluginInboundClaimEvent(
     senderId: canonical.senderId,
     senderName: canonical.senderName,
     senderUsername: canonical.senderUsername,
+    senderAliases: canonical.senderAliases,
     ...(canonical.replyToId !== undefined ? { replyToId: canonical.replyToId } : {}),
     ...(canonical.replyToBody !== undefined ? { replyToBody: canonical.replyToBody } : {}),
     ...(canonical.replyToSender !== undefined ? { replyToSender: canonical.replyToSender } : {}),

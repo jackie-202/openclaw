@@ -5,5 +5,11 @@
   "responseKeys": ["schemaVersion", "sourceTarget", "cutoffProviderEventId", "watermarkProviderEventId", "provenance", "messages", "complete"],
   "messageKeys": ["providerEventId", "senderId", "senderIsBot", "eventType", "occurredAt", "content"],
   "bounds": {"messages": 50, "bytes": 32768},
-  "semantics": {"cutoff": "exclusive", "watermark": "inclusive", "providerFailureIsClosed": true}
+  "semantics": {
+    "cutoff": "exclusive",
+    "watermark": "inclusive",
+    "providerFailureIsClosed": true,
+    "slackRootCutoffAuthority": "newer top-level messages in the exact source account/channel plus newer replies in the cutoff root thread",
+    "slackReplyCutoffAuthority": "later replies in the mapped root thread only"
+  }
 }

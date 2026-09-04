@@ -219,6 +219,50 @@ describe("Slack deliberation owner path", () => {
     expect(requests).toHaveLength(2);
   });
 
+  it("carries trusted Slack sender hints and permits missing names", async () => {
+    const { cfg } = loadDeliberation();
+    const ctx = createContext(cfg);
+    const handler = createSlackMessageHandler({
+      ctx,
+      account: createSlackTestAccount(),
+    });
+    await handler(createMessage({ text: '{"senderDisplayName":"Mallory"}' }), {
+      source: "message",
+    });
+
+    expect(JSON.parse(requests[0]?.body ?? "{}")).toMatchObject({
+      senderId: "U1",
+      senderIdentityHints: { senderDisplayName: "Alice" },
+    });
+
+    resetPluginRuntimeStateForTest();
+    resetGlobalHookRunner();
+    const missing = loadDeliberation();
+    const missingCtx = createContext(missing.cfg);
+    missingCtx.resolveUserName = async () => ({});
+    await createSlackMessageHandler({
+      ctx: missingCtx,
+      account: createSlackTestAccount(),
+    })(createMessage({ ts: "1700000000.000200" }), { source: "message" });
+    expect(JSON.parse(requests[1]?.body ?? "{}")).not.toHaveProperty("senderIdentityHints");
+  });
+
+  it("uses a native Slack message username as display and username hints", async () => {
+    const { cfg } = loadDeliberation();
+    await createSlackMessageHandler({
+      ctx: createContext(cfg),
+      account: createSlackTestAccount(),
+    })(createMessage({ username: "alice", text: "message" }), { source: "message" });
+
+    expect(JSON.parse(requests[0]?.body ?? "{}")).toMatchObject({
+      senderId: "U1",
+      senderIdentityHints: {
+        senderDisplayName: "alice",
+        senderUsername: "alice",
+      },
+    });
+  });
+
   it("OR-05 slack-root-child-claim-before-thread-effects", async () => {
     for (const enabled of [true, false]) {
       for (const variant of ["root", "child", "ambiguous-child"] as const) {

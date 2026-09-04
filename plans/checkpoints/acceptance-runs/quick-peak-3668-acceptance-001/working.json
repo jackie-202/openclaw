@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "Relevant build and Deliberation tests pass with canonical Test Gate evidence.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The canonical Test Gate status is not run and no canonical Test Gate evidence exists; supplied local verification is explicitly non-canonical and the task final note leaves the goal blocked.",
+      "rationale": "The goal is an explicit verification goal, and the caller assigns test execution and interpretation exclusively to Test Gate, so local agent-authored results cannot establish acceptance.",
+      "required": "Provide a caller-owned, durable Test Gate result for the identical candidate workspace that establishes the required build and Deliberation test results.",
+      "sources": [
+        {
+          "kind": "test-gate",
+          "reference": "canonical:not-run"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-peak-3668.test-gate.md:1"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-peak-3668.final-note.md:1"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Activate and verify the latest Deliberation Discord idempotency-key fix: goal-003: Relevant build and D"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-peak-3668-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-peak-3668"
+}

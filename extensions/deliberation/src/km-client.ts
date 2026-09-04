@@ -54,6 +54,12 @@ export type KmReservation = {
   reserveIdempotencyKey: string;
 };
 
+export type KmSenderIdentityHints = {
+  senderDisplayName?: string;
+  senderUsername?: string;
+  senderAliases?: string[];
+};
+
 export type KmIntakeBody = {
   pipelineId: string;
   deliveryTarget: KmWireDeliveryTarget;
@@ -62,6 +68,7 @@ export type KmIntakeBody = {
   sourceTarget: string;
   sourceThreadId: string;
   senderId: string;
+  senderIdentityHints?: KmSenderIdentityHints;
   occurredAt: string;
   receivedAt: string;
   content: string;
@@ -76,6 +83,29 @@ export type KmRequestStage =
   | "response-json"
   | "http"
   | "response-schema";
+
+export type KmRequestCause =
+  | "credential_unresolved"
+  | "timeout"
+  | "aborted"
+  | "connection_refused"
+  | "connection_reset"
+  | "dns"
+  | "transport";
+
+const KM_PATHS = {
+  health: "/deliberation/v1/health",
+  ready: "/deliberation/v1/ready",
+  intake: "/deliberation/v1/intake",
+  reserve: "/deliberation/v1/reservations",
+  invoke: "/deliberation/v1/invocations",
+  complete: "/deliberation/v1/completions",
+} as const;
+
+const KM_API_PREFIX = "/deliberation/v1";
+
+export type KmOperation = keyof typeof KM_PATHS;
+export type KmCanonicalPath = (typeof KM_PATHS)[KmOperation];
 
 const KM_ERROR_CODES = [
   "SCHEMA_INVALID",
@@ -95,16 +125,24 @@ export class KmRequestError extends Error {
   override readonly name = "KmRequestError";
 
   constructor(
+    readonly operation: KmOperation,
+    readonly path: KmCanonicalPath,
     readonly stage: KmRequestStage,
     readonly status?: number,
     readonly code: KmErrorCode = "UNKNOWN",
+    override readonly cause?: KmRequestCause,
     message = "KM request failed",
   ) {
     super(message);
   }
 }
 
-type KmResponse = { value: unknown; status: number };
+type KmResponse = {
+  value: unknown;
+  status: number;
+  operation: KmOperation;
+  path: KmCanonicalPath;
+};
 
 function canonicalErrorCode(value: unknown): KmErrorCode {
   return typeof value === "string" && KM_ERROR_CODES.includes(value as never)
@@ -117,8 +155,37 @@ function parseResponse<T>(response: KmResponse, parse: (value: unknown) => T): T
     return parse(response.value);
   } catch (error) {
     const message = error instanceof Error ? error.message : "KM returned an invalid response";
-    throw new KmRequestError("response-schema", response.status, "UNKNOWN", message);
+    throw new KmRequestError(
+      response.operation,
+      response.path,
+      "response-schema",
+      response.status,
+      "UNKNOWN",
+      undefined,
+      message,
+    );
   }
+}
+
+function transportCause(error: unknown, callerAborted: boolean, timedOut: boolean): KmRequestCause {
+  if (error instanceof DOMException && error.name === "TimeoutError") {
+    return callerAborted ? "aborted" : "timeout";
+  }
+  if (isRecord(error)) {
+    if (error.name === "AbortError" || error.code === "ABORT_ERR") {
+      return callerAborted ? "aborted" : timedOut ? "timeout" : "aborted";
+    }
+    if (error.code === "ECONNREFUSED") {
+      return "connection_refused";
+    }
+    if (error.code === "ECONNRESET") {
+      return "connection_reset";
+    }
+    if (error.code === "ENOTFOUND" || error.code === "EAI_AGAIN") {
+      return "dns";
+    }
+  }
+  return "transport";
 }
 
 function nodeFetch(input: string | URL | Request, init: RequestInit = {}): Promise<Response> {
@@ -708,28 +775,12 @@ const providerEvidenceSchema = z
     detail: z.string().optional(),
   })
   .strict();
-const listenerModuleSchema = z.union([
-  z.object({ status: z.literal("ok"), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).strict(),
-  z.object({ status: z.literal("unavailable"), sha256: z.null() }).strict(),
-]);
 const healthMetadataSchema = z
   .object({
     listener: z
       .object({
         protocolVersion: z.literal(1),
         startedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/),
-        sourceIdentity: z
-          .object({
-            status: z.enum(["ok", "unavailable"]),
-            modules: z
-              .object({
-                "lib/deliberation_source_identity.py": listenerModuleSchema,
-                "lib/deliberation_wire.py": listenerModuleSchema,
-                "lib/deliberation_spool_contracts.py": listenerModuleSchema,
-              })
-              .strict(),
-          })
-          .strict(),
       })
       .strict(),
     runner: z
@@ -815,6 +866,25 @@ const healthMetadataSchema = z
       .strict(),
   })
   .strict();
+const senderIdentityHintValueSchema = z
+  .string()
+  .min(1)
+  .refine((value) => Buffer.byteLength(value, "utf8") <= 128)
+  .refine((value) =>
+    Array.from(value).every((character) => {
+      const codePoint = character.codePointAt(0) ?? 0;
+      return codePoint > 0x1f && (codePoint < 0x7f || codePoint > 0x9f);
+    }),
+  );
+const senderIdentityHintsSchema = z
+  .object({
+    senderDisplayName: senderIdentityHintValueSchema.optional(),
+    senderUsername: senderIdentityHintValueSchema.optional(),
+    senderAliases: z.array(senderIdentityHintValueSchema).max(8).optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0)
+  .refine((value) => Buffer.byteLength(JSON.stringify(value), "utf8") <= 2048);
 const messageSchema = z
   .object({
     inboundId: z.string(),
@@ -823,6 +893,7 @@ const messageSchema = z
     pipelineId: z.string(),
     deliveryTarget: z.unknown(),
     senderId: z.string(),
+    senderIdentityHints: senderIdentityHintsSchema.optional(),
     eventType: z.string(),
     occurredAt: z.string(),
     receivedAt: z.string(),
@@ -1089,7 +1160,16 @@ export function createKmClient(params: {
   // Node fetch injects Accept-Language, which is outside KM's closed transport-header contract.
   const fetchImpl = params.fetchImpl ?? (nodeFetch as typeof fetch);
   const endpoint = params.config.km.endpoint.replace(/\/$/, "");
-  async function request(path: string, init: RequestInit = {}): Promise<KmResponse> {
+  const endpointHasApiPrefix = endpoint.endsWith(KM_API_PREFIX);
+  async function request(
+    operation: KmOperation,
+    init: RequestInit = {},
+    search = "",
+  ): Promise<KmResponse> {
+    const path = KM_PATHS[operation];
+    // A configured canonical prefix already owns this path segment; other endpoint
+    // pathnames are parent prefixes and must remain intact.
+    const requestPath = endpointHasApiPrefix ? path.slice(KM_API_PREFIX.length) : path;
     let credentialResolution;
     try {
       credentialResolution = await resolveConfiguredSecretInputString({
@@ -1099,17 +1179,31 @@ export function createKmClient(params: {
         path: "plugins.entries.deliberation.config.km.credential",
       });
     } catch {
-      throw new KmRequestError("credential");
+      throw new KmRequestError(
+        operation,
+        path,
+        "credential",
+        undefined,
+        "UNKNOWN",
+        "credential_unresolved",
+      );
     }
     const credential = credentialResolution.value;
     if (!credential) {
-      throw new KmRequestError("credential");
+      throw new KmRequestError(
+        operation,
+        path,
+        "credential",
+        undefined,
+        "UNKNOWN",
+        "credential_unresolved",
+      );
     }
     const timeout = AbortSignal.timeout(params.config.km.requestTimeoutMs);
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
     let response: Response;
     try {
-      response = await fetchImpl(`${endpoint}${path}`, {
+      response = await fetchImpl(`${endpoint}${requestPath}${search}`, {
         ...init,
         signal,
         headers: {
@@ -1119,25 +1213,38 @@ export function createKmClient(params: {
           ...(init.body === undefined ? {} : { "Content-Type": "application/json" }),
         },
       });
-    } catch {
-      throw new KmRequestError("transport");
+    } catch (error) {
+      throw new KmRequestError(
+        operation,
+        path,
+        "transport",
+        undefined,
+        "UNKNOWN",
+        transportCause(error, init.signal?.aborted === true, timeout.aborted),
+      );
     }
     let value: unknown;
     try {
       value = await response.json();
     } catch {
-      throw new KmRequestError("response-json", response.status);
+      throw new KmRequestError(operation, path, "response-json", response.status);
     }
     if (!response.ok) {
       const error = isRecord(value) && isRecord(value.error) ? value.error : undefined;
-      throw new KmRequestError("http", response.status, canonicalErrorCode(error?.code));
+      throw new KmRequestError(
+        operation,
+        path,
+        "http",
+        response.status,
+        canonicalErrorCode(error?.code),
+      );
     }
-    return { value, status: response.status };
+    return { value, status: response.status, operation, path };
   }
 
   return {
     async health(signal?: AbortSignal) {
-      return parseResponse(await request("/deliberation/v1/health", { signal }), (value) => {
+      return parseResponse(await request("health", { signal }), (value) => {
         if (
           !isRecord(value) ||
           !hasExactKeys(value, [
@@ -1187,25 +1294,22 @@ export function createKmClient(params: {
         search.set("cursor", query.cursor);
       }
       const suffix = search.size ? `?${search}` : "";
-      return parseResponse(
-        await request(`/deliberation/v1/ready${suffix}`, { signal }),
-        (value) => {
-          if (
-            !isRecord(value) ||
-            !hasExactKeys(value, ["protocolVersion", "items", "nextCursor"]) ||
-            !Array.isArray(value.items) ||
-            (value.nextCursor !== null &&
-              (typeof value.nextCursor !== "string" || !isReadyCursor(value.nextCursor)))
-          ) {
-            throw new Error("KM returned an invalid ready response");
-          }
-          assertProtocolVersion(value);
-          return {
-            items: value.items.map(parseReadyItem),
-            nextCursor: value.nextCursor,
-          };
-        },
-      );
+      return parseResponse(await request("ready", { signal }, suffix), (value) => {
+        if (
+          !isRecord(value) ||
+          !hasExactKeys(value, ["protocolVersion", "items", "nextCursor"]) ||
+          !Array.isArray(value.items) ||
+          (value.nextCursor !== null &&
+            (typeof value.nextCursor !== "string" || !isReadyCursor(value.nextCursor)))
+        ) {
+          throw new Error("KM returned an invalid ready response");
+        }
+        assertProtocolVersion(value);
+        return {
+          items: value.items.map(parseReadyItem),
+          nextCursor: value.nextCursor,
+        };
+      });
     },
     async intake(event: KmIntakeBody, signal?: AbortSignal) {
       if (
@@ -1217,6 +1321,7 @@ export function createKmClient(params: {
           "sourceTarget",
           "sourceThreadId",
           "senderId",
+          "senderIdentityHints",
           "occurredAt",
           "receivedAt",
           "content",
@@ -1229,7 +1334,10 @@ export function createKmClient(params: {
         throw new Error("KM received an invalid pipelineId");
       }
       parseWireDeliveryTarget(event.deliveryTarget, "deliveryTarget");
-      const response = await request("/deliberation/v1/intake", {
+      if (event.senderIdentityHints !== undefined) {
+        senderIdentityHintsSchema.parse(event.senderIdentityHints);
+      }
+      const response = await request("intake", {
         method: "POST",
         body: JSON.stringify(event),
         signal,
@@ -1254,7 +1362,7 @@ export function createKmClient(params: {
       const reserveIdempotencyKey = `reserve:${item.recordId}:${item.version}`;
       let response: KmResponse;
       try {
-        response = await request("/deliberation/v1/reservations", {
+        response = await request("reserve", {
           method: "POST",
           body: JSON.stringify({
             recordId: item.recordId,
@@ -1306,7 +1414,7 @@ export function createKmClient(params: {
     async invoke(reservation: KmReservation, providerAttemptId: string, signal?: AbortSignal) {
       const attemptedTarget = reservation.deliveryEnvelope.deliveryTarget;
       return parseResponse(
-        await request("/deliberation/v1/invocations", {
+        await request("invoke", {
           method: "POST",
           body: JSON.stringify({
             recordId: reservation.recordId,
@@ -1383,7 +1491,7 @@ export function createKmClient(params: {
       const { reservation } = delivery;
       const attemptedTarget = reservation.deliveryEnvelope.deliveryTarget;
       const record = parseResponse(
-        await request("/deliberation/v1/completions", {
+        await request("complete", {
           method: "POST",
           body: JSON.stringify({
             recordId: reservation.recordId,

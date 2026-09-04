@@ -68,6 +68,23 @@ function normalizeNullableObjectsForRuntime(value: unknown): unknown {
 }
 
 describe("accepted Deliberation contracts", () => {
+  it("pins schema-v2 Slack root and reply freshness authority", async () => {
+    const contract = JSON.parse(
+      await readFile(join(contractDir, "history-read-v2.json"), "utf8"),
+    ) as {
+      semantics: Record<string, unknown>;
+    };
+
+    expect(contract.semantics).toMatchObject({
+      cutoff: "exclusive",
+      watermark: "inclusive",
+      providerFailureIsClosed: true,
+      slackRootCutoffAuthority:
+        "newer top-level messages in the exact source account/channel plus newer replies in the cutoff root thread",
+      slackReplyCutoffAuthority: "later replies in the mapped root thread only",
+    });
+  });
+
   it("validates every fixture request and status-specific response", async () => {
     const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
       schemas: Record<string, JsonSchemaObject>;
@@ -154,21 +171,40 @@ describe("accepted Deliberation contracts", () => {
     }
   });
 
-  it("requires the KM owner to adopt immutable pipeline and target evidence", async () => {
+  it("defines immutable pipeline and target evidence at the public adapter boundary", async () => {
     const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
+      owner: string;
+      scope: string;
       schemas: {
         intakeBody: { properties: Record<string, unknown>; required: string[] };
+        senderIdentityHints: {
+          properties: Record<string, unknown>;
+          required?: string[];
+          additionalProperties: boolean;
+        };
         deliveryTarget: { properties: Record<string, unknown> };
         deliveryEnvelope: { properties: Record<string, unknown>; required: string[] };
       };
     };
-    const provenance = JSON.parse(await readFile(join(contractDir, "provenance.json"), "utf8")) as {
-      openclawProducerExtension: { status: string; kmOwnerBaselineChanged: boolean };
-    };
-
+    expect(contract.owner).toBe("OpenClaw");
+    expect(contract.scope).toContain("public HTTP adapter contract");
     expect(contract.schemas.intakeBody.required).toEqual(
       expect.arrayContaining(["pipelineId", "deliveryTarget"]),
     );
+    expect(contract.schemas.intakeBody.required).not.toContain("senderIdentityHints");
+    expect(contract.schemas.intakeBody.properties.senderIdentityHints).toEqual({
+      $ref: "#/schemas/senderIdentityHints",
+    });
+    expect(contract.schemas.senderIdentityHints).toMatchObject({
+      minProperties: 1,
+      additionalProperties: false,
+      properties: {
+        senderDisplayName: { minLength: 1, maxLength: 128 },
+        senderUsername: { minLength: 1, maxLength: 128 },
+        senderAliases: { maxItems: 8 },
+      },
+    });
+    expect(contract.schemas.senderIdentityHints.required).toBeUndefined();
     expect(contract.schemas.deliveryEnvelope.required).toContain("pipelineId");
 
     expect(Object.keys(contract.schemas.deliveryTarget.properties)).toEqual([
@@ -177,8 +213,27 @@ describe("accepted Deliberation contracts", () => {
       "channel",
       "threadId",
     ]);
-    expect(provenance.openclawProducerExtension.status).not.toMatch(/pending/i);
-    expect(provenance.openclawProducerExtension.kmOwnerBaselineChanged).toBe(true);
+  });
+
+  it("pins optional trusted sender hints and a sender-id-only intake fixture", async () => {
+    const fixtures = JSON.parse(
+      await readFile(join(contractDir, "cutover-controls-v1.json"), "utf8"),
+    ) as {
+      cases: Array<{ name: string; request: { body: Record<string, unknown> } }>;
+    };
+    const withHints = fixtures.cases.find(
+      (fixture) => fixture.name === "intake.discord-trusted-sender-hints",
+    );
+    const withoutHints = fixtures.cases.find((fixture) => fixture.name === "intake.success");
+
+    expect(withHints?.request.body).toMatchObject({
+      senderId: "1276273857921024073",
+      senderIdentityHints: {
+        senderDisplayName: "Michal876876",
+        senderUsername: "michal876876",
+      },
+    });
+    expect(withoutHints?.request.body).not.toHaveProperty("senderIdentityHints");
   });
 
   it("matches the accepted provenance hashes", async () => {
@@ -234,7 +289,7 @@ describe("accepted Deliberation contracts", () => {
     ]);
   });
 
-  it("mirrors the current KM endpoint and health contract", async () => {
+  it("defines the public endpoint and health contract consumed by OpenClaw", async () => {
     const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
       endpoints: Array<{ method: string; path: string }>;
       schemas: { healthResponse: { properties: Record<string, unknown> } };
@@ -550,54 +605,29 @@ describe("accepted Deliberation contracts", () => {
     });
   });
 
-  it("pins the accepted KM owner revision and owner files", async () => {
+  it("records only OpenClaw-local contract provenance", async () => {
     const provenance = JSON.parse(await readFile(join(contractDir, "provenance.json"), "utf8")) as {
-      runtimeRevision: { head: string; scope: string; blocking: boolean };
-      semanticAuthority: string;
-      ownerFiles: Record<string, string>;
-      openclawProducerExtension: Record<string, unknown>;
+      owner: string;
+      scope: string;
+      dependencyDirection: string;
+      files: Record<string, string>;
       repositoryLocalEvidence: Record<string, unknown>;
-      configuredKmCheckoutEvidence: Record<string, unknown>;
-      externalLiveDeployment: Record<string, unknown>;
     };
-    expect(provenance.runtimeRevision).toEqual({
-      head: "printed by the owner-backed gate at execution time",
-      scope: "runtime provenance only",
-      blocking: false,
-    });
-    expect(provenance.semanticAuthority).toContain("SHA-256");
-    expect(provenance.ownerFiles).toEqual({
-      "km-system/contracts/deliberation-v2/v1/contract.json":
-        "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
-      "km-system/contracts/deliberation-v2/v1/fixtures.json":
-        "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
-      "km-system/lib/deliberation_wire.py":
-        "a0e42e4fe54eedab6f9955e77f439a4e69c9614a60560ca46532ce0de9dbb528",
-      "km-system/lib/deliberation_spool_contracts.py":
-        "47587e405d3e6b7f433eb7d450bd02969546860ff0d6822ad7bea9ff2478a0ca",
-    });
-    expect(provenance).not.toHaveProperty("ownerPin");
-    expect(provenance.openclawProducerExtension).toEqual({
-      proposal: "proposal-20260820-203458-161e2c",
-      owner: "openclaw-fork",
-      status:
-        "repository-local closed schemas and lifecycle fixtures are semantically consistent; external deployment is unknown",
-      kmOwnerBaselineChanged: true,
-    });
+    expect(provenance.owner).toBe("OpenClaw");
+    expect(provenance.scope).toContain("repository-local public adapter schemas");
+    expect(provenance.dependencyDirection).toContain("caller-owned");
+    expect(Object.keys(provenance.files)).toEqual([
+      "km-wire-v1.json",
+      "cutover-controls-v1.json",
+      "openclaw-overlay-v1.json",
+      "source-identity-v1.json",
+      "source-identity-fixtures-v1.json",
+    ]);
     expect(provenance).toMatchObject({
       repositoryLocalEvidence: {
         schemaValidation: "all request and status-specific response fixtures pass",
         scope: "OpenClaw repository only",
       },
-      configuredKmCheckoutEvidence: {
-        status: "accepted artifact authority",
-        contractSha256: "5c63424b32a8db8370a1212ff7eb3878695afbb5d0fec3721fbab326908de44b",
-        fixturesSha256: "f26ca9afb804664cdcc03947262001d1d8441eab6d5ad9d92bb8533ae3c916b4",
-        wireSha256: "a0e42e4fe54eedab6f9955e77f439a4e69c9614a60560ca46532ce0de9dbb528",
-        spoolContractsSha256: "47587e405d3e6b7f433eb7d450bd02969546860ff0d6822ad7bea9ff2478a0ca",
-        result: expect.stringContaining("runtime HEAD is non-blocking"),
-      },
-      externalLiveDeployment: { status: "unknown" },
     });
     const identity = JSON.parse(
       await readFile(join(contractDir, "source-identity-v1.json"), "utf8"),

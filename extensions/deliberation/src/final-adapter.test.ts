@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createFinalDeliveryAdapter,
   deriveProviderAttemptId,
+  deriveProviderIdempotencyKey,
   FinalDeliveryOutcomeUnknownError,
   FinalDeliveryRejectedError,
 } from "./final-adapter.js";
@@ -40,11 +41,53 @@ const reservation = {
 };
 
 describe("public final delivery adapter", () => {
+  async function captureProviderIdempotencyKey(attemptId: string): Promise<string> {
+    const provider = {
+      send: vi.fn(async (_params: { idempotencyKey: string }) => ({
+        receiptId: "receipt-1",
+        messageId: "message-1",
+      })),
+    };
+    const km = {
+      ready: vi.fn().mockResolvedValue({
+        items: [{ recordId: "record-1", text: "reply", effectiveDeliveryTarget: deliveryTarget }],
+      }),
+      reserve: vi.fn().mockResolvedValue({
+        outcome: "reserved",
+        reservation: { ...reservation, attemptId },
+      }),
+      invoke: vi.fn().mockResolvedValue({}),
+      completeDelivery: vi.fn().mockResolvedValue({ state: "SENT" }),
+    };
+
+    await createFinalDeliveryAdapter({
+      km,
+      providers: { discord: provider },
+      owner: "owner",
+    } as never).runOnce();
+
+    return provider.send.mock.calls[0][0].idempotencyKey;
+  }
+
   it("derives the owner-bound provider attempt identity", () => {
     const providerAttemptId = deriveProviderAttemptId("attempt-1");
 
     expect(providerAttemptId).toBe("provider:attempt-1");
     expect(providerAttemptId).not.toBe(deriveProviderAttemptId("attempt-2"));
+  });
+
+  it("derives a bounded deterministic provider key per delivery attempt", async () => {
+    const firstAttempt = "6488c0ba0123456789abcdef01234567";
+    const secondAttempt = "f78294f70123456789abcdef01234567";
+
+    const first = await captureProviderIdempotencyKey(firstAttempt);
+    const repeated = await captureProviderIdempotencyKey(firstAttempt);
+    const second = await captureProviderIdempotencyKey(secondAttempt);
+
+    expect(first).toMatch(/^[0-9a-f]{24}$/);
+    expect(first.length).toBeLessThanOrEqual(25);
+    expect(repeated).toBe(first);
+    expect(second).not.toBe(first);
   });
 
   it.each([
@@ -137,7 +180,7 @@ describe("public final delivery adapter", () => {
       expect(selected.send).toHaveBeenCalledWith({
         ...asProviderTarget(target),
         text: "reply",
-        idempotencyKey: deriveProviderAttemptId("attempt-1"),
+        idempotencyKey: deriveProviderIdempotencyKey("attempt-1"),
       });
       expect(km.completeDelivery).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -186,9 +229,14 @@ describe("public final delivery adapter", () => {
       owner: "owner",
     } as never).runOnce();
 
-    expect(provider.send).toHaveBeenCalledWith(
-      expect.objectContaining({ accountId: "account-b", channelId: "channel-b" }),
-    );
+    expect(provider.send).toHaveBeenCalledWith({
+      provider: "discord",
+      accountId: "account-b",
+      channelId: "channel-b",
+      text: "reply",
+      idempotencyKey: deriveProviderIdempotencyKey("attempt-1"),
+    });
+    expect(provider.send.mock.calls[0]?.[0]).not.toHaveProperty("threadId");
     expect(km.invoke).toHaveBeenCalledWith(
       durableReservation,
       deriveProviderAttemptId("attempt-1"),

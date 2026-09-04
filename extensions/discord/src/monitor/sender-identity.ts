@@ -7,6 +7,8 @@ import { formatDiscordUserTag } from "./format.js";
 export type DiscordSenderIdentity = {
   id: string;
   name?: string;
+  displayName?: string;
+  username?: string;
   tag?: string;
   label: string;
   isPluralKit: boolean;
@@ -50,6 +52,8 @@ export function resolveDiscordSenderIdentity(params: {
     return {
       id: memberId,
       name: memberName,
+      displayName: memberName,
+      username: normalizeOptionalString(pkMember?.name),
       tag: normalizeOptionalString(pkMember?.name),
       label,
       isPluralKit: true,
@@ -75,6 +79,8 @@ export function resolveDiscordSenderIdentity(params: {
   return {
     id: params.author.id,
     name: params.author.username ?? undefined,
+    displayName: senderDisplay ?? undefined,
+    username: params.author.username ?? undefined,
     tag: senderTag,
     label: senderLabel,
     isPluralKit: false,

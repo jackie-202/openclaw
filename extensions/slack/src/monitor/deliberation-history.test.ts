@@ -3,6 +3,48 @@ import { describe, expect, it, vi } from "vitest";
 import { createSlackChannelHistoryContext } from "./deliberation-history.js";
 
 describe("Slack channel history runtime context", () => {
+  it("reads one bounded channel page through conversations.history", async () => {
+    const history = vi.fn().mockResolvedValue({
+      messages: [{ ts: "1723640000.000200", text: "new root", user: "U2" }],
+      response_metadata: { next_cursor: " next " },
+    });
+    const context = createSlackChannelHistoryContext({
+      client: { conversations: { history } } as unknown as WebClient,
+      token: "test-token",
+    });
+    await expect(
+      context.readChannelPage?.({
+        channelId: "C123",
+        cursor: "cursor-1",
+        oldest: "1723640000.000100",
+        latest: "1723640000.000300",
+        inclusive: true,
+        limit: 50,
+      }),
+    ).resolves.toEqual({
+      messages: [
+        {
+          id: "1723640000.000200",
+          threadId: undefined,
+          content: "new root",
+          senderId: "U2",
+          botId: undefined,
+          latestReplyId: undefined,
+        },
+      ],
+      nextCursor: "next",
+    });
+    expect(history).toHaveBeenCalledWith({
+      token: "test-token",
+      channel: "C123",
+      cursor: "cursor-1",
+      oldest: "1723640000.000100",
+      latest: "1723640000.000300",
+      inclusive: true,
+      limit: 50,
+    });
+  });
+
   it("reads one exact root through conversations.history", async () => {
     const history = vi.fn().mockResolvedValue({
       messages: [

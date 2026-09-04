@@ -50,10 +50,10 @@ Despite its title, the commit did not complete removal. The current fork still e
 
 ### Workspace-owned tooling
 
-The model-switch helper is not upstream OpenClaw code. It is workspace/KM tooling:
+The model-switch helper is not upstream OpenClaw code. It is external workspace tooling:
 
-- `/Users/michal/.openclaw/workspace/km-system/scripts/openclaw-channel-runtime.py`
-- `/Users/michal/.openclaw/workspace/km-system/scripts/openclaw_channel_runtime_support.py`
+- `scripts/openclaw-channel-runtime.py`
+- `scripts/openclaw_channel_runtime_support.py`
 
 The current implementation writes `runtimeByChannel`, optionally patches live sessions, and only warns when `modelByChannel` exists: `legacy channels.modelByChannel present — unsupported, migrate manually`. It does not currently remove the legacy entry.
 

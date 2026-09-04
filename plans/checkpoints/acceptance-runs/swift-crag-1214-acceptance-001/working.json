@@ -1,0 +1,66 @@
+{
+  "findings": [
+    {
+      "claim": "The required narrow KM request-boundary correction and safe final-delivery warning implementation are absent from the supplied task-scoped implementation diff.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied diff adds delivery-probe surfaces, lifecycle fixtures, documentation, and a semantically equivalent direct service registration, but shows no change to extensions/deliberation/src/km-client.ts or extensions/deliberation/src/final-adapter.ts implementing endpoint-prefix correction or operation/path/status/cause warning metadata.",
+      "rationale": "The task explicitly requires fixing the proven plugin/KM-client request mismatch and improving bounded runtime diagnostics; fixtures and documentation alone do not deliver those runtime behaviors.",
+      "required": "Provide the narrow request-boundary implementation in the owning plugin/client code and bounded final-delivery warning metadata while preserving authentication, protocol, reservation, destination, and unknown-outcome guards.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/km-client.ts"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/final-adapter.ts"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-25_swift-crag-1214_fix-deliberation-final-delivery-plugin-km-request-failure.md"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-declared mandatory RED/GREEN TDD proof is incomplete in the supplied material.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied proof records a timestamped failing RED command and failures, but supplies no timestamped GREEN phase command, exit status, or output; the checkpoint's summary assertion that GREEN exists is not concrete proof provenance.",
+      "rationale": "The manifest declares tddRequired true and the task requires a genuine failing-before/passing-after lifecycle and diagnostic cycle, so RED evidence alone cannot establish the required TDD progression.",
+      "required": "Supply the corresponding concrete GREEN proof for the same scoped behavior, including command provenance and passing outcome, without relying only on a checkpoint summary.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-crag-1214.red-green-proof.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-crag-1214.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Fix Deliberation final-delivery plugin KM request failure"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-crag-1214-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "swift-crag-1214"
+}

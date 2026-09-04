@@ -1,0 +1,36 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/dark-vale-4951.evidence.md",
+      "provenance": "evidence_repair:dark-vale-4951-acceptance-001-evidence-repair-001",
+      "size": 769
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/dark-vale-4951.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/dark-vale-4951-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "c810e68835a128c4dbd5e77db2208ab7b43bcce2",
+  "escalationReason": "exact_command_outcome_evidence_unavailable",
+  "finishedAt": "2026-08-25T17:05:32.820310+00:00",
+  "gaps": [],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=dark-vale-4951 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/route-match.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=dark-vale-4951 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/route-match.test.ts -- --reporter=verbose",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "dark-vale-4951-acceptance-001-evidence-repair-001",
+  "sourceRunId": "dark-vale-4951-acceptance-001",
+  "startedAt": "2026-08-25T17:05:30.692726+00:00",
+  "status": "escalated"
+}

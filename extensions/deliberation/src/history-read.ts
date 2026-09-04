@@ -114,16 +114,12 @@ function normalizeDiscordMessage(
   };
 }
 
-function normalizeSlackMessage(
+function normalizeSlackFields(
   message: ChannelHistoryMessage,
-  threadId: string,
+  invalidMessage: string,
 ): NormalizedMessage {
-  if (
-    typeof message.id !== "string" ||
-    typeof message.content !== "string" ||
-    (message.threadId === undefined ? message.id !== threadId : message.threadId !== threadId)
-  ) {
-    throw new Error("Slack history response contains an invalid or off-thread message");
+  if (typeof message.id !== "string" || typeof message.content !== "string") {
+    throw new Error(invalidMessage);
   }
   if (
     (message.senderId !== undefined &&
@@ -144,6 +140,29 @@ function normalizeSlackMessage(
     occurredAt: slackTimestampIso(message.id),
     content: message.content,
   };
+}
+
+function normalizeSlackMessage(
+  message: ChannelHistoryMessage,
+  threadId: string,
+): NormalizedMessage {
+  if (message.threadId === undefined ? message.id !== threadId : message.threadId !== threadId) {
+    throw new Error("Slack history response contains an invalid or off-thread message");
+  }
+  return normalizeSlackFields(
+    message,
+    "Slack history response contains an invalid or off-thread message",
+  );
+}
+
+function normalizeSlackChannelMessage(message: ChannelHistoryMessage): NormalizedMessage {
+  if (message.threadId !== undefined && message.threadId !== message.id) {
+    throw new Error("Slack history response contains an invalid or threaded channel message");
+  }
+  return normalizeSlackFields(
+    message,
+    "Slack history response contains an invalid or threaded channel message",
+  );
 }
 
 function sameMessage(left: NormalizedMessage, right: NormalizedMessage): boolean {
@@ -252,27 +271,17 @@ function requireSlackHistoryContext(context: ChannelHistoryRuntimeContext | unde
   return context;
 }
 
-async function readSlackThread(params: {
-  reader: ChannelHistoryRuntimeContext;
-  channelId: string;
-  threadId: string;
-  oldest?: string;
-  latest?: string;
-  inclusive?: boolean;
+async function readSlackPages(params: {
+  readPage: (cursor?: string) => Promise<{
+    messages: ChannelHistoryMessage[];
+    nextCursor?: string;
+  }>;
   onMessage: (message: ChannelHistoryMessage) => boolean | void;
 }): Promise<boolean> {
   const cursors = new Set<string>();
   let cursor: string | undefined;
   for (let pageIndex = 0; pageIndex < SLACK_HISTORY_MAX_PAGES; pageIndex += 1) {
-    const page = await params.reader.readThreadPage({
-      channelId: params.channelId,
-      threadId: params.threadId,
-      ...(cursor ? { cursor } : {}),
-      ...(params.oldest ? { oldest: params.oldest } : {}),
-      ...(params.latest ? { latest: params.latest } : {}),
-      ...(params.inclusive === undefined ? {} : { inclusive: params.inclusive }),
-      limit: FRESHNESS_PAGE_LIMIT,
-    });
+    const page = await params.readPage(cursor);
     if (!page || !Array.isArray(page.messages)) {
       throw new Error("Slack history response must contain a messages array");
     }
@@ -291,6 +300,51 @@ async function readSlackThread(params: {
     cursor = page.nextCursor;
   }
   return false;
+}
+
+async function readSlackThread(params: {
+  reader: ChannelHistoryRuntimeContext;
+  channelId: string;
+  threadId: string;
+  oldest?: string;
+  latest?: string;
+  inclusive?: boolean;
+  onMessage: (message: ChannelHistoryMessage) => boolean | void;
+}): Promise<boolean> {
+  return readSlackPages({
+    readPage: (cursor) =>
+      params.reader.readThreadPage({
+        channelId: params.channelId,
+        threadId: params.threadId,
+        ...(cursor ? { cursor } : {}),
+        ...(params.oldest ? { oldest: params.oldest } : {}),
+        ...(params.latest ? { latest: params.latest } : {}),
+        ...(params.inclusive === undefined ? {} : { inclusive: params.inclusive }),
+        limit: FRESHNESS_PAGE_LIMIT,
+      }),
+    onMessage: params.onMessage,
+  });
+}
+
+async function readSlackChannel(params: {
+  readChannelPage: NonNullable<ChannelHistoryRuntimeContext["readChannelPage"]>;
+  channelId: string;
+  oldest: string;
+  latest: string;
+  onMessage: (message: ChannelHistoryMessage) => boolean | void;
+}): Promise<boolean> {
+  return readSlackPages({
+    readPage: (cursor) =>
+      params.readChannelPage({
+        channelId: params.channelId,
+        ...(cursor ? { cursor } : {}),
+        oldest: params.oldest,
+        latest: params.latest,
+        inclusive: true,
+        limit: FRESHNESS_PAGE_LIMIT,
+      }),
+    onMessage: params.onMessage,
+  });
 }
 
 export function createHistoryReadHandler(options: {
@@ -369,6 +423,7 @@ export function createHistoryReadHandler(options: {
       }
 
       const cutoff = request.after;
+      const rootCutoff = cutoff === threadId;
       const latestReplyId = root.latestReplyId;
       if (latestReplyId) {
         if (!isSlackTimestamp(latestReplyId)) {
@@ -378,7 +433,33 @@ export function createHistoryReadHandler(options: {
           throw new Error("Slack thread watermark precedes its root");
         }
       }
-      const capturedWatermark = latestReplyId ?? threadId;
+      let capturedWatermark = latestReplyId ?? cutoff;
+      const readChannelPage = reader.readChannelPage?.bind(reader);
+      if (rootCutoff) {
+        if (!readChannelPage) {
+          throw new Error("Slack account history runtime is unavailable");
+        }
+        const probe = await readChannelPage({
+          channelId: identity.channel,
+          oldest: cutoff,
+          inclusive: false,
+          limit: 1,
+        });
+        if (!probe || !Array.isArray(probe.messages) || probe.messages.length > 1) {
+          throw new Error("Slack history response must contain a bounded messages array");
+        }
+        const channelWatermark = probe.messages[0]
+          ? normalizeSlackChannelMessage(probe.messages[0]).providerEventId
+          : undefined;
+        if (channelWatermark) {
+          if (compareSlackTimestamps(channelWatermark, cutoff) <= 0) {
+            throw new Error("Slack freshness response is outside captured bounds");
+          }
+          if (compareSlackTimestamps(channelWatermark, capturedWatermark) > 0) {
+            capturedWatermark = channelWatermark;
+          }
+        }
+      }
       if (compareSlackTimestamps(capturedWatermark, cutoff) <= 0) {
         return {
           schemaVersion: 2 as const,
@@ -393,7 +474,41 @@ export function createHistoryReadHandler(options: {
 
       const seen = new Map<string, NormalizedMessage>();
       const evidence = new Map<string, NormalizedMessage>();
-      const traversalComplete = await readSlackThread({
+      const admitMessage = (normalized: NormalizedMessage) => {
+        const existing = seen.get(normalized.providerEventId);
+        if (existing && !sameMessage(existing, normalized)) {
+          throw new Error("Slack history response contains a conflicting message id");
+        }
+        seen.set(normalized.providerEventId, normalized);
+        if (compareSlackTimestamps(normalized.providerEventId, capturedWatermark) > 0) {
+          throw new Error("Slack freshness response is outside captured bounds");
+        }
+        if (compareSlackTimestamps(normalized.providerEventId, cutoff) > 0) {
+          evidence.set(normalized.providerEventId, normalized);
+        }
+        const bounded = boundFreshnessMessages(
+          [...evidence.values()].toSorted((left, right) =>
+            compareSlackTimestamps(left.providerEventId, right.providerEventId),
+          ),
+        );
+        return bounded.complete;
+      };
+      let channelTraversalComplete = true;
+      if (rootCutoff) {
+        if (!readChannelPage) {
+          throw new Error("Slack account history runtime is unavailable");
+        }
+        channelTraversalComplete = await readSlackChannel({
+          readChannelPage,
+          channelId: identity.channel,
+          oldest: cutoff,
+          latest: capturedWatermark,
+          onMessage(message) {
+            return admitMessage(normalizeSlackChannelMessage(message));
+          },
+        });
+      }
+      const threadTraversalComplete = await readSlackThread({
         reader,
         channelId: identity.channel,
         threadId,
@@ -401,24 +516,7 @@ export function createHistoryReadHandler(options: {
         latest: capturedWatermark,
         inclusive: true,
         onMessage(message) {
-          const normalized = normalizeSlackMessage(message, threadId);
-          const existing = seen.get(normalized.providerEventId);
-          if (existing && !sameMessage(existing, normalized)) {
-            throw new Error("Slack history response contains a conflicting message id");
-          }
-          seen.set(normalized.providerEventId, normalized);
-          if (compareSlackTimestamps(normalized.providerEventId, capturedWatermark) > 0) {
-            throw new Error("Slack freshness response is outside captured bounds");
-          }
-          if (compareSlackTimestamps(normalized.providerEventId, cutoff) > 0) {
-            evidence.set(normalized.providerEventId, normalized);
-          }
-          const bounded = boundFreshnessMessages(
-            [...evidence.values()].toSorted((left, right) =>
-              compareSlackTimestamps(left.providerEventId, right.providerEventId),
-            ),
-          );
-          return bounded.complete;
+          return admitMessage(normalizeSlackMessage(message, threadId));
         },
       });
       const ordered = [...evidence.values()].toSorted((left, right) =>
@@ -432,7 +530,11 @@ export function createHistoryReadHandler(options: {
         watermarkProviderEventId: capturedWatermark,
         provenance: provenance(identity),
         messages: bounded.messages,
-        complete: traversalComplete && bounded.complete,
+        complete:
+          channelTraversalComplete &&
+          threadTraversalComplete &&
+          bounded.complete &&
+          evidence.has(capturedWatermark),
       };
     }
 

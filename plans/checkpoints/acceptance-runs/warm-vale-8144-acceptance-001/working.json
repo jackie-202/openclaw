@@ -1,0 +1,47 @@
+{
+  "findings": [
+    {
+      "claim": "The required task-scoped KM request-boundary correction and safe final-delivery warning implementation are absent from the supplied implementation diff.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied diff contains delivery-probe surfaces, lifecycle fixtures, documentation, and a semantically neutral direct service-registration rewrite, but no change to extensions/deliberation/src/km-client.ts or extensions/deliberation/src/final-adapter.ts. The checkpoint and TDD proof claim those implementation files, yet the task-scoped production diff does not expose the prefix correction or warning behavior for semantic review.",
+      "rationale": "This acceptance-fix was created specifically because the prior outcome lacked task-scoped production provenance. Passing proof prose cannot substitute for supplied implementation material, so the goal's runtime correction remains untrustworthy in this run.",
+      "required": "Supply the narrow createKmClient canonical-prefix correction and bounded final-delivery warning implementation in the task-scoped diff, preserving authentication, protocol, reservation, destination, provider-attempt, completion, and unknown-outcome guards.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/km-client.ts"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/final-adapter.ts"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-08-25_warm-vale-8144_fix-deliberation-final-delivery-plugin-km-request-failure.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-vale-8144.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Fix Deliberation final-delivery plugin KM request failure: goal-001: Fix Deliberation final-delivery pl"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-vale-8144-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-vale-8144"
+}

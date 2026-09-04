@@ -228,8 +228,12 @@ async function processDiscordMessageInner(
       conversationId: messageChannelId,
       parentConversationId: ctx.threadParentId,
       senderId: ctx.sender.id ?? ctx.author.id,
-      senderName: ctx.sender.label,
-      senderUsername: ctx.author.username,
+      senderName:
+        ctx.sender.displayName ??
+        (ctx.sender.isPluralKit ? ctx.sender.name : (ctx.author.globalName ?? ctx.sender.name)),
+      senderUsername:
+        ctx.sender.username ?? (ctx.sender.isPluralKit ? ctx.sender.name : ctx.author.username),
+      senderAliases: ctx.sender.tag ? [ctx.sender.tag] : undefined,
       threadId: ctx.threadChannel?.id,
       messageId: message.id,
       sessionKey: route.sessionKey,

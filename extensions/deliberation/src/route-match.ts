@@ -86,7 +86,7 @@ export function candidateRoute(candidate: RouteCandidate): DeliberationRoute | u
 function pipelineTargetToWire(
   pipeline: DeliberationPipeline,
   route: DeliberationRoute,
-  sourceThreadId: string,
+  deliveryThreadId?: string,
 ): KmWireDeliveryTarget {
   const target = pipeline.target;
   return target
@@ -100,7 +100,7 @@ function pipelineTargetToWire(
         provider: route.channel,
         account: route.accountId,
         channel: route.target,
-        threadId: sourceThreadId,
+        ...(deliveryThreadId === undefined ? {} : { threadId: deliveryThreadId }),
       };
 }
 
@@ -197,12 +197,13 @@ export function admitInboundSource(
     account: route.accountId,
     channel: route.target,
   });
+  const deliveryThreadId = channel === "slack" || parentTarget ? normalizedThreadId : undefined;
   return sourceTarget
     ? {
         accepted: true,
         pipeline,
         pipelineId: pipeline.id,
-        deliveryTarget: pipelineTargetToWire(pipeline, route, normalizedThreadId),
+        deliveryTarget: pipelineTargetToWire(pipeline, route, deliveryThreadId),
         route,
         sourceTarget,
         providerEventId,
