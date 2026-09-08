@@ -101,8 +101,6 @@ See [SecretRef credential surface](/reference/secretref-credential-surface) for 
 
 An explicit pipeline target uses canonical `channel`, `accountId`, and `target` fields. Omitting `threadId` represents root delivery; providing it selects that exact target thread. At authenticated intake, the plugin selects the pipeline whose source matches the provider, account, and channel evidence. An omitted target resolves to that authenticated source and its source thread. For a Discord root message, this is a source-message anchor: Discord creates or reuses the thread attached to that message before sending one reply. Each accepted request carries the selected pipeline ID and effective target, so pipelines can use different explicit or source-default destinations.
 
-No tagged release through `v2026.8.1-beta.2` included this plugin. Later tagged builds accept only canonical `pipelines` at startup. If an untagged fork build wrote a legacy `sources` array or global `deliveryTarget`, run `openclaw doctor --fix` before starting the Gateway. The plugin-owned migration creates one stable `v1:<provider>:<account>:<channel>` pipeline per source, copies the global target to each pipeline, removes the legacy keys, and reports the change. It refuses to choose between mixed legacy fields and `pipelines`; remove one authority manually and rerun doctor. Runtime intake has no legacy fallback or global common-target projection.
-
 ## Wire contract
 
 Every request sends `X-Deliberation-Protocol-Version: 1`. The canonical KM API has exactly six operations:

@@ -10,7 +10,7 @@ export const DELIBERATION_LEAVES = [
   ["OR-04", "OR-04 discord-system-room-event-claimed-before-enqueue", "discord"],
   ["OR-05", "OR-05 slack-root-child-claim-before-thread-effects", "slack"],
   ["OR-06", "OR-06 command-abort-empty-autothread-claim-matrix", "discord"],
-  ["OR-22", "OR-22 doctor-package-writeback-built-five-hook-runtime", "package"],
+  ["OR-22", "OR-22 canonical-package-validation-built-five-hook-runtime", "package"],
   ["OR-23", "OR-23 full-gate-integrity", "integrity"],
 ] as const;
 

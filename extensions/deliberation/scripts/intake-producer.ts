@@ -163,52 +163,11 @@ async function main(): Promise<void> {
   for await (const chunk of process.stdin) {
     chunks.push(Buffer.from(chunk));
   }
-  let input = JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+  const input = JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("invalid producer input");
   }
-  if ("routes" in input && "event" in input) {
-    const routes = input.routes as {
-      sources?: Array<{ provider: "discord" | "slack"; accountId: string; channelId: string }>;
-      processing?: { provider: "discord" | "slack"; accountId: string; channelId: string };
-    };
-    const event = input.event as Record<string, unknown>;
-    if (routes.sources && routes.processing) {
-      const { channelId, ...canonicalEvent } = event;
-      input = {
-        pipelines: routes.sources.map((source) => ({
-          id: `${source.provider}-source`,
-          source: {
-            channel: source.provider,
-            accountId: source.accountId,
-            target: source.channelId,
-          },
-          target: {
-            channel: source.provider,
-            accountId: source.accountId,
-            target: source.channelId,
-          },
-        })),
-        processingSource: {
-          channel: routes.processing.provider,
-          accountId: routes.processing.accountId,
-          target: routes.processing.channelId,
-        },
-        event: {
-          ...canonicalEvent,
-          conversationId: channelId,
-        },
-        context: {
-          channelId: event.provider,
-          accountId: event.accountId,
-          conversationId: channelId,
-          messageId: event.messageId,
-          senderId: event.senderId,
-        },
-      };
-    }
-  }
-  const result = await runIntakeProducer({ ...(input as Record<string, unknown>), endpoint });
+  const result = await runIntakeProducer({ ...input, endpoint });
   process.stdout.write(`${JSON.stringify(result)}\n`);
   if (!result.handled) {
     process.exitCode = 1;

@@ -147,15 +147,6 @@ exactly: an omitted `threadId` becomes `mode: "root"`, while a present
 explicit or source-default destinations. Message content cannot select a
 pipeline or replace its target.
 
-No tagged release through `v2026.8.1-beta.2` included the Deliberation plugin.
-Later tagged builds accept only canonical `pipelines` at startup. If an untagged
-fork build wrote `sources` or a global `deliveryTarget`, run
-`openclaw doctor --fix` before starting the Gateway. The plugin-owned doctor
-migration creates one stable `v1:<provider>:<account>:<channel>` pipeline per
-source, copies the global target to each pipeline, removes the legacy keys, and
-refuses mixed legacy and canonical authority for manual repair. There is no
-runtime legacy fallback, common-target projection, or reservation-time override.
-
 ### Bound the smoke cases
 
 Evaluate only these cases during a separately approved pilot window:

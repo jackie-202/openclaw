@@ -31,19 +31,25 @@ function makeConfig(pluginConfig: JsonObject): JsonObject {
   };
 }
 
-function makeLegacyConfig(): JsonObject {
+function makeCanonicalConfig(): JsonObject {
   return makeConfig({
     ...commonConfig,
-    sources: [
-      { channel: "discord", accountId: "acct", target: "source" },
-      { channel: "slack", accountId: "workspace-a", target: "C123" },
+    pipelines: [
+      {
+        id: "discord-source",
+        source: { channel: "discord", accountId: "acct", target: "source" },
+        target: {
+          channel: "discord",
+          accountId: "delivery",
+          target: "channel",
+          threadId: "thread",
+        },
+      },
+      {
+        id: "slack-source",
+        source: { channel: "slack", accountId: "workspace-a", target: "C123" },
+      },
     ],
-    deliveryTarget: {
-      provider: "discord",
-      accountId: "delivery",
-      channelId: "channel",
-      threadId: "thread",
-    },
   });
 }
 
@@ -60,24 +66,17 @@ function isolatedOpenClawEnv(root: string, configPath: string, packageRoot: stri
   };
 }
 
-function readPluginConfig(configPath: string): JsonObject {
-  const config = JSON.parse(fs.readFileSync(configPath, "utf8")) as {
-    plugins: { entries: { deliberation: { config: JsonObject } } };
-  };
-  return config.plugins.entries.deliberation.config;
-}
-
 function expectSuccess(result: SpawnSyncReturns<string>, label: string): void {
   expect(result.status, `${label}\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`).toBe(0);
 }
 
-it("OR-22 doctor-package-writeback-built-five-hook-runtime", () => {
+it("OR-22 canonical-package-validation-built-five-hook-runtime", () => {
   const tarball = process.env.OPENCLAW_CURRENT_PACKAGE_TGZ;
   if (!tarball) {
     throw new Error("OPENCLAW_CURRENT_PACKAGE_TGZ is required");
   }
 
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-deliberation-doctor-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-deliberation-package-"));
   try {
     const prefix = path.join(root, "prefix");
     const install = spawnSync(
@@ -88,15 +87,6 @@ it("OR-22 doctor-package-writeback-built-five-hook-runtime", () => {
     expectSuccess(install, "install packaged OpenClaw");
 
     const packageRoot = path.join(prefix, "node_modules", "openclaw");
-    const contract = path.join(
-      packageRoot,
-      "dist",
-      "extensions",
-      "deliberation",
-      "doctor-contract-api.js",
-    );
-    expect(fs.existsSync(contract), `missing packaged doctor contract: ${contract}`).toBe(true);
-
     const entrypoint = path.join(packageRoot, "openclaw.mjs");
     const runCli = (configPath: string, args: string[]) =>
       spawnSync(process.execPath, [entrypoint, ...args], {
@@ -110,42 +100,11 @@ it("OR-22 doctor-package-writeback-built-five-hook-runtime", () => {
       return configPath;
     };
 
-    const migratedPath = writeFixture("legacy", makeLegacyConfig());
-    const firstDoctor = runCli(migratedPath, ["doctor", "--fix", "--non-interactive"]);
-    expectSuccess(firstDoctor, "first doctor migration");
-    expect(firstDoctor.stdout + firstDoctor.stderr).toContain(
-      "Migrated Deliberation legacy config",
-    );
-    expect(readPluginConfig(migratedPath)).toMatchObject({
-      pipelines: [
-        {
-          id: "v1:discord:acct:source",
-          source: { channel: "discord", accountId: "acct", target: "source" },
-          target: {
-            channel: "discord",
-            accountId: "delivery",
-            target: "channel",
-            threadId: "thread",
-          },
-        },
-        {
-          id: "v1:slack:workspace-a:C123",
-          source: { channel: "slack", accountId: "workspace-a", target: "C123" },
-        },
-      ],
-    });
-    expect(readPluginConfig(migratedPath)).not.toHaveProperty("sources");
-    expect(readPluginConfig(migratedPath)).not.toHaveProperty("deliveryTarget");
+    const canonicalPath = writeFixture("canonical", makeCanonicalConfig());
+    const validateCanonical = runCli(canonicalPath, ["config", "validate"]);
+    expectSuccess(validateCanonical, "validate canonical config");
 
-    const firstBytes = fs.readFileSync(migratedPath, "utf8");
-    const secondDoctor = runCli(migratedPath, ["doctor", "--fix", "--non-interactive"]);
-    expectSuccess(secondDoctor, "idempotent doctor migration");
-    expect(fs.readFileSync(migratedPath, "utf8")).toBe(firstBytes);
-
-    const validateMigrated = runCli(migratedPath, ["config", "validate"]);
-    expectSuccess(validateMigrated, "validate migrated config");
-
-    const listPlugins = runCli(migratedPath, ["plugins", "list", "--json"]);
+    const listPlugins = runCli(canonicalPath, ["plugins", "list", "--json"]);
     expectSuccess(listPlugins, "discover packaged plugins");
 
     const runtimeProbeSource = `
@@ -182,9 +141,9 @@ it("OR-22 doctor-package-writeback-built-five-hook-runtime", () => {
       {
         encoding: "utf8",
         env: {
-          ...isolatedOpenClawEnv(root, migratedPath, packageRoot),
+          ...isolatedOpenClawEnv(root, canonicalPath, packageRoot),
           OPENCLAW_PROBE_PACKAGE_ROOT: packageRoot,
-          OPENCLAW_PROBE_CONFIG_PATH: migratedPath,
+          OPENCLAW_PROBE_CONFIG_PATH: canonicalPath,
         },
         timeout: 60_000,
       },
@@ -209,9 +168,17 @@ it("OR-22 doctor-package-writeback-built-five-hook-runtime", () => {
     ]);
     expect(registration.services).toEqual(["deliberation-final-delivery"]);
 
-    const refusalFixtures: Array<[string, JsonObject]> = [
+    const refusalFixtures: Array<[string, JsonObject, string]> = [
       [
-        "mixed-authority",
+        "legacy-sources",
+        makeConfig({
+          ...commonConfig,
+          sources: [{ channel: "discord", accountId: "acct", target: "source" }],
+        }),
+        "sources",
+      ],
+      [
+        "mixed-sources",
         makeConfig({
           ...commonConfig,
           pipelines: [
@@ -222,56 +189,39 @@ it("OR-22 doctor-package-writeback-built-five-hook-runtime", () => {
           ],
           sources: [{ channel: "discord", accountId: "acct", target: "legacy" }],
         }),
+        "sources",
       ],
       [
-        "duplicate-routes",
-        makeConfig({
-          ...commonConfig,
-          sources: [
-            { channel: "discord", accountId: "acct", target: "source" },
-            { channel: "discord", accountId: "acct", target: "source" },
-          ],
-        }),
-      ],
-      [
-        "processing-overlap",
-        makeConfig({
-          ...commonConfig,
-          sources: [commonConfig.processingSource],
-        }),
-      ],
-      [
-        "impossible-thread-inheritance",
+        "mixed-global-target",
         makeConfig({
           ...commonConfig,
           pipelines: [
             {
-              id: "slack-source",
-              source: { channel: "slack", accountId: "workspace-a", target: "C123" },
-              target: {
-                channel: "discord",
-                accountId: "delivery",
-                target: "channel",
-                inheritThread: true,
-              },
+              id: "canonical",
+              source: { channel: "discord", accountId: "acct", target: "source" },
             },
           ],
+          deliveryTarget: {
+            provider: "discord",
+            accountId: "delivery",
+            channelId: "channel",
+          },
         }),
+        "deliveryTarget",
       ],
     ];
 
-    for (const [name, fixture] of refusalFixtures) {
+    for (const [name, fixture, unsupportedKey] of refusalFixtures) {
       const configPath = writeFixture(name, fixture);
+      const before = fs.readFileSync(configPath, "utf8");
       const validation = runCli(configPath, ["config", "validate"]);
       expect(validation.status, `${name} unexpectedly validated`).not.toBe(0);
-
-      const doctor = runCli(configPath, ["doctor", "--fix", "--non-interactive"]);
-      expect(doctor.stdout + doctor.stderr, `${name} must not be migrated`).not.toContain(
-        "Migrated Deliberation legacy config",
-      );
-      expect(fs.readFileSync(configPath, "utf8"), `${name} must not be guessed`).not.toContain(
-        '"v1:',
-      );
+      expect(validation.stdout + validation.stderr).toContain(unsupportedKey);
+      expect(fs.readFileSync(configPath, "utf8"), `${name} must not be mutated`).toBe(before);
+      expect(
+        fs.readFileSync(configPath, "utf8"),
+        `${name} must not be reinterpreted`,
+      ).not.toContain('"id": "v1:');
     }
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

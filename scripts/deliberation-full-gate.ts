@@ -275,9 +275,9 @@ function runGate(output: string): void {
         "package",
         "test/vitest/vitest.e2e.config.ts",
         [
-          "test/scripts/deliberation-doctor-package.e2e.test.ts",
+          "test/scripts/deliberation-package.e2e.test.ts",
           "-t",
-          "^OR-22 doctor-package-writeback-built-five-hook-runtime$",
+          "^OR-22 canonical-package-validation-built-five-hook-runtime$",
         ],
         path.join(reports, "package.json"),
         { OPENCLAW_CURRENT_PACKAGE_TGZ: tarball },

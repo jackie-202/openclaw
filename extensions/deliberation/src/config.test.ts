@@ -68,19 +68,19 @@ describe("parseDeliberationConfig", () => {
     expect(parsed).not.toHaveProperty("deliveryTarget");
   });
 
-  it("rejects legacy config before runtime startup", () => {
+  it("rejects retired config keys before runtime startup", () => {
     expect(() =>
       parseDeliberationConfig({
         ...common,
         sources: [{ channel: "discord", accountId: "acct", target: "source" }],
       }),
-    ).toThrow();
+    ).toThrow(/sources/u);
     expect(() =>
       parseDeliberationConfig({
         ...valid,
         deliveryTarget: { provider: "discord", accountId: "acct", channelId: "delivery" },
       }),
-    ).toThrow();
+    ).toThrow(/deliveryTarget/u);
   });
 
   it("keeps source-default targets omitted and accepts explicit provider roots", () => {

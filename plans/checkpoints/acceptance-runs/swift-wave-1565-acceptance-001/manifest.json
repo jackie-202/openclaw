@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-07T06:46:14+00:00",
+    "implementingStartedAt": "2026-09-07T06:32:16+00:00",
+    "taskFile": "plans/tasks/2026-09-04_deliberation-plugin-remove-legacy-config-compatibility.md",
+    "taskId": "swift-wave-1565",
+    "title": "Deliberation plugin: remove legacy config compatibility"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation plugin: remove legacy config compatibility"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-wave-1565-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-wave-1565",
+  "tddRequired": true
+}

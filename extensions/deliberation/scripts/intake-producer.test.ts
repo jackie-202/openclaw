@@ -291,6 +291,27 @@ describe("deliberation intake producer", () => {
     );
   });
 
+  it("rejects noncanonical routes input instead of translating sources", async () => {
+    await expect(
+      runIntakeProducer(
+        {
+          endpoint: "https://km.invalid",
+          routes: {
+            sources: [{ provider: "discord", accountId: "default", channelId: "source" }],
+            processing: {
+              provider: "discord",
+              accountId: "default",
+              channelId: "processing",
+            },
+          },
+          event: producerInput().event,
+          context: producerInput().context,
+        },
+        credential,
+      ),
+    ).rejects.toThrow("invalid producer input");
+  });
+
   it("returns bounded KM rejection diagnostics", async () => {
     const server = createServer((_request, response) => {
       response.writeHead(400, { "Content-Type": "application/json" });

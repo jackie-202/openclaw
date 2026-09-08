@@ -1,5 +1,9 @@
 # Agent Changelog
 
+## 2026-09-07
+
+**Deliberation plugin removes legacy config compatibility**
+
 ## 2026-08-31
 
 **Slack Deliberation freshness now sees newer top-level channel messages**

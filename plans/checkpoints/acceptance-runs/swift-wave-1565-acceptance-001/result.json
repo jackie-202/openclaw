@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Deliberation plugin: remove legacy config compatibility"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-wave-1565-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "swift-wave-1565"
+}
