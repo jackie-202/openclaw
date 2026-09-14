@@ -1155,6 +1155,34 @@ describe("buildGatewayCronService", () => {
     }
   });
 
+  it("forwards setup progress from the cron watchdog to isolated runs", async () => {
+    const cfg = createCronConfig("server-cron-setup-progress");
+    loadConfigMock.mockReturnValue(cfg);
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      const job = await state.cron.add({
+        name: "setup-progress",
+        enabled: true,
+        schedule: { kind: "at", at: new Date(1).toISOString() },
+        sessionTarget: "isolated",
+        wakeMode: "next-heartbeat",
+        payload: { kind: "agentTurn", message: "hello" },
+      });
+
+      await state.cron.run(job.id, "force");
+
+      const options = expectIsolatedRunFields({ sessionKey: `cron:${job.id}` });
+      expect(options.onSetupProgress).toBeTypeOf("function");
+    } finally {
+      state.cron.stop();
+    }
+  });
+
   it("uses a dedicated cron session key for isolated jobs with model overrides", async () => {
     const cfg = createCronConfig("server-cron-isolated-key");
     loadConfigMock.mockReturnValue(cfg);

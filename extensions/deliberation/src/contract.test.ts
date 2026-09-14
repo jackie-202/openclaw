@@ -86,12 +86,14 @@ describe("accepted Deliberation contracts", () => {
   });
 
   it("validates every fixture request and status-specific response", async () => {
-    const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
+    const contract = JSON.parse(
+      await readFile(join(contractDir, "deliberation-v2-v1-contract.json"), "utf8"),
+    ) as {
       schemas: Record<string, JsonSchemaObject>;
       endpoints: ContractEndpoint[];
     };
     const fixtures = JSON.parse(
-      await readFile(join(contractDir, "cutover-controls-v1.json"), "utf8"),
+      await readFile(join(contractDir, "deliberation-v2-v1-fixtures.json"), "utf8"),
     ) as { cases: ContractFixture[] };
     // TypeBox emits unsafe property probes for the contract's draft-style nullable objects.
     // This equivalent form keeps the referenced closed schema executable for null values.
@@ -171,10 +173,12 @@ describe("accepted Deliberation contracts", () => {
     }
   });
 
-  it("defines immutable pipeline and target evidence at the public adapter boundary", async () => {
-    const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
-      owner: string;
-      scope: string;
+  it("defines immutable pipeline and target evidence at the published domain boundary", async () => {
+    const contract = JSON.parse(
+      await readFile(join(contractDir, "deliberation-v2-v1-contract.json"), "utf8"),
+    ) as {
+      name: string;
+      authority: string;
       schemas: {
         intakeBody: { properties: Record<string, unknown>; required: string[] };
         senderIdentityHints: {
@@ -186,8 +190,8 @@ describe("accepted Deliberation contracts", () => {
         deliveryEnvelope: { properties: Record<string, unknown>; required: string[] };
       };
     };
-    expect(contract.owner).toBe("OpenClaw");
-    expect(contract.scope).toContain("public HTTP adapter contract");
+    expect(contract.name).toBe("km-deliberation-v2-wire");
+    expect(contract.authority).toBe("state/deliberation-v2/spool.sqlite3");
     expect(contract.schemas.intakeBody.required).toEqual(
       expect.arrayContaining(["pipelineId", "deliveryTarget"]),
     );
@@ -208,16 +212,16 @@ describe("accepted Deliberation contracts", () => {
     expect(contract.schemas.deliveryEnvelope.required).toContain("pipelineId");
 
     expect(Object.keys(contract.schemas.deliveryTarget.properties)).toEqual([
-      "provider",
       "account",
       "channel",
+      "provider",
       "threadId",
     ]);
   });
 
   it("pins optional trusted sender hints and a sender-id-only intake fixture", async () => {
     const fixtures = JSON.parse(
-      await readFile(join(contractDir, "cutover-controls-v1.json"), "utf8"),
+      await readFile(join(contractDir, "deliberation-v2-v1-fixtures.json"), "utf8"),
     ) as {
       cases: Array<{ name: string; request: { body: Record<string, unknown> } }>;
     };
@@ -249,7 +253,9 @@ describe("accepted Deliberation contracts", () => {
   });
 
   it("mirrors the exact canonical header, endpoints, and controls", async () => {
-    const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
+    const contract = JSON.parse(
+      await readFile(join(contractDir, "deliberation-v2-v1-contract.json"), "utf8"),
+    ) as {
       applicationHeaders: string[];
       transportHeaders: string[];
       endpoints: Array<{ method: string; path: string }>;
@@ -282,15 +288,17 @@ describe("accepted Deliberation contracts", () => {
       "POST /deliberation/v1/completions",
     ]);
     expect(Object.keys(contract.schemas.controls.properties)).toEqual([
-      "source-intake",
       "claims",
       "review",
       "sender",
+      "source-intake",
     ]);
   });
 
   it("defines the public endpoint and health contract consumed by OpenClaw", async () => {
-    const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
+    const contract = JSON.parse(
+      await readFile(join(contractDir, "deliberation-v2-v1-contract.json"), "utf8"),
+    ) as {
       endpoints: Array<{ method: string; path: string }>;
       schemas: { healthResponse: { properties: Record<string, unknown> } };
     };
@@ -304,17 +312,20 @@ describe("accepted Deliberation contracts", () => {
       "POST /deliberation/v1/completions",
     ]);
     expect(Object.keys(contract.schemas.healthResponse.properties)).toEqual([
-      "protocolVersion",
-      "status",
-      "listener",
       "controls",
+      "listener",
+      "protocolVersion",
       "runner",
       "runtime",
+      "sourceDrift",
+      "status",
     ]);
   });
 
   it("accepts the current closed projection fields", async () => {
-    const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
+    const contract = JSON.parse(
+      await readFile(join(contractDir, "deliberation-v2-v1-contract.json"), "utf8"),
+    ) as {
       schemas: {
         record: {
           properties: {
@@ -341,7 +352,9 @@ describe("accepted Deliberation contracts", () => {
   });
 
   it("defines required source threads and generic structured targets across the lifecycle", async () => {
-    const contract = JSON.parse(await readFile(join(contractDir, "km-wire-v1.json"), "utf8")) as {
+    const contract = JSON.parse(
+      await readFile(join(contractDir, "deliberation-v2-v1-contract.json"), "utf8"),
+    ) as {
       schemas: {
         deliveryTarget: Record<string, unknown>;
         nullableDeliveryTarget: Record<string, unknown>;
@@ -540,7 +553,7 @@ describe("accepted Deliberation contracts", () => {
 
   it("pins account-scoped Discord root, Slack root, and Slack reply intake vectors", async () => {
     const fixtures = JSON.parse(
-      await readFile(join(contractDir, "cutover-controls-v1.json"), "utf8"),
+      await readFile(join(contractDir, "deliberation-v2-v1-fixtures.json"), "utf8"),
     ) as {
       pipelineVectors: { live: string[]; historical: string; targets: unknown[] };
       identityVectors: { positive: Array<Record<string, string>> };
@@ -610,22 +623,26 @@ describe("accepted Deliberation contracts", () => {
       owner: string;
       scope: string;
       dependencyDirection: string;
+      domainAuthority: { manifest: string; owner: string };
       files: Record<string, string>;
       repositoryLocalEvidence: Record<string, unknown>;
     };
     expect(provenance.owner).toBe("OpenClaw");
-    expect(provenance.scope).toContain("repository-local public adapter schemas");
-    expect(provenance.dependencyDirection).toContain("caller-owned");
+    expect(provenance.scope).toContain("OpenClaw-owned overlays");
+    expect(provenance.dependencyDirection).toContain("upstream");
+    expect(provenance.domainAuthority).toEqual({
+      manifest: "deliberation-wire-pin-v1.json",
+      owner: "published Deliberation v2 domain",
+    });
     expect(Object.keys(provenance.files)).toEqual([
-      "km-wire-v1.json",
-      "cutover-controls-v1.json",
       "openclaw-overlay-v1.json",
       "source-identity-v1.json",
       "source-identity-fixtures-v1.json",
     ]);
     expect(provenance).toMatchObject({
       repositoryLocalEvidence: {
-        schemaValidation: "all request and status-specific response fixtures pass",
+        schemaValidation:
+          "published request and status-specific response fixtures pass the local pin",
         scope: "OpenClaw repository only",
       },
     });

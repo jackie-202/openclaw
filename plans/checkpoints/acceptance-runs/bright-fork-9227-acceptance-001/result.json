@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Fix approval command deadlock behind same-session reply admission"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-fork-9227-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "bright-fork-9227"
+}

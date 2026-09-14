@@ -1,5 +1,15 @@
 # Agent Changelog
 
+## 2026-09-10
+
+**Deliberation plugin pins to the published domain wire contract**
+
+**Deliberation plugin používá publikovaný domain wire contract**
+
+## 2026-09-08
+
+**Approval commands no longer deadlock behind same-session reply admission**
+
 ## 2026-09-07
 
 **Deliberation plugin removes legacy config compatibility**

@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The required preserved-owner implementation evidence artifact is absent from the caller-supplied task material.",
+      "crossCutting": false,
+      "findingType": "required_artifact_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The plan explicitly requires plans/checkpoints/quick-vale-3780.evidence.md to contain exact preserved diff/base provenance for each cron and Gateway owner file. The supplied additional artifacts include the checkpoint and RED/GREEN proof, but not that evidence artifact or exact preserved implementation material for the listed owner files.",
+      "rationale": "The goal is an acceptance repair for runtime cron diagnostics and cancellation behavior that was previously rejected because owner implementation changes were not supplied. Plan assertions and passing-test prose do not provide the mandated exact owner-file provenance, so the supplied material cannot establish delivery of the preserved implementation.",
+      "required": "Supply the required quick-vale-3780 evidence artifact with exact preserved diff/base provenance for every inventoried owner file, or directly supply the complete preserved owner implementation material.",
+      "sources": [
+        {
+          "kind": "plan",
+          "reference": "plans/2026-09-09_quick-vale-3780_acceptance-fix-cron-preparation-stage-diagnostics-and.md:Implementation steps 5-6 and preserved evidence inventory"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-vale-3780.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/quick-vale-3780.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Cron preparation: stage diagnostics and cancellation regression coverage: goal-001: Cr"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-vale-3780-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "quick-vale-3780"
+}

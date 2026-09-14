@@ -1,16 +1,18 @@
 {
   "owner": "OpenClaw",
   "acceptedAt": "2026-08-26",
-  "scope": "repository-local public adapter schemas and fixtures consumed by the Deliberation plugin",
-  "dependencyDirection": "External orchestrators consume the OpenClaw adapter boundary. Their implementation and cross-repository tests are caller-owned.",
+  "scope": "OpenClaw-owned overlays and source identity artifacts consumed by the Deliberation plugin",
+  "dependencyDirection": "The published Deliberation domain wire pin is upstream; OpenClaw owns only plugin transport, history, and delivery overlays.",
+  "domainAuthority": {
+    "manifest": "deliberation-wire-pin-v1.json",
+    "owner": "published Deliberation v2 domain"
+  },
   "repositoryLocalEvidence": {
-    "schemaValidation": "all request and status-specific response fixtures pass",
+    "schemaValidation": "published request and status-specific response fixtures pass the local pin",
     "runtimeCoverage": "intake, history, reservation, invocation, completion, delivery, and fail-closed behavior use OpenClaw-local fakes",
     "scope": "OpenClaw repository only"
   },
   "files": {
-    "km-wire-v1.json": "4a09c6e11e410a5e360a1c7d752c52bfe90d1e99644c323a9ad3318956548930",
-    "cutover-controls-v1.json": "b1d845d1cda25bdba996c0fe4581963a80d1f62a37b0b5550fbc4d3ccf700b85",
     "openclaw-overlay-v1.json": "25c28e3d61d262ce05d09d61de29735c86860a6355c2aea9cf2727c6c3f31af8",
     "source-identity-v1.json": "252f03184601f2f2fa8752c5df1b4bb7dd4a20b90bd47c932eee09b9c0bc3af6",
     "source-identity-fixtures-v1.json": "8e4f0373b5d986cb8098fbc7bf3565cfd3f88ef9b83e7189f4bbb53299a427fb"

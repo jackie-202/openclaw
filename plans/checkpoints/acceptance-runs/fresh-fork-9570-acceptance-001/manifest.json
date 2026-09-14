@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-10T06:31:56+00:00",
+    "implementingStartedAt": "2026-09-10T05:52:22+00:00",
+    "taskFile": "plans/tasks/2026-09-10_followup-fresh-fork-9570-openclaw-deliberation-plugin-pin-to-published-domain-wire-co.md",
+    "taskId": "fresh-fork-9570",
+    "title": "[acceptance-fix] OpenClaw Deliberation plugin pin to published domain wire contract: goal-001: OpenClaw Deliberation plu"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] OpenClaw Deliberation plugin pin to published domain wire contract: goal-001: OpenClaw Deliberation plu"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "fresh-fork-9570-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "fresh-fork-9570",
+  "tddRequired": true
+}

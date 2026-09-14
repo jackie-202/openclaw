@@ -1,0 +1,62 @@
+{
+  "findings": [
+    {
+      "claim": "The Deliberation published-wire pin was not implemented.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff contains no changes under extensions/deliberation or docs/plugins/reference/deliberation.md, and the supplied checkpoint states the required publication bundle directory is absent and no production files were read or edited.",
+      "rationale": "The goal requires repository-local pinned contract, fixtures, pin manifest, migrated consumers, and related documentation/evidence. The supplied material establishes that implementation stopped at the prerequisite blocker, so these required components are absent.",
+      "required": "Supply the accepted publication bundle, then implement the scoped local wire pin and required consumer/documentation changes without changing prohibited runtime or deployment policy.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-crag-0106.checkpoint.md:4-11"
+        },
+        {
+          "kind": "file",
+          "reference": "task-scoped diff: no extensions/deliberation or docs/plugins/reference/deliberation.md paths"
+        }
+      ]
+    },
+    {
+      "claim": "Mandatory TDD RED/GREEN proof is invalid and incomplete.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof declares RED not run because the bundle is missing, and the caller-provided TDD projection reports missing GREEN, incomplete phase order, and malformed RED with no timestamp, command, or exit.",
+      "rationale": "The run manifest sets tddRequired to true, while the required proof lacks both valid RED execution evidence and a GREEN phase.",
+      "required": "After the prerequisite bundle is supplied and implementation proceeds, record valid RED then GREEN evidence for the identical focused command in the required proof artifact.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-crag-0106.red-green-proof.md:3-5"
+        },
+        {
+          "kind": "artifact",
+          "reference": "TDD proof/provenance: missing GREEN Phase; phase order is incomplete; malformed RED Phase"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "OpenClaw Deliberation plugin pin to published domain wire contract"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-crag-0106-acceptance-002",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-crag-0106"
+}

@@ -1588,6 +1588,103 @@ describe("cron service timer regressions", () => {
     }
   });
 
+  it("records one staged timeout when deferred setup resolves late", async () => {
+    vi.useFakeTimers();
+    try {
+      const release = createDeferred<void>();
+      const entered = createDeferred<void>();
+      const events: CronEvent[] = [];
+      const scheduledAt = Date.parse("2026-09-09T08:10:00.000Z");
+      const cronJob = createIsolatedRegressionJob({
+        id: "deferred-setup",
+        name: "deferred setup",
+        scheduledAt,
+        schedule: { kind: "at", at: new Date(scheduledAt).toISOString() },
+        payload: { kind: "agentTurn", message: "work", timeoutSeconds: 120 },
+        state: { nextRunAtMs: scheduledAt },
+      });
+      const store = timerRegressionFixtures.makeStorePath();
+      await saveCronStore(store.storePath, { version: 1, jobs: [cronJob] });
+
+      vi.setSystemTime(scheduledAt);
+      let now = scheduledAt;
+      let lateContinuationCount = 0;
+      let abortObserved = false;
+      const modelDispatch = vi.fn();
+      const cleanupTimedOutAgentRun = vi.fn(async () => {});
+      const state = createCronServiceState({
+        cronEnabled: true,
+        storePath: store.storePath,
+        log: noopLogger,
+        nowMs: () => now,
+        enqueueSystemEvent: vi.fn(),
+        requestHeartbeat: vi.fn(),
+        onEvent: (event) => events.push(event),
+        cleanupTimedOutAgentRun,
+        runIsolatedAgentJob: vi.fn(
+          async ({
+            abortSignal,
+            onSetupProgress,
+          }: {
+            abortSignal?: AbortSignal;
+            onSetupProgress?: (entry: {
+              jobId: string;
+              stage: "workspace";
+              elapsedMs: number;
+            }) => void;
+          }) => {
+            abortSignal?.addEventListener(
+              "abort",
+              () => {
+                abortObserved = true;
+              },
+              { once: true },
+            );
+            onSetupProgress?.({ jobId: cronJob.id, stage: "workspace", elapsedMs: 17 });
+            entered.resolve();
+            await release.promise;
+            lateContinuationCount += 1;
+            if (!abortSignal?.aborted) {
+              modelDispatch();
+            }
+            return { status: "ok" as const };
+          },
+        ),
+      });
+
+      const timerRun = onTimer(state);
+      await entered.promise;
+      await vi.advanceTimersByTimeAsync(60_100);
+      now += 60_100;
+      await timerRun;
+
+      const finishedBeforeRelease = events.filter((event) => event.action === "finished");
+      expect(finishedBeforeRelease).toHaveLength(1);
+      expect(finishedBeforeRelease[0]?.status).toBe("error");
+      expect(finishedBeforeRelease[0]?.diagnostics?.summary).toMatch(
+        /stage: workspace.*elapsed: 17ms/i,
+      );
+      expect(cleanupTimedOutAgentRun).toHaveBeenCalledOnce();
+      const terminalState = structuredClone(requireJob(state, cronJob.id).state);
+
+      release.resolve();
+      await vi.waitFor(() => expect(lateContinuationCount).toBe(1));
+      const finishedAfterRelease = events.filter((event) => event.action === "finished");
+      expect(abortObserved).toBe(true);
+      expect(finishedAfterRelease).toHaveLength(1);
+      expect(finishedAfterRelease[0]?.status).toBe("error");
+      expect(modelDispatch).not.toHaveBeenCalled();
+      expect(cleanupTimedOutAgentRun).toHaveBeenCalledOnce();
+      expect(requireJob(state, cronJob.id).state).toMatchObject({
+        lastStatus: terminalState.lastStatus,
+        lastError: terminalState.lastError,
+        lastDiagnostics: terminalState.lastDiagnostics,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("times out isolated agent runs that stall before execution starts (#74803)", async () => {
     vi.useFakeTimers();
     try {

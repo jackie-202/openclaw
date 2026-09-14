@@ -117,6 +117,7 @@ const KM_ERROR_CODES = [
   "CAS_CONFLICT",
   "CONTROL_DISABLED",
   "VERSION_UNSUPPORTED",
+  "DELIVERY_FRESHNESS_CLOSED",
 ] as const;
 
 type KmErrorCode = (typeof KM_ERROR_CODES)[number] | "UNKNOWN";
@@ -587,8 +588,12 @@ function parseDeliveryAttempt(value: unknown, expectedRecordId: string): ParsedD
   const outcome = value.outcome as DeliveryAttemptOutcome;
   const retainedOutcome =
     outcome === "RESERVATION_ABANDONED" || outcome === "NOT_SENT" || outcome === "DELIVERY_UNKNOWN";
+  // Published terminal projections may omit optional reservation/invocation fields.
+  // Validate them when present; the envelope, digest, and request-bound IDs remain mandatory.
+  const completionOutcome = outcome === "SENT" || outcome === "FAILED";
   if (
     !retainedOutcome &&
+    !completionOutcome &&
     !hasRequiredKeys(value, [
       "candidateRevision",
       "reviewedTextHash",
@@ -653,16 +658,23 @@ function parseDeliveryAttempt(value: unknown, expectedRecordId: string): ParsedD
     if (!envelope || value.deliveryEnvelopeDigest === null || value.completedAt === null) {
       throw new Error("KM returned terminal delivery without durable envelope evidence");
     }
-    const attemptedTarget = parseWireDeliveryTarget(value.attemptedTarget, "attemptedTarget");
-    if (!isDeepStrictEqual(attemptedTarget, envelope.deliveryTarget)) {
-      throw new Error("KM returned terminal delivery with mismatched target evidence");
+    if (value.attemptedTarget !== undefined) {
+      const attemptedTarget = parseWireDeliveryTarget(value.attemptedTarget, "attemptedTarget");
+      if (!isDeepStrictEqual(attemptedTarget, envelope.deliveryTarget)) {
+        throw new Error("KM returned terminal delivery with mismatched target evidence");
+      }
     }
-    boundedString(value.invocationIdempotencyKey, "invocationIdempotencyKey", 1, 256);
-    boundedString(value.completionIdempotencyKey, "completionIdempotencyKey", 1, 256);
-    boundedString(value.invokedAt, "invokedAt", 20, 64);
+    for (const field of ["invocationIdempotencyKey", "completionIdempotencyKey"]) {
+      if (value[field] !== undefined && value[field] !== null) {
+        boundedString(value[field], field, 1, 256);
+      }
+    }
+    if (value.invokedAt !== undefined && value.invokedAt !== null) {
+      boundedString(value.invokedAt, "invokedAt", 20, 64);
+    }
     boundedString(value.providerAttemptId, "providerAttemptId", 1, 256);
     const expectedTerminalReason = outcome === "SENT" ? "delivery_sent" : "delivery_failed";
-    if (value.terminalReason !== expectedTerminalReason) {
+    if (value.terminalReason !== undefined && value.terminalReason !== expectedTerminalReason) {
       throw new Error("KM returned a terminal reason that contradicts the delivery outcome");
     }
     if (outcome === "SENT") {
@@ -767,6 +779,76 @@ function validateDeliveryHistory(
 }
 
 const nullableString = z.string().nullable();
+const timestampSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/);
+const draftDispatchStageSchema = z
+  .object({
+    recordId: z.string().max(128),
+    correlationId: z.string().max(128),
+    attempt: z.number().int().min(1),
+    candidateRevision: z.number().int().min(0),
+    stage: z.enum([
+      "CLAIM_ACQUIRED",
+      "SOURCE_CONTEXT",
+      "PARTICIPANT_CONTEXT",
+      "MATERIALIZATION",
+      "EXISTING_RESULT",
+      "PINNED_SESSION_VALIDATION",
+      "DISPATCH_ARGUMENTS",
+      "FINAL_OWNERSHIP",
+      "DISPATCH_STARTED",
+      "TRANSPORT_ACKNOWLEDGED",
+      "RESULT_PENDING",
+      "RESULT_RECEIVED",
+    ]),
+    outcome: z.enum([
+      "started",
+      "succeeded",
+      "reused",
+      "absent",
+      "pending",
+      "received",
+      "failed",
+      "blocked",
+      "ownership_lost",
+    ]),
+    reason: z.string().max(64),
+    occurredAt: z.string(),
+    startedAt: nullableString,
+    completedAt: nullableString,
+    metadata: z.object({}).strict(),
+  })
+  .strict()
+  .nullable();
+const listenerModuleIdentitySchema = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("ok"), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).strict(),
+  z.object({ status: z.literal("unavailable"), sha256: z.null() }).strict(),
+]);
+const listenerSourceIdentitySchema = z
+  .object({
+    status: z.enum(["ok", "unavailable"]),
+    modules: z
+      .object({
+        "lib/deliberation_source_identity.py": listenerModuleIdentitySchema,
+        "lib/deliberation_wire.py": listenerModuleIdentitySchema,
+        "lib/deliberation_spool_contracts.py": listenerModuleIdentitySchema,
+      })
+      .strict(),
+  })
+  .strict();
+const sourceDriftSchema = z
+  .object({
+    drifted: z.boolean(),
+    driftedModules: z
+      .array(
+        z
+          .string()
+          .max(256)
+          .regex(/^(scripts\/deliberation-v2-listener\.py|lib\/deliberation_[A-Za-z0-9_]+\.py)$/),
+      )
+      .max(256),
+    fingerprintAt: timestampSchema,
+  })
+  .strict();
 const providerEvidenceSchema = z
   .object({
     code: z.string().optional(),
@@ -780,7 +862,8 @@ const healthMetadataSchema = z
     listener: z
       .object({
         protocolVersion: z.literal(1),
-        startedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/),
+        startedAt: timestampSchema,
+        sourceIdentity: listenerSourceIdentitySchema,
       })
       .strict(),
     runner: z
@@ -821,11 +904,20 @@ const healthMetadataSchema = z
             resultDeadline: nullableString,
             ageSeconds: z.number().int().min(0),
             deadlineInSeconds: z.number().int().nullable(),
+            dispatchStage: draftDispatchStageSchema,
           })
           .strict()
           .nullable(),
         timeoutCount: z.number().int().min(0),
         lateResultCount: z.number().int().min(0),
+        sourceHistoryTimeoutCount: z.number().int().min(0),
+        failureWindow: z
+          .object({
+            durationSeconds: z.literal(86_400),
+            startedAt: timestampSchema,
+            endedAt: timestampSchema,
+          })
+          .strict(),
         lastPass: z
           .object({
             schemaVersion: z.literal(1),
@@ -864,6 +956,7 @@ const healthMetadataSchema = z
           .nullable(),
       })
       .strict(),
+    sourceDrift: sourceDriftSchema,
   })
   .strict();
 const senderIdentityHintValueSchema = z
@@ -912,7 +1005,22 @@ const draftingSchema = z
     resultPath: z.string().optional(),
     outcome: nullableString.optional(),
     diagnostic: z
-      .object({ code: z.string().min(1).max(64), message: z.string().min(1).max(512) })
+      .object({
+        code: z.string().min(1).max(64),
+        message: z.string().min(1).max(512),
+        failureKind: z
+          .enum([
+            "executable_unavailable",
+            "launch_failed",
+            "timeout",
+            "nonzero_exit",
+            "oversized_output",
+            "invalid_json",
+            "invalid_schema",
+            "interrupted",
+          ])
+          .optional(),
+      })
       .strict()
       .nullable()
       .optional(),
@@ -925,6 +1033,7 @@ const draftingSchema = z
     purpose: z.string().optional(),
     candidateRevision: z.number().int().optional(),
     technicalAttempt: z.number().int().optional(),
+    dispatchStage: draftDispatchStageSchema.optional(),
   })
   .strict()
   .nullable();
@@ -1064,6 +1173,21 @@ const historyDetailsSchema = z
     owner: z.string().optional(),
     outcome: z.string().optional(),
     proofReference: z.string().optional(),
+    attempt: z.number().int().min(1).optional(),
+    durationMs: z.number().int().min(0).max(90_000).optional(),
+    failureKind: z
+      .enum([
+        "executable_unavailable",
+        "launch_failed",
+        "timeout",
+        "nonzero_exit",
+        "oversized_output",
+        "invalid_json",
+        "invalid_schema",
+        "interrupted",
+      ])
+      .optional(),
+    timeoutSeconds: z.number().positive().optional(),
   })
   .strict()
   .nullable();
@@ -1250,6 +1374,7 @@ export function createKmClient(params: {
           !hasExactKeys(value, [
             "protocolVersion",
             "status",
+            "sourceDrift",
             "listener",
             "controls",
             "runner",
@@ -1263,6 +1388,7 @@ export function createKmClient(params: {
             listener: value.listener,
             runner: value.runner,
             runtime: value.runtime,
+            sourceDrift: value.sourceDrift,
           }).success
         ) {
           throw new Error("KM returned an invalid health response");
@@ -1275,6 +1401,7 @@ export function createKmClient(params: {
           listener: value.listener,
           runner: value.runner,
           runtime: value.runtime,
+          sourceDrift: value.sourceDrift,
         };
       });
     },
@@ -1536,17 +1663,26 @@ export function createKmClient(params: {
         attempt.completionOutcome !== delivery.outcome ||
         !isDeepStrictEqual(attempt.deliveryEnvelope, reservation.deliveryEnvelope) ||
         attempt.deliveryEnvelopeDigest !== reservation.deliveryEnvelopeDigest ||
-        !isDeepStrictEqual(attempt.attemptedTarget, attemptedTarget) ||
+        (attempt.attemptedTarget !== undefined &&
+          !isDeepStrictEqual(attempt.attemptedTarget, attemptedTarget)) ||
         attempt.providerAttemptId !== delivery.providerAttemptId ||
         attempt.ordinal !== reservation.ordinal ||
-        attempt.reservedRecordVersion !== expectedReservedRecordVersion ||
-        attempt.owner !== reservation.owner ||
-        attempt.leaseExpiresAt !== reservation.leaseExpiresAt ||
-        attempt.candidateRevision !== reservation.candidateRevision ||
-        attempt.reviewedTextHash !== reservation.reviewedTextHash ||
+        (attempt.reservedRecordVersion !== undefined &&
+          attempt.reservedRecordVersion !== expectedReservedRecordVersion) ||
+        (attempt.owner !== undefined && attempt.owner !== reservation.owner) ||
+        (attempt.leaseExpiresAt !== undefined &&
+          attempt.leaseExpiresAt !== reservation.leaseExpiresAt) ||
+        (attempt.candidateRevision !== undefined &&
+          attempt.candidateRevision !== reservation.candidateRevision) ||
+        (attempt.reviewedTextHash !== undefined &&
+          attempt.reviewedTextHash !== reservation.reviewedTextHash) ||
         attempt.reserveIdempotencyKey !== reservation.reserveIdempotencyKey ||
-        attempt.invocationIdempotencyKey !== `invoke:${reservation.attemptId}` ||
-        attempt.completionIdempotencyKey !== expectedCompletionKey
+        (attempt.invocationIdempotencyKey !== undefined &&
+          attempt.invocationIdempotencyKey !== null &&
+          attempt.invocationIdempotencyKey !== `invoke:${reservation.attemptId}`) ||
+        (attempt.completionIdempotencyKey !== undefined &&
+          attempt.completionIdempotencyKey !== null &&
+          attempt.completionIdempotencyKey !== expectedCompletionKey)
       ) {
         throw new Error("KM returned mismatched completion evidence");
       }

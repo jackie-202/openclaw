@@ -53,6 +53,7 @@ type ResolveInboundConversationParams = Parameters<
 
 const mocks = vi.hoisted(() => ({
   routeReply: vi.fn(async (_params: unknown) => ({ ok: true, messageId: "mock" })),
+  resolveApprovalOverGateway: vi.fn(async (_params: unknown) => undefined),
   tryFastAbortFromMessage: vi.fn<() => Promise<AbortResult>>(async () => ({
     handled: false,
     aborted: false,
@@ -403,6 +404,10 @@ vi.mock("./abort.runtime.js", () => ({
     const label = stoppedSubagents === 1 ? "sub-agent" : "sub-agents";
     return `⚙️ Agent was aborted. Stopped ${stoppedSubagents} ${label}.`;
   },
+}));
+
+vi.mock("../../infra/approval-gateway-resolver.js", () => ({
+  resolveApprovalOverGateway: mocks.resolveApprovalOverGateway,
 }));
 
 vi.mock("../../logging/diagnostic.js", () => ({
@@ -949,6 +954,8 @@ describe("dispatchReplyFromConfig", () => {
     resetInboundDedupe();
     mocks.routeReply.mockReset();
     mocks.routeReply.mockResolvedValue({ ok: true, messageId: "mock" });
+    mocks.resolveApprovalOverGateway.mockReset();
+    mocks.resolveApprovalOverGateway.mockResolvedValue(undefined);
     acpMocks.listAcpSessionEntries.mockReset().mockResolvedValue([]);
     diagnosticMocks.logMessageQueued.mockClear();
     diagnosticMocks.logMessageProcessed.mockClear();
@@ -1067,6 +1074,144 @@ describe("dispatchReplyFromConfig", () => {
     });
 
     expect(result.sessionMetadataChanges).toEqual([{ sessionKey, reason: "command-metadata" }]);
+  });
+
+  it("resolves a same-session plugin approval while the originating reply remains active", async () => {
+    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    setNoAbort();
+    const sessionKey = "agent:main:discord:channel:approval";
+    const active = createReplyOperation({
+      sessionKey,
+      sessionId: "originating-run",
+      resetTriggered: false,
+    });
+    active.setPhase("running");
+    sessionStoreMocks.currentEntry = {
+      sessionId: "originating-run",
+      updatedAt: 0,
+      sessionStartedAt: 0,
+      lastInteractionAt: 0,
+    };
+    const cfg = {
+      commands: { text: true },
+      channels: { discord: { allowFrom: ["123"] } },
+      messages: { visibleReplies: "message_tool" },
+      session: { reset: { mode: "idle", idleMinutes: 1 } },
+    } as OpenClawConfig;
+    const dispatcher = createDispatcher();
+
+    const dispatch = dispatchReplyFromConfig({
+      ctx: buildTestCtx({
+        Provider: "discord",
+        Surface: "discord",
+        OriginatingChannel: "discord",
+        OriginatingTo: "channel:approval",
+        To: "channel:approval",
+        SessionKey: sessionKey,
+        SenderId: "123",
+        CommandAuthorized: true,
+        CommandSource: "text",
+        BodyForAgent: "/approve plugin:request-1 allow-once",
+        BodyForCommands: "/approve plugin:request-1 allow-once",
+        CommandBody: "/approve plugin:request-1 allow-once",
+        RawBody: "/approve plugin:request-1 allow-once",
+      }),
+      cfg,
+      dispatcher,
+    });
+
+    try {
+      await vi.waitFor(
+        () => {
+          expect(mocks.resolveApprovalOverGateway).toHaveBeenCalledWith(
+            expect.objectContaining({
+              approvalId: "plugin:request-1",
+              decision: "allow-once",
+              resolveMethod: "plugin",
+            }),
+          );
+        },
+        { timeout: 1_000 },
+      );
+      await dispatch;
+      expect(mocks.resolveApprovalOverGateway).toHaveBeenCalledTimes(1);
+      expect(replyRunRegistry.get(sessionKey)).toBe(active);
+      expect(active.result).toBeNull();
+      expect(sessionStoreMocks.currentEntry?.sessionId).toBe("originating-run");
+      expect(dispatcher.sendFinalReply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: "✅ Approval allow-once submitted for plugin:request-1.",
+        }),
+      );
+    } finally {
+      active.complete();
+      await dispatch;
+    }
+  });
+
+  it("normalizes approval commands before bypassing active reply admission", async () => {
+    setNoAbort();
+    const sessionKey = "agent:main:discord:channel:normalized-approval";
+    const active = createReplyOperation({
+      sessionKey,
+      sessionId: "originating-run",
+      resetTriggered: false,
+    });
+    active.setPhase("running");
+    const replyResolver = vi.fn(async () => undefined);
+    const dispatch = dispatchReplyFromConfig({
+      ctx: buildTestCtx({
+        Provider: "discord",
+        Surface: "discord",
+        SessionKey: sessionKey,
+        CommandSource: "text",
+        BodyForCommands: "/approve: plugin:request-2 deny",
+      }),
+      cfg: { commands: { text: true } } as OpenClawConfig,
+      dispatcher: createDispatcher(),
+      replyResolver,
+    });
+
+    try {
+      await vi.waitFor(() => expect(replyResolver).toHaveBeenCalledTimes(1));
+      await dispatch;
+      expect(replyRunRegistry.get(sessionKey)).toBe(active);
+      expect(active.result).toBeNull();
+    } finally {
+      active.complete();
+      await dispatch;
+    }
+  });
+
+  it("routes bare approval text through the approval command handler", async () => {
+    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    setNoAbort();
+
+    await dispatchReplyFromConfig({
+      ctx: buildTestCtx({
+        Provider: "discord",
+        Surface: "discord",
+        SenderId: "123",
+        CommandAuthorized: true,
+        CommandSource: "text",
+        BodyForAgent: "approve plugin:request-3 deny",
+        BodyForCommands: "approve plugin:request-3 deny",
+        CommandBody: "approve plugin:request-3 deny",
+      }),
+      cfg: {
+        commands: { text: true },
+        channels: { discord: { allowFrom: ["123"] } },
+      } as OpenClawConfig,
+      dispatcher: createDispatcher(),
+    });
+
+    expect(mocks.resolveApprovalOverGateway).toHaveBeenCalledWith(
+      expect.objectContaining({
+        approvalId: "plugin:request-3",
+        decision: "deny",
+        resolveMethod: "plugin",
+      }),
+    );
   });
 
   it("notifies session metadata changes before later dispatch errors", async () => {

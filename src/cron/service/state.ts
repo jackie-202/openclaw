@@ -6,6 +6,7 @@ import type { QuarantinedCronConfigJob } from "../store.js";
 import type {
   CronAgentExecutionPhaseUpdate,
   CronAgentExecutionStarted,
+  CronAgentSetupProgress,
   CronFailureNotificationDelivery,
   CronDeliveryStatus,
   CronDeliveryTrace,
@@ -113,6 +114,7 @@ export type CronServiceDeps = {
     job: CronJob;
     message: string;
     abortSignal?: AbortSignal;
+    onSetupProgress?: (info: CronAgentSetupProgress) => void;
     onExecutionStarted?: (info?: CronAgentExecutionStarted) => void;
     onExecutionPhase?: (info: CronAgentExecutionPhaseUpdate) => void;
   }) => Promise<

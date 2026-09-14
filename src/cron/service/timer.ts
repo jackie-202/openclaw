@@ -28,6 +28,7 @@ import { sweepCronRunSessions } from "../session-reaper.js";
 import type {
   CronAgentExecutionPhaseUpdate,
   CronAgentExecutionStarted,
+  CronAgentSetupProgress,
   CronDeliveryStatus,
   CronDeliveryTrace,
   CronFailureNotificationDelivery,
@@ -153,6 +154,7 @@ export async function executeJobCoreWithTimeout(
     triggerTimeout,
   });
   const corePromise = executeJobCore(state, job, runAbortController.signal, {
+    onSetupProgress: deferTimeoutUntilExecutionStart ? watchdog.noteSetupProgress : undefined,
     onExecutionStarted: deferTimeoutUntilExecutionStart ? watchdog.noteRunnerStarted : undefined,
     onExecutionPhase: deferTimeoutUntilExecutionStart ? watchdog.notePhase : undefined,
   });
@@ -1324,6 +1326,7 @@ export async function executeJobCore(
   job: CronJob,
   abortSignal?: AbortSignal,
   options?: {
+    onSetupProgress?: (info: CronAgentSetupProgress) => void;
     onExecutionStarted?: (info?: CronAgentExecutionStarted) => void;
     onExecutionPhase?: (info: CronAgentExecutionPhaseUpdate) => void;
   },
@@ -1505,6 +1508,7 @@ async function executeDetachedCronJob(
   abortSignal: AbortSignal | undefined,
   resolveAbortError: () => { status: "error"; error: string },
   options?: {
+    onSetupProgress?: (info: CronAgentSetupProgress) => void;
     onExecutionStarted?: (info?: CronAgentExecutionStarted) => void;
     onExecutionPhase?: (info: CronAgentExecutionPhaseUpdate) => void;
   },
@@ -1578,6 +1582,7 @@ async function executeDetachedCronJob(
     job,
     message: job.payload.message,
     abortSignal,
+    onSetupProgress: options?.onSetupProgress,
     onExecutionStarted: options?.onExecutionStarted,
     onExecutionPhase: options?.onExecutionPhase,
   });

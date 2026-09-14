@@ -13,6 +13,7 @@ import {
   createChannelTestPluginBase,
   createTestRegistry,
 } from "../../test-utils/channel-plugins.js";
+import { isApprovalCommandCandidate } from "./approval-command-control.js";
 import { handleApproveCommand } from "./commands-approve.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 
@@ -475,6 +476,14 @@ describe("handleApproveCommand", () => {
     } as OpenClawConfig;
   }
 
+  it("recognizes only approval command control forms", () => {
+    expect(isApprovalCommandCandidate("/approve plugin:request-1 allow-once")).toBe(true);
+    expect(isApprovalCommandCandidate("approve request-1 deny")).toBe(true);
+    expect(isApprovalCommandCandidate("/approve@otherbot request-1 allow-once")).toBe(true);
+    expect(isApprovalCommandCandidate("/approve-now request-1")).toBe(false);
+    expect(isApprovalCommandCandidate("please /approve request-1 allow-once")).toBe(false);
+  });
+
   it("rejects invalid usage", async () => {
     const result = await handleApproveCommand(
       buildApproveParams("/approve", {
@@ -485,6 +494,31 @@ describe("handleApproveCommand", () => {
     );
     expect(result?.shouldContinue).toBe(false);
     expect(result?.reply?.text).toContain("Usage: /approve");
+    expect(resolveApprovalOverGatewayMock).not.toHaveBeenCalled();
+  });
+
+  it("submits a plugin denial through the plugin approval owner", async () => {
+    resolveApprovalOverGatewayMock.mockResolvedValue(undefined);
+    const result = await handleApproveCommand(
+      buildApproveParams(
+        "/approve plugin:request-1 deny",
+        createDiscordApproveCfg({ enabled: false, approvers: ["123"], target: "channel" }),
+        {
+          Provider: "discord",
+          Surface: "discord",
+          SenderId: "123",
+        },
+      ),
+      true,
+    );
+
+    expect(result?.shouldContinue).toBe(false);
+    expect(result?.reply?.text).toContain("Approval deny submitted");
+    expectApprovalResolverCall({
+      method: "plugin.approval.resolve",
+      id: "plugin:request-1",
+      decision: "deny",
+    });
   });
 
   it("submits approval", async () => {
@@ -914,6 +948,30 @@ describe("handleApproveCommand", () => {
     expect(result?.reply?.text).toContain("unknown or expired approval id");
     expect(resolveApprovalOverGatewayMock).toHaveBeenCalledTimes(1);
     expectApprovalResolverCall({ method: "plugin.approval.resolve", id: "abc123" });
+  });
+
+  it("returns unknown or expired errors for prefixed plugin approvals", async () => {
+    resolveApprovalOverGatewayMock.mockRejectedValueOnce(
+      new Error("unknown or expired approval id"),
+    );
+
+    const result = await handleApproveCommand(
+      buildApproveParams(
+        "/approve plugin:missing allow-once",
+        createDiscordApproveCfg({ enabled: false, approvers: ["123"], target: "channel" }),
+        {
+          Provider: "discord",
+          Surface: "discord",
+          SenderId: "123",
+        },
+      ),
+      true,
+    );
+
+    expect(result?.shouldContinue).toBe(false);
+    expect(result?.reply?.text).toContain("unknown or expired approval id");
+    expect(resolveApprovalOverGatewayMock).toHaveBeenCalledTimes(1);
+    expectApprovalResolverCall({ method: "plugin.approval.resolve", id: "plugin:missing" });
   });
 
   it("requires configured Discord approvers for plugin approvals", async () => {

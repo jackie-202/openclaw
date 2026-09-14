@@ -1,0 +1,62 @@
+{
+  "findings": [
+    {
+      "claim": "Required cron setup-stage diagnostics, watchdog retention, timeout projection, and cooperative preparation cancellation were not delivered in the supplied implementation material.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff supplies a new preparation-cancellation test and a test-harness adjustment, but no production changes to src/cron/isolated-agent/run.ts, src/cron/types.ts, src/cron/service/state.ts, src/cron/service/timer.ts, src/cron/service/agent-watchdog.ts, or src/cron/service/execution-errors.ts, and it supplies no deferred setup watchdog regression in src/cron/service/timer.regression.test.ts.",
+      "rationale": "Requirements 2, 3, 4, and 5 require runtime stage reporting, retained timeout diagnostics, cancellation checkpoints, unchanged budget semantics, and late-release terminal/non-dispatch coverage. Tests alone cannot provide those runtime behaviors, and the supplied implementation does not show them.",
+      "required": "Implement the specified bounded/redacted setup progress and cooperative cancellation behavior through the existing cron diagnostics/watchdog owners, preserve timeout classification and budgets, and add the deferred setup watchdog regression covering exactly one terminal failure, retained stage evidence, cleanup, and no late model dispatch.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-09-09_cron-preparation-stage-diagnostics-and-cancellation-regressi.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied task-scoped diff"
+        }
+      ]
+    },
+    {
+      "claim": "The caller-required TDD proof is incomplete because no GREEN phase evidence is supplied.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof contains the RED heading, the required focused command, and exit code 1, followed by partial RED output. It contains no GREEN heading, successful command outcome, or captured GREEN output. The checkpoint only asserts that RED/GREEN were recorded and does not provide the missing proof contents.",
+      "rationale": "The manifest declares tddRequired true, so a valid proof must demonstrate both failing RED behavior and successful GREEN behavior with credible provenance. A summary claim cannot establish the absent GREEN phase.",
+      "required": "Provide the run-scoped TDD proof with both RED and GREEN phases for the recorded focused command, including the successful GREEN result and credible command/output provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-mist-3363.red-green-proof.md (caller-supplied excerpt)"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/bright-mist-3363.checkpoint.md (caller-supplied content)"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Cron preparation: stage diagnostics and cancellation regression coverage"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-mist-3363-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "bright-mist-3363"
+}

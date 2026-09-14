@@ -1,0 +1,89 @@
+{
+  "findings": [
+    {
+      "claim": "The Deliberation plugin was not pinned to the published domain wire contract.",
+      "crossCutting": false,
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied checkpoint states that the required publication-bundle directory is absent, production files were not read or edited, and implementation remains blocked before the pinned artifacts or consumer migration were created. The task-scoped diff contains no extensions/deliberation implementation changes.",
+      "rationale": "The task requires repository-local pinned contract, fixture, and manifest artifacts and migration of their consumers; these required behaviors are absent from the supplied implementation material.",
+      "required": "Supply the approved publication bundle, then implement the self-contained local pin and migrate the scoped Deliberation consumers as specified.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-crag-0106.checkpoint.md:8-13"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/tasks/2026-09-05_openclaw-deliberation-plugin-pin-to-published-domain-wire-co.md:Work"
+        }
+      ]
+    },
+    {
+      "claim": "The mandatory TDD RED/GREEN proof is invalid and incomplete.",
+      "crossCutting": false,
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied TDD proof projection reports a missing GREEN phase, incomplete phase order, and a malformed RED phase without timestamp, command, or exit. The supplied proof file records only that RED was not run because the bundle was missing.",
+      "rationale": "The run manifest declares tddRequired true and the plan requires RED and GREEN from the identical focused command in the named proof file.",
+      "required": "After the host supplies the bundle and implementation is completed, record valid RED and GREEN phases for the prescribed focused command in the required proof file.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-crag-0106.red-green-proof.md:1-5"
+        },
+        {
+          "kind": "artifact",
+          "reference": "TDD proof/provenance:1-4"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-09-10_warm-crag-0106_openclaw-deliberation-plugin-pin-to-published-domain-wire.md:TDD"
+        }
+      ]
+    },
+    {
+      "claim": "The required Deliberation wire-pin verification record is absent.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The supplied artifacts include only the pre-implementation checkpoint and incomplete TDD proof. They contain no plans/checkpoints/deliberation_wire_pin.md recording required commands/results, baseline, authority membership, digests, and explicitly unrun deployment evidence.",
+      "rationale": "The task explicitly requires that checkpoint as the implementation-time evidence record; its absence leaves the prescribed scoped verification evidence unavailable.",
+      "required": "Create plans/checkpoints/deliberation_wire_pin.md after implementation with the required local verification record and the separately listed unrun build, deployed-identity, and protocol-smoke requirements.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/warm-crag-0106.checkpoint.md:8-13"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/tasks/2026-09-05_openclaw-deliberation-plugin-pin-to-published-domain-wire-co.md:Acceptance"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "OpenClaw Deliberation plugin pin to published domain wire contract"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-crag-0106-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "warm-crag-0106"
+}

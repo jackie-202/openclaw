@@ -16,12 +16,14 @@ The Deliberation plugin keeps configured Discord and Slack sources silent in ord
 
 ## Repository boundary
 
-OpenClaw owns the channel and provider hooks, intake and history adapters,
-final-delivery behavior, and the public HTTP interface documented below. An
-external orchestrator may consume and integration-test that interface from its
-own repository. The orchestrator's implementation, storage, restart,
-reconciliation, migration, and cross-repository end-to-end gates are not part
-of OpenClaw's build or repository-local acceptance gate.
+The published Deliberation v2 domain contract owns the closed HTTP wire schemas,
+fixtures, controls, and durable workflow fields. The plugin pins that immutable
+publication locally, without reading another checkout or fetching contract data
+at runtime. OpenClaw owns the channel and provider hooks, source identity and
+destination overlays, intake and history adapters, and final-delivery behavior.
+The external orchestrator's implementation, storage, restart, reconciliation,
+migration, and cross-repository end-to-end gates are not part of OpenClaw's
+build or repository-local acceptance gate.
 
 ## Surface
 
@@ -112,7 +114,7 @@ Every request sends `X-Deliberation-Protocol-Version: 1`. The canonical KM API h
 - `POST /deliberation/v1/invocations`
 - `POST /deliberation/v1/completions`
 
-Request and response objects are closed schemas. The KM owns the `source-intake`, `claims`, `review`, and `sender` controls. Change them with KM operator tooling, not OpenClaw Gateway methods or plugin CLI commands.
+Request and response objects are closed schemas pinned from the published Deliberation v2 domain contract. The KM owns the `source-intake`, `claims`, `review`, and `sender` controls. Change them with KM operator tooling, not OpenClaw Gateway methods or plugin CLI commands. OpenClaw's overlay supplies provider-specific routing, history, and native-delivery behavior without widening that domain wire contract.
 
 Accepted Discord and Slack intake uses `v1:<provider>:<account>:<channel>` as the canonical `sourceTarget`. For example, Slack account `work` and channel `C123` produce `v1:slack:work:C123`. Account and channel components are both part of the KM record, deduplication, and correlation domain. Slack thread timestamps are routing identities and are not encoded into `sourceTarget`; a reply's own `message.ts` remains its `providerEventId`.
 

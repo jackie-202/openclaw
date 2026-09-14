@@ -9,12 +9,10 @@ import { isApprovalNotFoundError } from "../../infra/approval-errors.js";
 import { resolveApprovalOverGateway } from "../../infra/approval-gateway-resolver.js";
 import { resolveApprovalCommandAuthorization } from "../../infra/channel-approval-auth.js";
 import { formatErrorMessage } from "../../infra/errors.js";
+import { matchApprovalCommandCandidate } from "./approval-command-control.js";
 import { resolveChannelAccountId } from "./channel-context.js";
 import { requireGatewayClientScope } from "./command-gates.js";
-import type { CommandHandler } from "./commands-types.js";
-
-const COMMAND_REGEX = /^\/?approve(?:\s|$)/i;
-const FOREIGN_COMMAND_MENTION_REGEX = /^\/approve@([^\s]+)(?:\s|$)/i;
+import type { CommandHandler, HandleCommandsParams } from "./commands-types.js";
 
 const DECISION_ALIASES: Record<string, "allow-once" | "allow-always" | "deny"> = {
   allow: "allow-once",
@@ -38,14 +36,14 @@ const APPROVE_USAGE_TEXT =
 
 function parseApproveCommand(raw: string): ParsedApproveCommand | null {
   const trimmed = raw.trim();
-  if (FOREIGN_COMMAND_MENTION_REGEX.test(trimmed)) {
-    return { ok: false, error: "❌ This /approve command targets a different Telegram bot." };
-  }
-  const commandMatch = trimmed.match(COMMAND_REGEX);
-  if (!commandMatch) {
+  const candidate = matchApprovalCommandCandidate(trimmed);
+  if (!candidate) {
     return null;
   }
-  const rest = trimmed.slice(commandMatch[0].length).trim();
+  if (candidate.kind === "foreign-mention") {
+    return { ok: false, error: "❌ This /approve command targets a different Telegram bot." };
+  }
+  const rest = trimmed.slice(candidate.prefixLength).trim();
   if (!rest) {
     return { ok: false, error: APPROVE_USAGE_TEXT };
   }
@@ -74,7 +72,9 @@ function parseApproveCommand(raw: string): ParsedApproveCommand | null {
   return { ok: false, error: APPROVE_USAGE_TEXT };
 }
 
-function buildResolvedByLabel(params: Parameters<CommandHandler>[0]): string {
+type ApproveCommandParams = Pick<HandleCommandsParams, "cfg" | "command" | "ctx">;
+
+function buildResolvedByLabel(params: ApproveCommandParams): string {
   const channel = params.command.channel;
   const sender = params.command.senderId ?? "unknown";
   return `${channel}:${sender}`;
@@ -123,7 +123,10 @@ function resolveApprovalAuthorizationError(params: {
   );
 }
 
-export const handleApproveCommand: CommandHandler = async (params, allowTextCommands) => {
+export async function handleApproveCommandControl(
+  params: ApproveCommandParams,
+  allowTextCommands: boolean,
+) {
   if (!allowTextCommands) {
     return null;
   }
@@ -239,4 +242,6 @@ export const handleApproveCommand: CommandHandler = async (params, allowTextComm
     shouldContinue: false,
     reply: { text: `✅ Approval ${parsed.decision} submitted for ${parsed.id}.` },
   };
-};
+}
+
+export const handleApproveCommand: CommandHandler = handleApproveCommandControl;

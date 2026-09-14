@@ -363,6 +363,7 @@ export function buildGatewayCronService(params: {
       job,
       message,
       abortSignal,
+      onSetupProgress,
       onExecutionStarted,
       onExecutionPhase,
     }) => {
@@ -375,6 +376,7 @@ export function buildGatewayCronService(params: {
           job,
           message,
           abortSignal,
+          onSetupProgress,
           onExecutionStarted,
           onExecutionPhase,
           agentId,

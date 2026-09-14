@@ -101,6 +101,14 @@ function validHealthResponse() {
     listener: {
       protocolVersion: 1,
       startedAt: "2026-08-09T12:00:00Z",
+      sourceIdentity: {
+        status: "ok",
+        modules: {
+          "lib/deliberation_source_identity.py": { status: "ok", sha256: "a".repeat(64) },
+          "lib/deliberation_wire.py": { status: "ok", sha256: "b".repeat(64) },
+          "lib/deliberation_spool_contracts.py": { status: "ok", sha256: "c".repeat(64) },
+        },
+      },
     },
     controls: { "source-intake": true, claims: true, review: true, sender: false },
     runner: {
@@ -122,7 +130,18 @@ function validHealthResponse() {
       activeSlot: null,
       timeoutCount: 0,
       lateResultCount: 0,
+      sourceHistoryTimeoutCount: 0,
+      failureWindow: {
+        durationSeconds: 86_400,
+        startedAt: "2026-08-08T12:00:00Z",
+        endedAt: "2026-08-09T12:00:00Z",
+      },
       lastPass: null,
+    },
+    sourceDrift: {
+      drifted: false,
+      driftedModules: [],
+      fingerprintAt: "2026-08-09T12:00:00Z",
     },
   };
 }
@@ -867,7 +886,10 @@ describe("KM contract parsing", () => {
 
   it("emits only transport metadata accepted by the closed KM contract", async () => {
     const contract = JSON.parse(
-      await readFile(new URL("../contracts/km-wire-v1.json", import.meta.url), "utf8"),
+      await readFile(
+        new URL("../contracts/deliberation-v2-v1-contract.json", import.meta.url),
+        "utf8",
+      ),
     ) as { transportHeaders: string[] };
     const transportHeaders = new Set(contract.transportHeaders.map((name) => name.toLowerCase()));
     let rawHeaderNames: string[] = [];
@@ -1020,13 +1042,20 @@ describe("KM contract parsing", () => {
     await expect(client.health()).rejects.toThrow("invalid health response");
   });
 
-  it("accepts health without source-file identity metadata", async () => {
+  it("accepts published unavailable source-identity health evidence", async () => {
     const health = validHealthResponse();
     const client = createClient({
       ...health,
       listener: {
-        protocolVersion: health.listener.protocolVersion,
-        startedAt: health.listener.startedAt,
+        ...health.listener,
+        sourceIdentity: {
+          ...health.listener.sourceIdentity,
+          status: "unavailable",
+          modules: {
+            ...health.listener.sourceIdentity.modules,
+            "lib/deliberation_source_identity.py": { status: "unavailable", sha256: null },
+          },
+        },
       },
     });
 
@@ -1036,6 +1065,7 @@ describe("KM contract parsing", () => {
       listener: {
         protocolVersion: 1,
         startedAt: "2026-08-09T12:00:00Z",
+        sourceIdentity: { status: "unavailable" },
       },
     });
   });
@@ -1053,7 +1083,68 @@ describe("KM contract parsing", () => {
     });
   });
 
-  it.each(["listener", "runner", "runtime"])(
+  it.each(["complete.sent", "complete.replay", "complete.failed"])(
+    "accepts the published %s response projection",
+    async (name) => {
+      const fixtures = JSON.parse(
+        await readFile(
+          new URL("../contracts/deliberation-v2-v1-fixtures.json", import.meta.url),
+          "utf8",
+        ),
+      ) as {
+        cases: Array<{
+          name: string;
+          request: { body: Record<string, unknown> };
+          response: { body: Record<string, unknown> };
+        }>;
+      };
+      const fixture = fixtures.cases.find((candidate) => candidate.name === name);
+      if (!fixture) {
+        throw new Error(`missing published fixture ${name}`);
+      }
+      const request = fixture.request.body;
+      const responseRecord = fixture.response.body.record as {
+        delivery: { attempts: Array<Record<string, unknown>> };
+      };
+      const attempt = responseRecord.delivery.attempts[0];
+      const envelope = request.deliveryEnvelope as KmReservation["deliveryEnvelope"];
+      const outcome = request.outcome as "SENT" | "FAILED";
+      const reservation: KmReservation = {
+        recordId: String(request.recordId),
+        attemptId: String(request.attemptId),
+        ordinal: Number(attempt?.ordinal),
+        version: 8,
+        owner: String(request.owner),
+        leaseToken: String(request.leaseToken),
+        leaseExpiresAt: "2026-07-27T12:02:00Z",
+        candidateRevision: envelope.candidateRevision as number,
+        reviewedTextHash: String(envelope.reviewedTextHash),
+        deliveryEnvelope: envelope,
+        deliveryEnvelopeDigest: String(request.deliveryEnvelopeDigest),
+        reserveIdempotencyKey: String(attempt?.reserveIdempotencyKey),
+      };
+      const client = createClient(fixture.response.body);
+
+      await expect(
+        client.completeDelivery({
+          reservation,
+          providerAttemptId: String(request.providerAttemptId),
+          outcome,
+          ...(outcome === "SENT"
+            ? {
+                providerReceiptId: String(request.providerReceiptId),
+                providerMessageId: String(request.providerMessageId),
+              }
+            : {
+                providerFailureClass: String(request.providerFailureClass),
+                providerEvidence: request.providerEvidence as Record<string, string | number>,
+              }),
+        }),
+      ).resolves.toMatchObject({ state: outcome });
+    },
+  );
+
+  it.each(["listener", "runner", "runtime", "sourceDrift"])(
     "rejects malformed nested health projection %s",
     async (field) => {
       const client = createClient({ ...validHealthResponse(), [field]: {} });

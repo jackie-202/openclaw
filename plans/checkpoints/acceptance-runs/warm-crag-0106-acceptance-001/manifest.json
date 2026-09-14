@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-10T05:32:35+00:00",
+    "implementingStartedAt": "2026-09-10T05:26:26+00:00",
+    "taskFile": "plans/tasks/2026-09-05_openclaw-deliberation-plugin-pin-to-published-domain-wire-co.md",
+    "taskId": "warm-crag-0106",
+    "title": "OpenClaw Deliberation plugin pin to published domain wire contract"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "OpenClaw Deliberation plugin pin to published domain wire contract"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "warm-crag-0106-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "warm-crag-0106",
+  "tddRequired": true
+}

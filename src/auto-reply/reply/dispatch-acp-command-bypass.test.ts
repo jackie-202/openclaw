@@ -37,6 +37,26 @@ describe("shouldBypassAcpDispatchForCommand", () => {
     expect(shouldBypassAcpDispatchForCommand(ctx, {} as OpenClawConfig)).toBe(true);
   });
 
+  it.each(["approve plugin:request-1 deny", "/approve: plugin:request-1 allow-once"])(
+    "bypasses ACP model dispatch for approval control %s",
+    (command) => {
+      const ctx = buildTestCtx({
+        Provider: "discord",
+        Surface: "discord",
+        CommandBody: command,
+        BodyForCommands: command,
+        BodyForAgent: command,
+        CommandSource: "text",
+      });
+
+      expect(
+        shouldBypassAcpDispatchForCommand(ctx, {
+          commands: { text: true },
+        } as OpenClawConfig),
+      ).toBe(true);
+    },
+  );
+
   it("returns true for native ACP slash commands", () => {
     const ctx = buildTestCtx({
       Provider: "discord",

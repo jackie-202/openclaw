@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-09T11:24:29+00:00",
+    "implementingStartedAt": "2026-09-09T11:13:33+00:00",
+    "taskFile": "plans/tasks/2026-09-09_followup-quick-vale-3780-acceptance-fix-cron-preparation-stage-diagnostics-and-cancel.md",
+    "taskId": "quick-vale-3780",
+    "title": "[acceptance-fix] [acceptance-fix] Cron preparation: stage diagnostics and cancellation regression coverage: goal-001: Cr"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Cron preparation: stage diagnostics and cancellation regression coverage: goal-001: Cr"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "quick-vale-3780-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "quick-vale-3780",
+  "tddRequired": true
+}

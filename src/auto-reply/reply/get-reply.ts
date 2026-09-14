@@ -14,6 +14,7 @@ import {
 import { resolveModelRefFromString } from "../../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
+import { normalizeChatType } from "../../channels/chat-type.js";
 import {
   resolveChannelModelOverride,
   resolveChannelRuntimeProfile,
@@ -27,16 +28,24 @@ import { buildAgentHookContextChannelFields } from "../../plugins/hook-agent-con
 import { defaultRuntime } from "../../runtime.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 import { resolveCommandTurnTargetSessionKey } from "../command-turn-context.js";
+import { normalizeCommandBody } from "../commands-registry.js";
+import { shouldHandleTextCommands } from "../commands-text-routing.js";
 import type { GetReplyOptions } from "../get-reply-options.types.js";
 import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS, stripHeartbeatToken } from "../heartbeat.js";
-import type { ReplyPayload } from "../reply-payload.js";
-import type { MsgContext } from "../templating.js";
+import {
+  markReplyPayloadForSourceSuppressionDelivery,
+  type ReplyPayload,
+} from "../reply-payload.js";
+import type { FinalizedMsgContext, MsgContext } from "../templating.js";
 import {
   normalizeReasoningLevel,
   normalizeThinkLevel,
   normalizeVerboseLevel,
 } from "../thinking.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
+import { isApprovalCommandCandidate } from "./approval-command-control.js";
+import { buildCommandContext } from "./commands-context.js";
+import { resolveCommandContextText } from "./context-text.js";
 import { resolveDefaultModel } from "./directive-handling.defaults.js";
 import { clearInlineDirectives } from "./get-reply-directives-utils.js";
 import { resolveReplyDirectives } from "./get-reply-directives.js";
@@ -105,6 +114,7 @@ const replyResolverTimingLog = createSubsystemLogger("auto-reply/reply-resolver-
 const commandsCoreRuntimeLoader = createLazyImportLoader(
   () => import("./commands-core.runtime.js"),
 );
+const approveCommandRuntimeLoader = createLazyImportLoader(() => import("./commands-approve.js"));
 
 function loadSessionResetModelRuntime() {
   return sessionResetModelRuntimeLoader.load();
@@ -124,6 +134,46 @@ function loadLinkUnderstandingApplyRuntime() {
 
 function loadCommandsCoreRuntime() {
   return commandsCoreRuntimeLoader.load();
+}
+
+async function resolveApprovalControlReply(params: {
+  ctx: FinalizedMsgContext;
+  cfg: OpenClawConfig;
+  agentId: string;
+  sessionKey?: string;
+  commandAuthorized: boolean;
+}): Promise<{ handled: false } | { handled: true; reply: ReplyPayload | undefined }> {
+  const commandText = resolveCommandContextText(params.ctx);
+  const normalizedCommandText = normalizeCommandBody(commandText, {
+    botUsername: params.ctx.BotUsername,
+  });
+  const allowTextCommands = shouldHandleTextCommands({
+    cfg: params.cfg,
+    surface: params.ctx.Surface ?? params.ctx.Provider ?? "",
+    commandSource: params.ctx.CommandSource,
+  });
+  if (!allowTextCommands || !isApprovalCommandCandidate(normalizedCommandText)) {
+    return { handled: false };
+  }
+  const chatType = normalizeChatType(params.ctx.ChatType);
+  const command = buildCommandContext({
+    ctx: params.ctx,
+    cfg: params.cfg,
+    agentId: params.agentId,
+    sessionKey: params.sessionKey,
+    isGroup: chatType != null && chatType !== "direct",
+    triggerBodyNormalized: commandText,
+    commandAuthorized: params.commandAuthorized,
+  });
+  const { handleApproveCommandControl } = await approveCommandRuntimeLoader.load();
+  const result = await handleApproveCommandControl(
+    { ctx: params.ctx, cfg: params.cfg, command },
+    true,
+  );
+  return {
+    handled: true,
+    reply: result?.reply ? markReplyPayloadForSourceSuppressionDelivery(result.reply) : undefined,
+  };
 }
 
 const hookRunnerGlobalLoader = createLazyImportLoader(
@@ -390,6 +440,21 @@ export async function getReplyFromConfig(
     opts?.onTypingController?.(controller);
     return controller;
   });
+
+  const approvalControlReply = await traceGetReplyPhase("reply.approval_control_fast_path", () =>
+    resolveApprovalControlReply({
+      ctx: finalized,
+      cfg,
+      agentId,
+      sessionKey: agentSessionKey,
+      commandAuthorized: finalized.CommandAuthorized,
+    }),
+  );
+  if (approvalControlReply.handled) {
+    typing.cleanup();
+    logResolverTiming("completed", "approval_control_fast_path");
+    return approvalControlReply.reply;
+  }
 
   const nativeSlashCommandFastReply = await traceGetReplyPhase(
     "reply.native_slash_command_fast_path",

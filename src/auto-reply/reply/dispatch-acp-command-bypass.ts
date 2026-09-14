@@ -2,9 +2,10 @@
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { hasControlCommand } from "../command-detection.js";
 import { isCommandEnabled } from "../commands-registry-list.js";
-import { maybeResolveTextAlias } from "../commands-registry-normalize.js";
+import { maybeResolveTextAlias, normalizeCommandBody } from "../commands-registry-normalize.js";
 import { shouldHandleTextCommands } from "../commands-text-routing.js";
 import type { FinalizedMsgContext } from "../templating.js";
+import { isApprovalCommandCandidate } from "./approval-command-control.js";
 import { resolveCommandContextText } from "./context-text.js";
 
 function isResetCommandCandidate(text: string): boolean {
@@ -33,6 +34,10 @@ export function shouldBypassAcpDispatchForCommand(
     surface: ctx.Surface ?? ctx.Provider ?? "",
     commandSource: ctx.CommandSource,
   });
+  const normalizedCommand = normalizeCommandBody(candidate, { botUsername: ctx.BotUsername });
+  if (isApprovalCommandCandidate(normalizedCommand)) {
+    return allowTextCommands;
+  }
   if (!normalized.startsWith("/") && maybeResolveTextAlias(candidate, cfg) != null) {
     return allowTextCommands;
   }

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-08T15:24:35+00:00",
+    "implementingStartedAt": "2026-09-08T14:27:51+00:00",
+    "taskFile": "plans/tasks/2026-09-08_fix-approval-command-deadlock-behind-same-session-reply-admi.md",
+    "taskId": "bright-fork-9227",
+    "title": "Fix approval command deadlock behind same-session reply admission"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Fix approval command deadlock behind same-session reply admission"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "bright-fork-9227-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "bright-fork-9227",
+  "tddRequired": true
+}

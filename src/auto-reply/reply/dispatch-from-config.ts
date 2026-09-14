@@ -102,6 +102,7 @@ import {
   normalizeCommandBody,
   resolveTextCommand,
 } from "../commands-registry.js";
+import { shouldHandleTextCommands } from "../commands-text-routing.js";
 import type { BlockReplyContext } from "../get-reply-options.types.js";
 import {
   copyReplyPayloadMetadata,
@@ -113,10 +114,12 @@ import {
 import type { FinalizedMsgContext } from "../templating.js";
 import { normalizeVerboseLevel } from "../thinking.js";
 import { resolveSessionRuntimeOverrideForProvider } from "./agent-runner-execution.js";
+import { isApprovalCommandCandidate } from "./approval-command-control.js";
 import {
   takeCommandSessionMetadataChanges,
   type CommandSessionMetadataChange,
 } from "./command-session-metadata.js";
+import { resolveCommandContextText } from "./context-text.js";
 import { resolveConversationBindingContextFromMessage } from "./conversation-binding-input.js";
 import {
   createInternalHookEvent,
@@ -1185,6 +1188,16 @@ export async function dispatchReplyFromConfig(
   const inboundAudio = hasInboundAudio(ctx);
   const sessionTtsAuto = normalizeTtsAutoMode(sessionStoreEntry.entry?.ttsAuto);
   const workspaceDir = resolveAgentWorkspaceDir(cfg, sessionAgentId);
+  const approvalCommandText = normalizeCommandBody(resolveCommandContextText(ctx), {
+    botUsername: ctx.BotUsername,
+  });
+  const isApprovalControlCommand =
+    isApprovalCommandCandidate(approvalCommandText) &&
+    shouldHandleTextCommands({
+      cfg,
+      surface: ctx.Surface ?? ctx.Provider ?? "",
+      commandSource: ctx.CommandSource,
+    });
   let dispatchReplyOperation: ReplyOperation | undefined;
   let dispatchAbortOperation: ReplyOperation | undefined;
   let preDispatchAbortOperation: ReplyOperation | undefined;
@@ -1192,6 +1205,11 @@ export async function dispatchReplyFromConfig(
   const ensureDispatchReplyOperation = async (
     phase: "pre_dispatch" | "dispatch",
   ): Promise<DispatchReplyOperationAcquisition> => {
+    // Approval decisions unblock the active run itself, so they must reach the canonical
+    // command handler without reading or mutating that run's reply-operation ownership.
+    if (isApprovalControlCommand) {
+      return { status: "ready" };
+    }
     if (dispatchReplyOperation && !dispatchReplyOperation.result) {
       return { status: "ready" };
     }

@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-09T10:54:27+00:00",
+    "implementingStartedAt": "2026-09-09T10:37:53+00:00",
+    "taskFile": "plans/tasks/2026-09-09_followup-swift-dune-1177-cron-preparation-stage-diagnostics-and-cancellation-regressi.md",
+    "taskId": "swift-dune-1177",
+    "title": "[acceptance-fix] Cron preparation: stage diagnostics and cancellation regression coverage: goal-001: Cron preparation: s"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Cron preparation: stage diagnostics and cancellation regression coverage: goal-001: Cron preparation: s"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-dune-1177-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "swift-dune-1177",
+  "tddRequired": true
+}

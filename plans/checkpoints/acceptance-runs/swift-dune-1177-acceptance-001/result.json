@@ -1,0 +1,50 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "Required cron setup-stage diagnostics, watchdog retention, timeout projection, cooperative cancellation, and complete late-release watchdog regression are not delivered in the supplied implementation material.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped diff contains a new isolated-agent preparation-cancellation test and a test-harness adjustment, but no production changes to src/cron/isolated-agent/run.ts, src/cron/types.ts, src/cron/service/state.ts, src/cron/service/timer.ts, src/cron/service/agent-watchdog.ts, src/cron/service/execution-errors.ts, or the Gateway owner boundary. It also does not contain the claimed strengthened src/cron/service/timer.regression.test.ts change asserting abort observation, no late dispatch, one terminal result, and unchanged durable state. Plan and checkpoint assertions do not supply those implementations.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Goal-001 requires runtime stage reporting, retained timeout diagnostics, cooperative cancellation checkpoints, unchanged timeout semantics, and late-release terminal/non-dispatch coverage. The supplied tests and narrative artifacts cannot establish or deliver the absent runtime behavior and service regression.",
+      "required": "Supply the preserved cron and Gateway owner implementation changes and the strengthened deferred setup watchdog regression demonstrating bounded stage evidence, cancellation, one cleanup, one terminal failure, no late model dispatch, and unchanged durable state after release.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "caller-supplied task-scoped diff"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-09-09_followup-swift-dune-1177-cron-preparation-stage-diagnostics-and-cancellation-regressi.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-09-09_swift-dune-1177_cron-preparation-stage-diagnostics-and-cancellation.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/swift-dune-1177.checkpoint.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Cron preparation: stage diagnostics and cancellation regression coverage: goal-001: Cron preparation: s"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "swift-dune-1177-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "swift-dune-1177"
+}

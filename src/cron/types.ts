@@ -207,6 +207,28 @@ export type CronAgentExecutionPhaseUpdate = CronAgentExecutionStarted & {
   phase: CronAgentExecutionPhase;
 };
 
+/** Stable, redacted preparation boundaries retained by the setup watchdog. */
+export type CronAgentSetupStage =
+  | "workspace"
+  | "runtime-plugins"
+  | "model-selection"
+  | "model-preflight"
+  | "model-catalog"
+  | "delivery-resolution"
+  | "external-content"
+  | "skills-snapshot"
+  | "session-persistence"
+  | "session-cleanup"
+  | "auth-profile";
+
+/** Bounded setup timing metadata; deliberately excludes paths, prompts, and credentials. */
+export type CronAgentSetupProgress = {
+  jobId: string;
+  sessionId?: string;
+  stage: CronAgentSetupStage;
+  elapsedMs: number;
+};
+
 /** Failure alert policy persisted on a cron job. */
 export type CronFailureAlert = {
   after?: number;

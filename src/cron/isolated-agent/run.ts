@@ -42,6 +42,8 @@ import {
 import type {
   CronAgentExecutionPhaseUpdate,
   CronAgentExecutionStarted,
+  CronAgentSetupProgress,
+  CronAgentSetupStage,
   CronDeliveryTrace,
   CronDeliveryTraceMessageTarget,
   CronDeliveryTraceTarget,
@@ -360,6 +362,7 @@ async function resolveCronDeliveryContext(params: {
   cfg: OpenClawConfig;
   job: CronJob;
   agentId: string;
+  checkCancelled: () => void;
 }) {
   const deliveryPlan = resolveCronDeliveryPlan(params.job);
   if (deliveryPlan.mode === "webhook") {
@@ -397,6 +400,7 @@ async function resolveCronDeliveryContext(params: {
     };
   }
   const { resolveDeliveryTarget } = await loadCronDeliveryRuntime();
+  params.checkCancelled();
   const resolvedDelivery = await resolveDeliveryTarget(params.cfg, params.agentId, {
     channel: deliveryPlan.channel ?? "last",
     to: deliveryPlan.to,
@@ -449,6 +453,7 @@ type RunCronAgentTurnParams = {
   message: string;
   abortSignal?: AbortSignal;
   signal?: AbortSignal;
+  onSetupProgress?: (info: CronAgentSetupProgress) => void;
   onExecutionStarted?: (info?: CronAgentExecutionStarted) => void;
   onExecutionPhase?: (info: CronAgentExecutionPhaseUpdate) => void;
   sessionKey: string;
@@ -525,8 +530,39 @@ function resolveCronActiveRuntimeConfig(cfg: OpenClawConfig): OpenClawConfig {
 async function prepareCronRunContext(params: {
   input: RunCronAgentTurnParams;
   isFastTestEnv: boolean;
+  isAborted: () => boolean;
+  abortReason: () => string;
 }): Promise<CronPreparationResult> {
   const { input } = params;
+  const setupStartedAtMs = Date.now();
+  const setupIdentity: { sessionId?: string } = {};
+  let lastSetupStage: CronAgentSetupStage | undefined;
+  const reportSetupStage = (stage: CronAgentSetupStage) => {
+    if (stage === lastSetupStage) {
+      return;
+    }
+    lastSetupStage = stage;
+    const rawElapsedMs = Date.now() - setupStartedAtMs;
+    const elapsedMs = Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(rawElapsedMs)));
+    input.onSetupProgress?.({
+      jobId: input.job.id,
+      ...(setupIdentity.sessionId ? { sessionId: setupIdentity.sessionId } : {}),
+      stage,
+      elapsedMs,
+    });
+  };
+  const throwIfCancelled = () => {
+    if (params.isAborted()) {
+      throw new Error(params.abortReason());
+    }
+  };
+  const runSetupStage = async <T>(stage: CronAgentSetupStage, run: () => Promise<T>) => {
+    reportSetupStage(stage);
+    const result = await run();
+    throwIfCancelled();
+    return result;
+  };
+  throwIfCancelled();
   const runtimeCfg = resolveCronActiveRuntimeConfig(input.cfg);
   const defaultAgentId = resolveDefaultAgentId(runtimeCfg);
   const requestedAgentId =
@@ -551,11 +587,12 @@ async function prepareCronRunContext(params: {
   let catalog: Awaited<ReturnType<CronModelCatalogRuntime["loadModelCatalog"]>> | undefined;
   const loadCatalog = async () => {
     if (!catalog) {
-      catalog = await (
-        await loadCronModelCatalogRuntime()
-      ).loadModelCatalog({
-        config: cfgWithAgentDefaults,
-      });
+      const catalogRuntime = await runSetupStage("model-catalog", loadCronModelCatalogRuntime);
+      catalog = await runSetupStage("model-catalog", () =>
+        catalogRuntime.loadModelCatalog({
+          config: cfgWithAgentDefaults,
+        }),
+      );
     }
     return catalog;
   };
@@ -574,14 +611,16 @@ async function prepareCronRunContext(params: {
 
   const workspaceDirRaw = resolveAgentWorkspaceDir(input.cfg, agentId);
   const agentDir = resolveAgentDir(input.cfg, agentId);
-  const workspace = await ensureAgentWorkspace({
-    dir: workspaceDirRaw,
-    ensureBootstrapFiles: !agentCfg?.skipBootstrap && !params.isFastTestEnv,
-    skipOptionalBootstrapFiles: agentCfg?.skipOptionalBootstrapFiles,
-  });
+  const workspace = await runSetupStage("workspace", () =>
+    ensureAgentWorkspace({
+      dir: workspaceDirRaw,
+      ensureBootstrapFiles: !agentCfg?.skipBootstrap && !params.isFastTestEnv,
+      skipOptionalBootstrapFiles: agentCfg?.skipOptionalBootstrapFiles,
+    }),
+  );
   const workspaceDir = workspace.dir;
 
-  const { ensureRuntimePluginsLoaded } = await loadRuntimePlugins();
+  const { ensureRuntimePluginsLoaded } = await runSetupStage("runtime-plugins", loadRuntimePlugins);
   ensureRuntimePluginsLoaded({
     config: cfgWithAgentDefaults,
     workspaceDir,
@@ -598,6 +637,7 @@ async function prepareCronRunContext(params: {
     forceNew: input.job.sessionTarget === "isolated",
   });
   const runSessionId = cronSession.sessionEntry.sessionId;
+  setupIdentity.sessionId = runSessionId;
   const currentRunSessionId = () => cronSession.sessionEntry.sessionId ?? runSessionId;
   if (!cronSession.sessionEntry.sessionFile?.trim()) {
     cronSession.sessionEntry.sessionFile = resolveSessionTranscriptPath(runSessionId, agentId);
@@ -605,13 +645,14 @@ async function prepareCronRunContext(params: {
   const runSessionKey = baseSessionKey.startsWith("cron:")
     ? `${agentSessionKey}:run:${runSessionId}`
     : agentSessionKey;
+  let sessionStoreRuntime: Awaited<ReturnType<typeof loadSessionStoreRuntime>> | undefined;
   const persistSessionEntry = createPersistCronSessionEntry({
     isFastTestEnv: params.isFastTestEnv,
     cronSession,
     agentSessionKey,
     updateSessionStore: async (storePath, update) => {
-      const { updateSessionStore } = await loadSessionStoreRuntime();
-      await updateSessionStore(storePath, update);
+      sessionStoreRuntime ??= await loadSessionStoreRuntime();
+      await sessionStoreRuntime.updateSessionStore(storePath, update);
     },
   });
   const withRunSession: WithRunSession = (result) => ({
@@ -627,15 +668,17 @@ async function prepareCronRunContext(params: {
     cronSession.sessionEntry.label = `Cron: ${labelSuffix}`;
   }
 
-  const resolvedModelSelection = await resolveCronModelSelection({
-    cfg: input.cfg,
-    cfgWithAgentDefaults,
-    agentConfigOverride,
-    sessionEntry: cronSession.sessionEntry,
-    payload: input.job.payload,
-    isGmailHook,
-    agentId,
-  });
+  const resolvedModelSelection = await runSetupStage("model-selection", () =>
+    resolveCronModelSelection({
+      cfg: input.cfg,
+      cfgWithAgentDefaults,
+      agentConfigOverride,
+      sessionEntry: cronSession.sessionEntry,
+      payload: input.job.payload,
+      isGmailHook,
+      agentId,
+    }),
+  );
   if (!resolvedModelSelection.ok) {
     return {
       ok: false,
@@ -653,7 +696,10 @@ async function prepareCronRunContext(params: {
   let model = resolvedModelSelection.model;
   const useSubagentFallbacks = resolvedModelSelection.modelSource === "subagent";
 
-  const modelPreflightRuntime = await loadCronModelPreflightRuntime();
+  const modelPreflightRuntime = await runSetupStage(
+    "model-preflight",
+    loadCronModelPreflightRuntime,
+  );
   const preflightCandidates = resolveCronPreflightCandidates({
     cfg: cfgWithAgentDefaults,
     job: input.job,
@@ -668,11 +714,13 @@ async function prepareCronRunContext(params: {
     | Awaited<ReturnType<typeof modelPreflightRuntime.preflightCronModelProvider>>
     | undefined;
   for (const [index, candidate] of preflightCandidates.entries()) {
-    const candidatePreflight = await modelPreflightRuntime.preflightCronModelProvider({
-      cfg: cfgWithAgentDefaults,
-      provider: candidate.provider,
-      model: candidate.model,
-    });
+    const candidatePreflight = await runSetupStage("model-preflight", () =>
+      modelPreflightRuntime.preflightCronModelProvider({
+        cfg: cfgWithAgentDefaults,
+        provider: candidate.provider,
+        model: candidate.model,
+      }),
+    );
     if (candidatePreflight.status === "available") {
       selectedPreflightCandidate = candidate;
       selectedPreflightCandidateIndex = index;
@@ -764,12 +812,16 @@ async function prepareCronRunContext(params: {
   // `timeoutSeconds` happens to numerically equal `agents.defaults.timeoutSeconds`.
   const runTimeoutOverrideMs = resolveCronRunTimeoutOverrideMs(explicitTimeoutSeconds);
   const agentPayload = input.job.payload.kind === "agentTurn" ? input.job.payload : null;
-  const { deliveryPlan, deliveryRequested, resolvedDelivery, sourceDelivery } =
-    await resolveCronDeliveryContext({
-      cfg: cfgWithAgentDefaults,
-      job: input.job,
-      agentId,
-    });
+  const { deliveryPlan, deliveryRequested, resolvedDelivery, sourceDelivery } = await runSetupStage(
+    "delivery-resolution",
+    () =>
+      resolveCronDeliveryContext({
+        cfg: cfgWithAgentDefaults,
+        job: input.job,
+        agentId,
+        checkCancelled: throwIfCancelled,
+      }),
+  );
 
   const { formattedTime, timeLine } = resolveCronStyleNow(input.cfg, now);
   const message = resolveCronAgentTurnMessage(input);
@@ -783,7 +835,10 @@ async function prepareCronRunContext(params: {
   let commandBody: string;
 
   if (isExternalHook) {
-    const { detectSuspiciousPatterns } = await loadCronExternalContentRuntime();
+    const { detectSuspiciousPatterns } = await runSetupStage(
+      "external-content",
+      loadCronExternalContentRuntime,
+    );
     const suspiciousPatterns = detectSuspiciousPatterns(message);
     if (suspiciousPatterns.length > 0) {
       logWarn(
@@ -794,7 +849,10 @@ async function prepareCronRunContext(params: {
   }
 
   if (shouldWrapExternal) {
-    const { buildSafeExternalPrompt } = await loadCronExternalContentRuntime();
+    const { buildSafeExternalPrompt } = await runSetupStage(
+      "external-content",
+      loadCronExternalContentRuntime,
+    );
     const hookType = mapHookExternalContentSource(hookExternalContentSource ?? "webhook");
     const safeContent = buildSafeExternalPrompt({
       content: message,
@@ -817,13 +875,19 @@ async function prepareCronRunContext(params: {
     resolvedDeliveryOk: resolvedDelivery.ok,
   });
 
-  const skillsSnapshot = await resolveCronSkillsSnapshot({
-    workspaceDir,
-    config: cfgWithAgentDefaults,
-    agentId,
-    existingSnapshot: cronSession.sessionEntry.skillsSnapshot,
-    isFastTestEnv: params.isFastTestEnv,
-  });
+  const skillsSnapshot = await runSetupStage("skills-snapshot", () =>
+    resolveCronSkillsSnapshot({
+      workspaceDir,
+      config: cfgWithAgentDefaults,
+      agentId,
+      existingSnapshot: cronSession.sessionEntry.skillsSnapshot,
+      isFastTestEnv: params.isFastTestEnv,
+    }),
+  );
+  reportSetupStage("session-persistence");
+  if (!params.isFastTestEnv) {
+    sessionStoreRuntime = await runSetupStage("session-persistence", loadSessionStoreRuntime);
+  }
   await persistCronSkillsSnapshotIfChanged({
     isFastTestEnv: params.isFastTestEnv,
     cronSession,
@@ -831,50 +895,63 @@ async function prepareCronRunContext(params: {
     nowMs: Date.now(),
     persistSessionEntry,
   });
-
-  markCronSessionPreRun({ entry: cronSession.sessionEntry, provider, model });
   try {
-    await persistSessionEntry();
-  } catch (err) {
-    logWarn(`[cron:${input.job.id}] Failed to persist pre-run session entry: ${String(err)}`);
+    throwIfCancelled();
+
+    markCronSessionPreRun({ entry: cronSession.sessionEntry, provider, model });
+    try {
+      await persistSessionEntry();
+      throwIfCancelled();
+    } catch (err) {
+      if (params.isAborted()) {
+        throw err;
+      }
+      logWarn(`[cron:${input.job.id}] Failed to persist pre-run session entry: ${String(err)}`);
+    }
+  } finally {
+    reportSetupStage("session-cleanup");
+    await retireRolledCronSessionMcpRuntime({
+      job: input.job,
+      cronSession,
+    });
   }
-  await retireRolledCronSessionMcpRuntime({
-    job: input.job,
-    cronSession,
-  });
+  throwIfCancelled();
   const hasSessionAuthProfileOverride = Boolean(
     cronSession.sessionEntry.authProfileOverride?.trim(),
   );
-  const authProfileId =
-    !hasSessionAuthProfileOverride &&
-    !hasConfiguredAuthProfiles(cfgWithAgentDefaults) &&
-    !hasAnyAuthProfileStoreSource(agentDir)
-      ? undefined
-      : await (
-          await loadCronAuthProfileRuntime()
-        ).resolveSessionAuthProfileOverride({
-          // Auth profile resolution can mutate session state; pass the same
-          // store and key that persistence will later write.
-          cfg: cfgWithAgentDefaults,
+  let authProfileId: string | undefined;
+  const requiresAuthProfileResolution =
+    hasSessionAuthProfileOverride ||
+    hasConfiguredAuthProfiles(cfgWithAgentDefaults) ||
+    hasAnyAuthProfileStoreSource(agentDir);
+  if (requiresAuthProfileResolution) {
+    const authProfileRuntime = await runSetupStage("auth-profile", loadCronAuthProfileRuntime);
+    authProfileId = await runSetupStage("auth-profile", () =>
+      authProfileRuntime.resolveSessionAuthProfileOverride({
+        // Auth profile resolution can mutate session state; pass the same
+        // store and key that persistence will later write.
+        cfg: cfgWithAgentDefaults,
+        provider,
+        acceptedProviderIds: listOpenAIAuthProfileProvidersForAgentRuntime({
           provider,
-          acceptedProviderIds: listOpenAIAuthProfileProvidersForAgentRuntime({
+          harnessRuntime: resolveAgentHarnessPolicy({
             provider,
-            harnessRuntime: resolveAgentHarnessPolicy({
-              provider,
-              modelId: model,
-              config: cfgWithAgentDefaults,
-              agentId,
-              sessionKey: agentSessionKey,
-            }).runtime,
+            modelId: model,
             config: cfgWithAgentDefaults,
-          }),
-          agentDir,
-          sessionEntry: cronSession.sessionEntry,
-          sessionStore: cronSession.store,
-          sessionKey: agentSessionKey,
-          storePath: cronSession.storePath,
-          isNewSession: cronSession.isNewSession && input.job.sessionTarget !== "isolated",
-        });
+            agentId,
+            sessionKey: agentSessionKey,
+          }).runtime,
+          config: cfgWithAgentDefaults,
+        }),
+        agentDir,
+        sessionEntry: cronSession.sessionEntry,
+        sessionStore: cronSession.store,
+        sessionKey: agentSessionKey,
+        storePath: cronSession.storePath,
+        isNewSession: cronSession.isNewSession && input.job.sessionTarget !== "isolated",
+      }),
+    );
+  }
   const liveSelection: CronLiveSelection = {
     provider,
     model,
@@ -1231,6 +1308,7 @@ export async function runCronIsolatedAgentTurn(params: {
   message: string;
   abortSignal?: AbortSignal;
   signal?: AbortSignal;
+  onSetupProgress?: (info: CronAgentSetupProgress) => void;
   onExecutionStarted?: (info?: CronAgentExecutionStarted) => void;
   onExecutionPhase?: (info: CronAgentExecutionPhaseUpdate) => void;
   sessionKey: string;
@@ -1246,7 +1324,25 @@ export async function runCronIsolatedAgentTurn(params: {
       : "cron: job execution timed out";
   };
   const isFastTestEnv = process.env.OPENCLAW_TEST_FAST === "1";
-  const prepared = await prepareCronRunContext({ input: params, isFastTestEnv });
+  let prepared: CronPreparationResult;
+  try {
+    prepared = await prepareCronRunContext({
+      input: params,
+      isFastTestEnv,
+      isAborted,
+      abortReason,
+    });
+  } catch (err) {
+    if (!isAborted()) {
+      throw err;
+    }
+    const error = abortReason();
+    return {
+      status: "error",
+      error,
+      diagnostics: createCronRunDiagnosticsFromError("cron-setup", error),
+    };
+  }
   if (!prepared.ok) {
     return prepared.result;
   }
@@ -1295,7 +1391,25 @@ export async function runCronIsolatedAgentTurn(params: {
   let outcome: "completed" | "error" = "completed";
   let outcomeError: string | undefined;
   try {
+    if (isAborted()) {
+      outcome = "error";
+      outcomeError = abortReason();
+      return prepared.context.withRunSession({
+        status: "error",
+        error: outcomeError,
+        diagnostics: createCronRunDiagnosticsFromError("cron-setup", outcomeError),
+      });
+    }
     const { executeCronRun } = await loadCronExecutorRuntime();
+    if (isAborted()) {
+      outcome = "error";
+      outcomeError = abortReason();
+      return prepared.context.withRunSession({
+        status: "error",
+        error: outcomeError,
+        diagnostics: createCronRunDiagnosticsFromError("cron-setup", outcomeError),
+      });
+    }
     const execution = await executeCronRun({
       cfg: params.cfg,
       cfgWithAgentDefaults: prepared.context.cfgWithAgentDefaults,
