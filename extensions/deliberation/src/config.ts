@@ -100,6 +100,7 @@ const commonConfigFields = {
         }, "KM endpoint must be credential-free HTTPS or literal-loopback HTTP without query or fragment"),
       credential: secretInputSchema,
       requestTimeoutMs: z.number().int().min(100).max(30_000),
+      invocationTimeoutMs: z.number().int().min(100).max(30_000).default(30_000),
     })
     .strict(),
   restrictedSessionKeys: z.array(z.string().trim().min(1)).min(1),

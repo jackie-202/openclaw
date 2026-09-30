@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "claim": "The required follow-up-specific learning artifact or credible completed provenance is missing from the supplied material.",
+      "crossCutting": false,
+      "findingType": "required_learning_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The follow-up plan requires save-learning as the final implementation action and a new learning file, but the supplied checkpoint says learning capture is next; the only readable learning artifact supplied belongs to parent task task-190873da-d25c-46f1-87c0-4782fde68765, and no follow-up learning content is provided.",
+      "rationale": "The timeout characterization itself satisfies the acceptance behavior, but the explicitly required follow-up learning deliverable is not demonstrated as completed by the caller-supplied artifacts.",
+      "required": "Provide the follow-up task-specific learning artifact, or credible provenance showing the required learning was saved.",
+      "sources": [
+        {
+          "kind": "plan",
+          "reference": "plans/2026-09-14_task-8a750897-a2ca-4d5d-ba37-7e70d352d86e_deliberation-invocation-timeout-before-provider-send-goal.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-8a750897-a2ca-4d5d-ba37-7e70d352d86e.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "learnings/architecture/task-190873da-invocation-authorization-timeout.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation invocation timeout before provider send: goal-001: Deliberation invocation timeout before"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "task-8a750897-a2ca-4d5d-ba37-7e70d352d86e-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "task-8a750897-a2ca-4d5d-ba37-7e70d352d86e"
+}

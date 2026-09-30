@@ -24,6 +24,7 @@ const rawConfig = {
 };
 
 const config = parseDeliberationConfig(rawConfig);
+const testLeaseExpiry = new Date(Date.now() + 60_000).toISOString();
 
 const producerAuthority = {
   pipelineId: "discord-source",
@@ -204,7 +205,7 @@ function validReservation(
     version: 8,
     owner: "sender-1",
     leaseToken: "lease-1",
-    leaseExpiresAt: "2026-08-01T12:01:00Z",
+    leaseExpiresAt: testLeaseExpiry,
     candidateRevision: 1,
     reviewedTextHash: "a".repeat(64),
     deliveryEnvelope: validDeliveryEnvelope(target, sourceTarget),
@@ -216,6 +217,21 @@ function validReservation(
 function validWireReservation(): Omit<KmReservation, "reserveIdempotencyKey"> {
   const { reserveIdempotencyKey: _, ...reservation } = validReservation();
   return reservation;
+}
+
+function validInvocationResponse(reservation = validReservation()) {
+  return {
+    protocolVersion: 1,
+    invocation: {
+      recordId: reservation.recordId,
+      attemptId: reservation.attemptId,
+      deliveryEnvelope: reservation.deliveryEnvelope,
+      attemptedTarget: reservation.deliveryEnvelope.deliveryTarget,
+      invocationIdempotencyKey: `invoke:${reservation.attemptId}`,
+      providerAttemptId: "provider:attempt-1",
+      invokedAt: "2026-08-01T12:00:30Z",
+    },
+  };
 }
 
 function validRecordAuthority(target: KmDeliveryTarget = deliveryTarget) {
@@ -237,7 +253,7 @@ function validTerminalAttempt(
     reviewedTextHash: "a".repeat(64),
     reservedRecordVersion: 7,
     owner: "sender-1",
-    leaseExpiresAt: "2026-08-01T12:01:00Z",
+    leaseExpiresAt: testLeaseExpiry,
     reservedAt: "2026-08-01T12:00:20Z",
     completionOutcome: "SENT",
     outcome: "SENT",
@@ -271,6 +287,87 @@ function validFailedAttempt(): Record<string, unknown> {
 }
 
 describe("KM contract parsing", () => {
+  it("waits for delayed matching invocation authorization without extending health requests", async () => {
+    vi.useFakeTimers();
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockImplementation((timeoutMs) => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), timeoutMs);
+      return controller.signal;
+    });
+    try {
+      const configured = parseDeliberationConfig({
+        ...rawConfig,
+        km: { ...rawConfig.km, requestTimeoutMs: 5_000, invocationTimeoutMs: 30_000 },
+      });
+      expect(configured.km.invocationTimeoutMs).toBe(30_000);
+      const reservation = {
+        ...validReservation(),
+        leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+      };
+      const fetchImpl = vi.fn(
+        (_input: string | URL | Request, init?: RequestInit) =>
+          new Promise<Response>((resolve, reject) => {
+            init?.signal?.addEventListener(
+              "abort",
+              () => reject(new DOMException("", "AbortError")),
+              { once: true },
+            );
+            setTimeout(
+              () =>
+                resolve(
+                  new Response(JSON.stringify(validInvocationResponse(reservation)), {
+                    status: 200,
+                  }),
+                ),
+              13_000,
+            );
+          }),
+      );
+      const client = createKmClient({
+        config: {
+          ...config,
+          km: configured.km,
+        },
+        openclawConfig: {} as never,
+        fetchImpl,
+        env: { KM_TOKEN: "test-only" },
+      });
+
+      const health = client.health().catch((error: unknown) => error);
+      const invocation = client.invoke(reservation, "provider:attempt-1");
+      await vi.advanceTimersByTimeAsync(5_000);
+      await expect(health).resolves.toMatchObject({ operation: "health", cause: "timeout" });
+      await vi.advanceTimersByTimeAsync(13_000);
+      await expect(invocation).resolves.toMatchObject({ attemptId: "attempt-1" });
+    } finally {
+      timeout.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not invoke transport after the reservation lease expires", async () => {
+    const fetchImpl = vi.fn();
+    const client = createKmClient({
+      config,
+      openclawConfig: {} as never,
+      fetchImpl,
+      env: { KM_TOKEN: "test-only" },
+    });
+
+    await expect(
+      client.invoke(
+        { ...validReservation(), leaseExpiresAt: new Date(Date.now() - 1).toISOString() },
+        "provider:attempt-1",
+      ),
+    ).rejects.toMatchObject({
+      operation: "invoke",
+      path: "/deliberation/v1/invocations",
+      stage: "transport",
+      cause: "timeout",
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it("serializes the required source thread identity with exact camelCase casing", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       new Response(

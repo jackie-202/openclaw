@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-14T13:19:57+00:00",
+    "implementingStartedAt": "2026-09-14T13:08:45+00:00",
+    "taskFile": "plans/tasks/2026-09-14_followup-task-8a750897-a2ca-4d5d-ba37-7e70d352d86e-deliberation-invocation-timeout-before-provider-send.md",
+    "taskId": "task-8a750897-a2ca-4d5d-ba37-7e70d352d86e",
+    "title": "[acceptance-fix] Deliberation invocation timeout before provider send: goal-001: Deliberation invocation timeout before "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation invocation timeout before provider send: goal-001: Deliberation invocation timeout before"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "task-8a750897-a2ca-4d5d-ba37-7e70d352d86e-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "task-8a750897-a2ca-4d5d-ba37-7e70d352d86e",
+  "tddRequired": false
+}

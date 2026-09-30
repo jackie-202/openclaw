@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Finish completed OpenClaw fork dirty families: goal-001: Finish completed OpenClaw fork dirty families"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "task-dece0577-b3c9-4685-b6de-85a3ffde09e9-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-dece0577-b3c9-4685-b6de-85a3ffde09e9"
+}

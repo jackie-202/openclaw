@@ -84,6 +84,7 @@ function writeJson(response: import("node:http").ServerResponse, status: number,
 function createLifecycleServer(options: { mismatchReservationTarget?: boolean } = {}) {
   const requests: Array<{ path: string; body: Record<string, unknown> }> = [];
   let completed = false;
+  const leaseExpiresAt = new Date(Date.now() + 60_000).toISOString();
   const envelope = deliveryEnvelope();
   const server = createServer((request, response) => {
     void (async () => {
@@ -131,7 +132,7 @@ function createLifecycleServer(options: { mismatchReservationTarget?: boolean } 
             version: 8,
             owner: body.owner,
             leaseToken: "lease-1",
-            leaseExpiresAt: "2026-08-25T12:01:00Z",
+            leaseExpiresAt,
             candidateRevision: 1,
             reviewedTextHash: "a".repeat(64),
             deliveryEnvelope: reservedEnvelope,
@@ -175,7 +176,7 @@ function createLifecycleServer(options: { mismatchReservationTarget?: boolean } 
                   reviewedTextHash: "a".repeat(64),
                   reservedRecordVersion: 7,
                   owner: body.owner,
-                  leaseExpiresAt: "2026-08-25T12:01:00Z",
+                  leaseExpiresAt,
                   reservedAt: "2026-08-25T12:00:20Z",
                   completionOutcome: "SENT",
                   outcome: "SENT",

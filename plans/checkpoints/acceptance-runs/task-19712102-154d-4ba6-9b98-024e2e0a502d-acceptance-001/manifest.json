@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-15T11:03:22+00:00",
+    "implementingStartedAt": "2026-09-15T10:38:42+00:00",
+    "taskFile": "plans/tasks/2026-09-15_finish-completed-fork-dirty-families.md",
+    "taskId": "task-19712102-154d-4ba6-9b98-024e2e0a502d",
+    "title": "Finish completed OpenClaw fork dirty families"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Finish completed OpenClaw fork dirty families"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "task-19712102-154d-4ba6-9b98-024e2e0a502d-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "task-19712102-154d-4ba6-9b98-024e2e0a502d",
+  "tddRequired": false
+}

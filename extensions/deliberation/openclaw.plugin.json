@@ -117,7 +117,8 @@
             "pattern": "^(?:https://[^/?#@]+|http://(?:127\\.0\\.0\\.1|\\[::1\\])(?::[0-9]+)?)(?:/[^?#]*)?$"
           },
           "credential": { "type": ["string", "object"] },
-          "requestTimeoutMs": { "type": "integer", "minimum": 100, "maximum": 30000 }
+          "requestTimeoutMs": { "type": "integer", "minimum": 100, "maximum": 30000 },
+          "invocationTimeoutMs": { "type": "integer", "minimum": 100, "maximum": 30000, "default": 30000 }
         }
       },
       "restrictedSessionKeys": {

@@ -1,0 +1,82 @@
+{
+  "attributionIntegrity": "ee35bed7cd648e7dafaf9584898f0d5211a7be179923174e1cf5266a1a4442a3",
+  "classification": "ACCEPT",
+  "excludedConcurrentChanges": [
+    {
+      "highConfidence": true,
+      "path": "docs/plugins/reference/deliberation.md",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment explicitly requires deliberation timeout documentation and operator guidance.",
+      "relatedTaskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+    },
+    {
+      "highConfidence": true,
+      "path": "extensions/deliberation/openclaw.plugin.json",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment explicitly owns deliberation timeout configuration schema changes.",
+      "relatedTaskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+    },
+    {
+      "highConfidence": true,
+      "path": "extensions/deliberation/src/config.test.ts",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment explicitly requires tests for the deliberation invocation timeout configuration.",
+      "relatedTaskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+    },
+    {
+      "highConfidence": true,
+      "path": "extensions/deliberation/src/config.ts",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment explicitly owns the deliberation invocation timeout configuration contract.",
+      "relatedTaskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+    },
+    {
+      "highConfidence": true,
+      "path": "extensions/deliberation/src/delivery-probe.test.ts",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment requires local isolated delivery lifecycle verification for the invocation timeout repair.",
+      "relatedTaskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+    },
+    {
+      "highConfidence": true,
+      "path": "extensions/deliberation/src/final-adapter.test.ts",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment explicitly requires proving no provider send occurs when invocation authorization times out.",
+      "relatedTaskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+    },
+    {
+      "highConfidence": true,
+      "path": "extensions/deliberation/src/km-client.test.ts",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment explicitly requires delayed authorization and bounded lease timeout client tests.",
+      "relatedTaskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+    },
+    {
+      "highConfidence": true,
+      "path": "extensions/deliberation/src/km-client.ts",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment identifies km-client.ts as the primary implementation owner for invocation timeout handling.",
+      "relatedTaskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+    },
+    {
+      "highConfidence": true,
+      "path": "learnings/architecture/2026-09-14_authorization-timeout-requires-operational-sla.md",
+      "pathKind": "file",
+      "rationale": "The path and title exactly document the authorization-timeout operational SLA addressed by the concurrent assignment.",
+      "relatedTaskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+    }
+  ],
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Prevent long cron jobs from starving independent recurring jobs"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "task-b06ff88b-f3b3-4ac8-8df5-30fac618b881-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-b06ff88b-f3b3-4ac8-8df5-30fac618b881"
+}

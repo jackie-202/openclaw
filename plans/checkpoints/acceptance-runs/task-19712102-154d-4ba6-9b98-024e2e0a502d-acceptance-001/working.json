@@ -1,0 +1,39 @@
+{
+  "findings": [
+    {
+      "claim": "The required final handoff note is absent from the supplied task artifacts.",
+      "crossCutting": false,
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The canonical task requires a final note with exact commands/results, before/after paused-plan SHA-256, and separate Deliberation and cron commit manifests, but the supplied checkpoint contains only a summary, one unchanged hash, and a statement that the handoff includes one cron file; it also identifies a final action still pending.",
+      "rationale": "Without the required final note, Jackie does not have the task-mandated auditable verification record and separated host-owned commit manifests needed to treat both dirty families as landable.",
+      "required": "Provide the final handoff note with exact commands and results, both paused-plan SHA-256 values, and complete separate Deliberation and cron file manifests.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-09-15_finish-completed-fork-dirty-families.md:79-82"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-19712102-154d-4ba6-9b98-024e2e0a502d.checkpoint.md:6-10"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Finish completed OpenClaw fork dirty families"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "task-19712102-154d-4ba6-9b98-024e2e0a502d-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "working",
+  "taskId": "task-19712102-154d-4ba6-9b98-024e2e0a502d"
+}

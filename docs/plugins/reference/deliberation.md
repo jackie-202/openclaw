@@ -90,6 +90,7 @@ Every pipeline needs a stable unique ID and exactly one canonical source. The pr
             endpoint: "https://<km-host>",
             credential: { source: "env", provider: "default", id: "KM_TOKEN" },
             requestTimeoutMs: 1000,
+            invocationTimeoutMs: 30000,
           },
           restrictedSessionKeys: ["<restricted-session-key>"],
         },
@@ -100,6 +101,8 @@ Every pipeline needs a stable unique ID and exactly one canonical source. The pr
 ```
 
 See [SecretRef credential surface](/reference/secretref-credential-surface) for credential setup.
+
+`requestTimeoutMs` applies to ordinary KM requests. `invocationTimeoutMs` applies only to the pre-send authorization request and defaults to 30000 milliseconds. Keep it below the 60-second reservation lifetime; 30000 milliseconds leaves 30 seconds for the single provider call and completion. The plugin also caps this request by the remaining lease and sends nothing when authorization times out, is lost, malformed, or mismatched. Set the budget through normal configuration and restart or reload the plugin through the normal deployment process; it does not retry or requeue a prior delivery automatically.
 
 An explicit pipeline target uses canonical `channel`, `accountId`, and `target` fields. Omitting `threadId` represents root delivery; providing it selects that exact target thread. At authenticated intake, the plugin selects the pipeline whose source matches the provider, account, and channel evidence. An omitted target resolves to that authenticated source and its source thread. For a Discord root message, this is a source-message anchor: Discord creates or reuses the thread attached to that message before sending one reply. Each accepted request carries the selected pipeline ID and effective target, so pipelines can use different explicit or source-default destinations.
 
@@ -201,7 +204,7 @@ Discord auto-thread delivery keeps the authenticated parent channel as source au
 
 Discord removes exact self-authored messages before `inbound_claim`: the authenticated `botUserId` is compared with `author.id` in the Discord monitor and preflight paths. The hook payload does not expose authoritative bot/self evidence, so Deliberation does not infer bot identity from names, display text, or other unstable metadata. Other accepted bot-authored events remain subject to Discord's channel policy before reaching this plugin.
 
-Runtime intake warnings use the same bounded KM stage, status, and code fields. Final-delivery warnings also identify the closed operation and canonical path, with an HTTP status or bounded transport cause when available. They omit credentials, request and response bodies, endpoint values, Discord message content, ready-item text, and raw KM error messages.
+Runtime intake warnings use the same bounded KM stage, status, and code fields. Final-delivery warnings also identify the closed operation and canonical path, with an HTTP status or bounded transport cause when available. An `operation=invoke` transport timeout is pre-send authorization uncertainty, while a `delivery_outcome_unknown` warning follows a provider-send uncertainty. They omit credentials, request and response bodies, endpoint values, Discord message content, ready-item text, and raw KM error messages.
 
 The Gateway plugin service polls the KM ready queue at a bounded interval and processes at most one item per non-overlapping tick. It validates the ready pipeline and destination, reserves them, verifies exact deep equality with the durable reservation, and records invocation evidence before requesting one native text attempt from the selected Discord or Slack adapter. The canonical durable `deliveryTarget` selects the exact provider, account, channel, and delivery mode for the adapter attempt, invocation evidence, and completion evidence. The adapter renders the final provider-specific text and mentions before preflighting the single-message limit. Over-limit output is rejected before a native message-create request.
 

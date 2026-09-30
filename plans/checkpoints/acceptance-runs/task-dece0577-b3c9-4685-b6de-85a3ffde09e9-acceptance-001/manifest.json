@@ -1,0 +1,21 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-15T12:12:19+00:00",
+    "implementingStartedAt": "2026-09-15T11:25:37+00:00",
+    "taskFile": "plans/tasks/2026-09-15_followup-task-dece0577-b3c9-4685-b6de-85a3ffde09e9-finish-completed-openclaw-fork-dirty-families.md",
+    "taskId": "task-dece0577-b3c9-4685-b6de-85a3ffde09e9",
+    "title": "[acceptance-fix] Finish completed OpenClaw fork dirty families: goal-001: Finish completed OpenClaw fork dirty families"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Finish completed OpenClaw fork dirty families: goal-001: Finish completed OpenClaw fork dirty families"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "task-dece0577-b3c9-4685-b6de-85a3ffde09e9-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskId": "task-dece0577-b3c9-4685-b6de-85a3ffde09e9",
+  "tddRequired": false
+}

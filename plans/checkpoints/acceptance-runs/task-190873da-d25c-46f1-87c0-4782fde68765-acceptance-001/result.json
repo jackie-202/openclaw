@@ -1,0 +1,70 @@
+{
+  "attributionIntegrity": "48eea44496da1b4f5c1266ea06abf96107b91515d95c58de15880d9a3faf6bf1",
+  "classification": "evidence_reject",
+  "excludedConcurrentChanges": [
+    {
+      "highConfidence": true,
+      "path": "src/cron/service/state.ts",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment explicitly targets the cron scheduler ownership/state needed to remove cross-job starvation.",
+      "relatedTaskId": "task-b06ff88b-f3b3-4ac8-8df5-30fac618b881"
+    },
+    {
+      "highConfidence": true,
+      "path": "src/cron/service/timer.ts",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment identifies the timer round barrier and requires independent admission and settlement changes in this owner.",
+      "relatedTaskId": "task-b06ff88b-f3b3-4ac8-8df5-30fac618b881"
+    },
+    {
+      "highConfidence": true,
+      "path": "src/cron/service/timer.regression.test.ts",
+      "pathKind": "file",
+      "rationale": "The concurrent assignment explicitly requires deterministic timer regression coverage for a later-due fast job while a slow run remains active.",
+      "relatedTaskId": "task-b06ff88b-f3b3-4ac8-8df5-30fac618b881"
+    }
+  ],
+  "findings": [
+    {
+      "claim": "The required timeout-then-late-authorization no-send characterization is missing.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "evidence",
+      "observed": "The supplied km-client delayed-response test gives invoke a 30000 ms budget and observes a successful response at 13000 ms; the final-adapter timeout test only mocks invoke as immediately rejected. No supplied test or proof models a short client abort followed by successful late server authorization/persisted invocation ambiguity while asserting provider.send remains at zero.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The characterization-first guardrail explicitly requires this boundary to pin the incident behavior and duplicate-send safety. Successful delayed authorization under the repaired budget and an isolated mocked rejection do not demonstrate the late authorization side effect after the client has already failed closed.",
+      "required": "Provide the deterministic fake-time/transport characterization required by the task: exceed the configured short invoke timeout, allow the fake server authorization side effect to complete late, record the resulting authorization ambiguity, and prove provider.send and completion remain uncalled on that path.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/km-client.test.ts:290"
+        },
+        {
+          "kind": "file",
+          "reference": "extensions/deliberation/src/final-adapter.test.ts:382"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-190873da-d25c-46f1-87c0-4782fde68765.red-green-proof.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Deliberation invocation timeout before provider send"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v1",
+  "runId": "task-190873da-d25c-46f1-87c0-4782fde68765-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-190873da-d25c-46f1-87c0-4782fde68765"
+}

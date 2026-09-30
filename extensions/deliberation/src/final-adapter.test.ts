@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { parseDeliberationConfig } from "./config.js";
 import {
   createFinalDeliveryAdapter,
   deriveProviderAttemptId,
@@ -6,6 +7,7 @@ import {
   FinalDeliveryOutcomeUnknownError,
   FinalDeliveryRejectedError,
 } from "./final-adapter.js";
+import { createKmClient, KmRequestError } from "./km-client.js";
 
 const deliveryTarget = {
   provider: "discord" as const,
@@ -377,6 +379,142 @@ describe("public final delivery adapter", () => {
     expect(km.completeDelivery).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: "SENT", providerReceiptId: "receipt-1" }),
     );
+  });
+
+  it("does not send when invocation authorization times out", async () => {
+    const provider = { send: vi.fn() };
+    const km = {
+      ready: vi.fn().mockResolvedValue({
+        items: [{ recordId: "record-1", text: "reply", effectiveDeliveryTarget: deliveryTarget }],
+      }),
+      reserve: vi.fn().mockResolvedValue({ outcome: "reserved", reservation }),
+      invoke: vi.fn().mockRejectedValue(new Error("authorization timeout")),
+      completeDelivery: vi.fn(),
+    };
+
+    await expect(
+      createFinalDeliveryAdapter({
+        km,
+        providers: { discord: provider },
+        owner: "owner",
+      } as never).runOnce(),
+    ).rejects.toThrow("authorization timeout");
+    expect(km.invoke).toHaveBeenCalledOnce();
+    expect(provider.send).not.toHaveBeenCalled();
+    expect(km.completeDelivery).not.toHaveBeenCalled();
+  });
+
+  it("leaves a late authorization ambiguous without sending after the invocation timeout", async () => {
+    vi.useFakeTimers();
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockImplementation((timeoutMs) => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), timeoutMs);
+      return controller.signal;
+    });
+    try {
+      const lateAuthorizations: Array<{
+        attemptId: string;
+        providerAttemptId: string;
+        invocationIdempotencyKey: string;
+      }> = [];
+      const invocationTimeoutMs = 100;
+      const durableReservation = {
+        ...reservation,
+        leaseExpiresAt: new Date(Date.now() + 1_000).toISOString(),
+      };
+      const fetchImpl = vi.fn(
+        (_input: string | URL | Request, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener(
+              "abort",
+              () => reject(new DOMException("", "AbortError")),
+              { once: true },
+            );
+            setTimeout(() => {
+              const body = init?.body;
+              if (typeof body !== "string") {
+                return;
+              }
+              const invocation = JSON.parse(body) as {
+                attemptId: string;
+                providerAttemptId: string;
+                idempotencyKey: string;
+              };
+              lateAuthorizations.push({
+                attemptId: invocation.attemptId,
+                providerAttemptId: invocation.providerAttemptId,
+                invocationIdempotencyKey: invocation.idempotencyKey,
+              });
+            }, 200);
+          }),
+      );
+      const client = createKmClient({
+        config: parseDeliberationConfig({
+          enabled: true,
+          failClosed: true,
+          processingSource: { channel: "discord", accountId: "processing", target: "processing" },
+          km: {
+            endpoint: "https://km.example.test",
+            credential: "env:KM_TOKEN",
+            requestTimeoutMs: 5_000,
+            invocationTimeoutMs,
+          },
+          restrictedSessionKeys: ["restricted"],
+          pipelines: [
+            {
+              id: "pipeline-1",
+              source: { channel: "discord", accountId: "source", target: "source" },
+            },
+          ],
+        }),
+        openclawConfig: {} as never,
+        fetchImpl,
+        env: { KM_TOKEN: "test-only" },
+      });
+      const provider = { send: vi.fn() };
+      const completeDelivery = vi.fn();
+      const km = {
+        ready: vi.fn().mockResolvedValue({
+          items: [{ recordId: "record-1", text: "reply", effectiveDeliveryTarget: deliveryTarget }],
+        }),
+        reserve: vi
+          .fn()
+          .mockResolvedValue({ outcome: "reserved", reservation: durableReservation }),
+        invoke: (reserved: typeof durableReservation, providerAttemptId: string) =>
+          client.invoke(reserved, providerAttemptId),
+        completeDelivery,
+      };
+
+      const run = createFinalDeliveryAdapter({
+        km,
+        providers: { discord: provider },
+        owner: "owner",
+      } as never).runOnce();
+      const rejected = expect(run).rejects.toMatchObject({
+        operation: "invoke",
+        stage: "transport",
+        cause: "timeout",
+      } satisfies Partial<KmRequestError>);
+      await vi.advanceTimersByTimeAsync(invocationTimeoutMs);
+      await rejected;
+      expect(lateAuthorizations).toEqual([]);
+      expect(provider.send).not.toHaveBeenCalled();
+      expect(completeDelivery).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(100);
+      expect(lateAuthorizations).toEqual([
+        {
+          attemptId: "attempt-1",
+          providerAttemptId: "provider:attempt-1",
+          invocationIdempotencyKey: "invoke:attempt-1",
+        },
+      ]);
+      expect(provider.send).not.toHaveBeenCalled();
+      expect(completeDelivery).not.toHaveBeenCalled();
+    } finally {
+      timeout.mockRestore();
+      vi.useRealTimers();
+    }
   });
 
   it.each([

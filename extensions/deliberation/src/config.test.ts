@@ -104,6 +104,16 @@ describe("parseDeliberationConfig", () => {
     expect(parsed.km.credential).toBe("runtime-secret");
   });
 
+  it("defaults the invocation budget while allowing an explicit bounded override", () => {
+    expect(parseDeliberationConfig(valid).km.invocationTimeoutMs).toBe(30_000);
+    expect(
+      parseDeliberationConfig({
+        ...valid,
+        km: { ...valid.km, invocationTimeoutMs: 13_000 },
+      }).km.invocationTimeoutMs,
+    ).toBe(13_000);
+  });
+
   it.each([
     [
       { ...valid, pipelines: [...valid.pipelines, { ...valid.pipelines[0] }] },
@@ -214,6 +224,8 @@ describe("parseDeliberationConfig", () => {
     ],
     [{ ...valid, km: { ...valid.km, endpoint: "http://km.invalid" } }, "non-loopback HTTP KM"],
     [{ ...valid, km: { ...valid.km, credential: "" } }, "empty credential"],
+    [{ ...valid, km: { ...valid.km, invocationTimeoutMs: 99 } }, "too-short invocation budget"],
+    [{ ...valid, km: { ...valid.km, invocationTimeoutMs: 30_001 } }, "too-long invocation budget"],
     [{ ...valid, km: { ...valid.km, pollIntervalMs: 1000 } }, "retired polling config"],
   ])("rejects malformed config: %s (%s)", (input, _description) => {
     expect(() => parseDeliberationConfig(input)).toThrow();
@@ -279,7 +291,13 @@ describe("parseDeliberationConfig", () => {
     ) as {
       configSchema: {
         $defs: {
-          km: { properties: { endpoint: { pattern: string }; credential: { type: string[] } } };
+          km: {
+            properties: {
+              endpoint: { pattern: string };
+              credential: { type: string[] };
+              invocationTimeoutMs: { minimum: number; maximum: number; default: number };
+            };
+          };
         };
       };
     };
@@ -287,6 +305,12 @@ describe("parseDeliberationConfig", () => {
     const pattern = new RegExp(km.properties.endpoint.pattern);
 
     expect(km.properties.credential.type).toEqual(["string", "object"]);
+    expect(km.properties.invocationTimeoutMs).toEqual({
+      type: "integer",
+      minimum: 100,
+      maximum: 30_000,
+      default: 30_000,
+    });
     for (const [endpoint, accepted] of endpointCases) {
       expect(pattern.test(endpoint), endpoint).toBe(accepted);
     }

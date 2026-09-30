@@ -1,5 +1,15 @@
 # Agent Changelog
 
+## 2026-09-14
+
+**Deliberation invocations time out before provider submission**
+
+The deliberation invocation timeout is enforced before sending work to the provider.
+
+**Independent recurring cron jobs no longer wait behind long-running jobs**
+
+**Deliberation invocations time out before provider requests**
+
 ## 2026-09-10
 
 **Deliberation plugin pins to the published domain wire contract**

@@ -1289,6 +1289,7 @@ export function createKmClient(params: {
     operation: KmOperation,
     init: RequestInit = {},
     search = "",
+    timeoutDeadlineMs?: number,
   ): Promise<KmResponse> {
     const path = KM_PATHS[operation];
     // A configured canonical prefix already owns this path segment; other endpoint
@@ -1323,7 +1324,14 @@ export function createKmClient(params: {
         "credential_unresolved",
       );
     }
-    const timeout = AbortSignal.timeout(params.config.km.requestTimeoutMs);
+    const timeoutMs =
+      timeoutDeadlineMs === undefined
+        ? params.config.km.requestTimeoutMs
+        : timeoutDeadlineMs - Date.now();
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+      throw new KmRequestError(operation, path, "transport", undefined, "UNKNOWN", "timeout");
+    }
+    const timeout = AbortSignal.timeout(timeoutMs);
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
     let response: Response;
     try {
@@ -1540,22 +1548,42 @@ export function createKmClient(params: {
     },
     async invoke(reservation: KmReservation, providerAttemptId: string, signal?: AbortSignal) {
       const attemptedTarget = reservation.deliveryEnvelope.deliveryTarget;
+      const leaseExpiresAtMs = Date.parse(reservation.leaseExpiresAt);
+      const timeoutDeadlineMs = Math.min(
+        Date.now() + params.config.km.invocationTimeoutMs,
+        leaseExpiresAtMs,
+      );
+      if (!Number.isFinite(timeoutDeadlineMs) || timeoutDeadlineMs <= Date.now()) {
+        throw new KmRequestError(
+          "invoke",
+          KM_PATHS.invoke,
+          "transport",
+          undefined,
+          "UNKNOWN",
+          "timeout",
+        );
+      }
       return parseResponse(
-        await request("invoke", {
-          method: "POST",
-          body: JSON.stringify({
-            recordId: reservation.recordId,
-            attemptId: reservation.attemptId,
-            owner: reservation.owner,
-            leaseToken: reservation.leaseToken,
-            deliveryEnvelope: reservation.deliveryEnvelope,
-            deliveryEnvelopeDigest: reservation.deliveryEnvelopeDigest,
-            attemptedTarget,
-            idempotencyKey: `invoke:${reservation.attemptId}`,
-            providerAttemptId,
-          }),
-          signal,
-        }),
+        await request(
+          "invoke",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              recordId: reservation.recordId,
+              attemptId: reservation.attemptId,
+              owner: reservation.owner,
+              leaseToken: reservation.leaseToken,
+              deliveryEnvelope: reservation.deliveryEnvelope,
+              deliveryEnvelopeDigest: reservation.deliveryEnvelopeDigest,
+              attemptedTarget,
+              idempotencyKey: `invoke:${reservation.attemptId}`,
+              providerAttemptId,
+            }),
+            signal,
+          },
+          "",
+          timeoutDeadlineMs,
+        ),
         (value) => {
           if (
             !isRecord(value) ||

@@ -1,0 +1,51 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/task-190873da-d25c-46f1-87c0-4782fde68765.evidence.md",
+      "provenance": "evidence_repair:task-190873da-d25c-46f1-87c0-4782fde68765-acceptance-001-evidence-repair-001",
+      "size": 1737
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/task-190873da-d25c-46f1-87c0-4782fde68765.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/task-190873da-d25c-46f1-87c0-4782fde68765-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "61fd99ed61b3ca40b41ddcc885016b95576413c6",
+  "escalationReason": "task_evidence_gap",
+  "finishedAt": "2026-09-14T12:47:50.123631+00:00",
+  "gaps": [
+    "command_lines_truncated",
+    "outcome_lines_truncated"
+  ],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [
+    {
+      "command": "TASK_ID=task-190873da-d25c-46f1-87c0-4782fde68765 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/km-client.test.ts extensions",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=task-190873da-d25c-46f1-87c0-4782fde68765 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" red -- pnpm test extensions/deliberation/src/km-client.test.ts extensions",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "TASK_ID=task-190873da-d25c-46f1-87c0-4782fde68765 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/km-client.test.ts extensio",
+      "outcome": "outcome_unavailable"
+    },
+    {
+      "command": "python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" read --task-id task-190873da-d25c-46f1-87c0-4782fde68765 --run-id 2154d7f0eb074c2db929b4ce3e0b85ad --stream stderr --offset",
+      "outcome": "{\"task_id\": \"task-190873da-d25c-46f1-87c0-4782fde68765\", \"run_id\": \"2154d7f0eb074c2db929b4ce3e0b85ad\", \"stream\": \"stderr"
+    },
+    {
+      "command": "TASK_ID=task-190873da-d25c-46f1-87c0-4782fde68765 python3 \"/Users/michal/.config/opencode/skills/tdd/scripts/proof-capture.py\" green -- pnpm test extensions/deliberation/src/km-client.test.ts extensio",
+      "outcome": "outcome_unavailable"
+    }
+  ],
+  "repairRunId": "task-190873da-d25c-46f1-87c0-4782fde68765-acceptance-001-evidence-repair-001",
+  "sourceRunId": "task-190873da-d25c-46f1-87c0-4782fde68765-acceptance-001",
+  "startedAt": "2026-09-14T12:47:45.471483+00:00",
+  "status": "escalated"
+}

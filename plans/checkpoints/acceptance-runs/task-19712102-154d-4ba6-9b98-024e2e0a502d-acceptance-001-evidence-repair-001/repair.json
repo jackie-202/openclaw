@@ -1,0 +1,27 @@
+{
+  "actor": "km-monitor:task-evidence",
+  "artifactProvenance": [
+    {
+      "path": "plans/checkpoints/task-19712102-154d-4ba6-9b98-024e2e0a502d.evidence.md",
+      "provenance": "evidence_repair:task-19712102-154d-4ba6-9b98-024e2e0a502d-acceptance-001-evidence-repair-001",
+      "size": 416
+    }
+  ],
+  "artifacts": [
+    "plans/checkpoints/task-19712102-154d-4ba6-9b98-024e2e0a502d.evidence.md"
+  ],
+  "auditPath": "plans/checkpoints/acceptance-runs/task-19712102-154d-4ba6-9b98-024e2e0a502d-acceptance-001-evidence-repair-001/repair.json",
+  "commit": "61fd99ed61b3ca40b41ddcc885016b95576413c6",
+  "escalationReason": "exact_command_outcome_evidence_unavailable",
+  "finishedAt": "2026-09-15T11:05:36.529317+00:00",
+  "gaps": [],
+  "mutationCheck": {
+    "changedPaths": [],
+    "clean": true
+  },
+  "pairs": [],
+  "repairRunId": "task-19712102-154d-4ba6-9b98-024e2e0a502d-acceptance-001-evidence-repair-001",
+  "sourceRunId": "task-19712102-154d-4ba6-9b98-024e2e0a502d-acceptance-001",
+  "startedAt": "2026-09-15T11:05:31.814737+00:00",
+  "status": "escalated"
+}
