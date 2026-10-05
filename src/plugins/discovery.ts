@@ -17,6 +17,7 @@ import {
   buildLegacyBundledRootPath,
   resolvePackagedBundledLoadPathAlias,
 } from "./bundled-load-path-aliases.js";
+import { isExcludedSourceCheckoutBundledPlugin } from "./bundled-source-exclusions.js";
 import { listBundledSourceOverlayDirs } from "./bundled-source-overlays.js";
 import { shouldRejectHardlinkedPluginFiles } from "./hardlink-policy.js";
 import { readLegacyNpmPluginDeclaration } from "./legacy-npm-declaration.js";
@@ -986,6 +987,12 @@ function discoverInDirectory(params: {
     if (params.skipDirectories?.has(entry.name)) {
       continue;
     }
+    if (
+      params.origin === "bundled" &&
+      isExcludedSourceCheckoutBundledPlugin(params.dir, entry.name)
+    ) {
+      continue;
+    }
     if (shouldIgnoreScannedDirectory(entry.name)) {
       continue;
     }
@@ -1513,6 +1520,14 @@ export function discoverOpenClawPlugins(params: {
         bundledRoot: roots.stock,
         env,
       })) {
+        if (
+          isExcludedSourceCheckoutBundledPlugin(
+            path.dirname(sourceOverlayDir),
+            path.basename(sourceOverlayDir),
+          )
+        ) {
+          continue;
+        }
         discoverFromPath({
           rawPath: sourceOverlayDir,
           origin: "bundled",

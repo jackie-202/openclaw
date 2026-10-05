@@ -1,0 +1,83 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "Remaining host integration consumers must load Deliberation through the separately packaged public API/test contract rather than the retired sibling implementation.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The retirement checkpoint marks the work partial and identifies three unchanged Discord/Slack real-domain loaders that still require a runnable public package input; their owner-path scenarios currently cannot load Deliberation.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Retiring the bundled sources without migrating these active consumers leaves the requested host path decoupling incomplete and does not satisfy the explicit public-boundary requirement.",
+      "required": "Provide the repo-local offline public package/test contract, migrate all three loaders to config-origin public package resolution, and preserve their existing assertions and scenarios without skips or replacement domain hooks.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:5"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:107-109"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:120-124"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:157"
+        }
+      ]
+    },
+    {
+      "claim": "The retirement deliverable must provide assertion-level ownership/scenario mapping for transferred native coverage; filename and case-count parity alone are insufficient.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "For the two parameterized Slack root/child orchestration cases, the supplied manifest has no dynamic target titles or target assertions, and the checkpoint states that the two-case count and external suite pass do not prove the producer-resolve conversion preserved the required assertions.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The task explicitly requires scenario mappings and warns that filename/count parity is not scenario equivalence, so the acknowledged unmapped orchestration assertions leave required retirement evidence incomplete.",
+      "required": "Supply external-owner assertion-level mapping for both dynamic Slack orchestration cases, covering identity, bounded history, unrelated-thread exclusion, envelope/receipt invariants, and one-Discord/zero-Slack send behavior.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:81"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:91"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:158"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/handoffs/deliberation-plugin-retirement/accepted-host-contract.md:5"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Deliberation plugin: retire replaced bundled implementation and host path coupling"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "calm-fork-3432-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "calm-fork-3432"
+}

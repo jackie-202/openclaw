@@ -14,6 +14,7 @@ import {
   resolveBundledPluginScanDir,
   trimBundledPluginString,
 } from "./bundled-plugin-scan.js";
+import { isExcludedSourceCheckoutBundledPlugin } from "./bundled-source-exclusions.js";
 import {
   getPackageManifestMetadata,
   loadPluginManifest,
@@ -82,6 +83,7 @@ function collectBundledPluginMetadata(
   resolvedScanDir: string | undefined,
   includeChannelConfigs: boolean,
   includeSyntheticChannelConfigs: boolean,
+  explicitScanDir: boolean,
 ): readonly BundledPluginMetadata[] {
   if (!resolvedScanDir || !fs.existsSync(resolvedScanDir)) {
     return [];
@@ -93,6 +95,9 @@ function collectBundledPluginMetadata(
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .toSorted((left, right) => left.localeCompare(right))) {
+    if (!explicitScanDir && isExcludedSourceCheckoutBundledPlugin(resolvedScanDir, dirName)) {
+      continue;
+    }
     const pluginDir = path.join(resolvedScanDir, dirName);
     const manifestResult = loadPluginManifest(pluginDir, false);
     if (!manifestResult.ok) {
@@ -188,6 +193,7 @@ export function listBundledPluginMetadata(params?: {
       resolvedScanDir,
       includeChannelConfigs,
       includeSyntheticChannelConfigs,
+      scanDir !== undefined,
     ),
   );
   return metadata;

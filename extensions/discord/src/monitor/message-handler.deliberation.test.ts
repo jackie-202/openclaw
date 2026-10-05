@@ -264,6 +264,20 @@ describe("Discord deliberation owner path", () => {
     };
   }
 
+  it("loads the public Deliberation package with config origin", () => {
+    const { registry } = loadDeliberation();
+    const records = registry.plugins.filter((plugin) => plugin.id === "deliberation");
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({ status: "loaded", origin: "config" });
+    for (const hookName of ["inbound_event_policy", "inbound_claim", "before_dispatch"]) {
+      expect(
+        registry.typedHooks.some(
+          (hook) => hook.pluginId === "deliberation" && hook.hookName === hookName,
+        ),
+      ).toBe(true);
+    }
+  });
+
   it("OR-02 disabled-source-terminal-without-side-effects", async () => {
     const { cfg, runner, policy } = loadDeliberation(false);
     const outcome = vi.spyOn(runner, "runInboundClaimForPluginOutcome");

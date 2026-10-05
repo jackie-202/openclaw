@@ -1,0 +1,29 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-30T20:35:29+00:00",
+    "implementingStartedAt": "2026-09-30T20:13:32+00:00",
+    "taskFile": "plans/tasks/2026-09-30_repair-the-uncommitted-cron-detached-run-admission-changes-i.md",
+    "taskId": "task-dabd3d11-ae03-49d9-baa5-d01a649d8c56",
+    "title": "Repair the uncommitted cron detached-run admission changes in openclaw-fork"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Repair the uncommitted cron detached-run admission changes in openclaw-fork"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-dabd3d11-ae03-49d9-baa5-d01a649d8c56-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-dabd3d11-ae03-49d9-baa5-d01a649d8c56.checkpoint.md",
+      "provenance": "untracked",
+      "size": 1021
+    }
+  ],
+  "taskId": "task-dabd3d11-ae03-49d9-baa5-d01a649d8c56",
+  "tddRequired": false
+}

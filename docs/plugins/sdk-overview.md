@@ -76,7 +76,9 @@ The compiler entrypoint inventory lives in
 `scripts/lib/plugin-sdk-entrypoints.json`; package exports are generated from
 the public subset after subtracting repo-local test/internal subpaths listed in
 `scripts/lib/plugin-sdk-private-local-only-subpaths.json`. Run
-`pnpm plugin-sdk:surface` to audit the public export count. Deprecated public
+`pnpm plugin-sdk:surface` to audit the public export count. The
+`plugin-test-api` and `test-env` subpaths are packaged for external plugin tests;
+other repo-local test helpers remain excluded. Deprecated public
 subpaths that are old enough and unused by bundled extension production code are
 tracked in `scripts/lib/plugin-sdk-deprecated-public-subpaths.json`; broad
 deprecated re-export barrels are tracked in

@@ -612,6 +612,37 @@ describe("gateway sessions patch", () => {
     expect(entry.thinkingLevel).toBe("xhigh");
   });
 
+  test("accepts low and rejects off for GPT-6.1 catalog efforts", async () => {
+    const loadGatewayModelCatalog = async () => [
+      {
+        provider: "openai",
+        id: "gpt-6.1-sol",
+        name: "GPT-6.1 Sol",
+        reasoning: true,
+        compat: {
+          supportsReasoningEffort: true,
+          supportedReasoningEfforts: ["low", "medium", "high", "xhigh", "max"],
+        },
+      },
+    ];
+    const cfg = {
+      agents: { defaults: { model: { primary: "openai/gpt-6.1-sol" } } },
+    } as OpenClawConfig;
+    const low = await runPatch({
+      cfg,
+      patch: { key: MAIN_SESSION_KEY, thinkingLevel: "low" },
+      loadGatewayModelCatalog,
+    });
+    expect(expectPatchOk(low).thinkingLevel).toBe("low");
+
+    const off = await runPatch({
+      cfg,
+      patch: { key: MAIN_SESSION_KEY, thinkingLevel: "off" },
+      loadGatewayModelCatalog,
+    });
+    expectPatchError(off, 'thinkingLevel "off" is not supported');
+  });
+
   test("validates global patches against the selected agent", async () => {
     const entry = expectPatchOk(
       await runPatch({

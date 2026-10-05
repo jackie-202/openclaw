@@ -68,12 +68,19 @@ describe("bundled plugin build entries", () => {
     expect(pickEntries(entries, Object.keys(expectedEntries))).toStrictEqual(expectedEntries);
   });
 
-  it("omits the retired Deliberation doctor compatibility sidecar", () => {
+  it("retires the replaced Deliberation source package from the host", () => {
+    expect(fs.existsSync(path.resolve("extensions", "deliberation"))).toBe(false);
+  });
+
+  it("does not build or package deliberation as a bundled plugin", () => {
     const entries = listBundledPluginBuildEntries();
     const artifacts = listBundledPluginPackArtifacts();
 
-    expect(entries).not.toHaveProperty("extensions/deliberation/doctor-contract-api");
-    expect(artifacts).not.toContain("dist/extensions/deliberation/doctor-contract-api.js");
+    expect(
+      Object.keys(entries).filter((key) => key.startsWith("extensions/deliberation/")),
+    ).toEqual([]);
+    expect(artifacts.filter((key) => key.startsWith("dist/extensions/deliberation/"))).toEqual([]);
+    expect(entries).toHaveProperty("extensions/bonjour/index");
   });
 
   it("filters bundled plugin build entries for bounded script lanes", () => {

@@ -1,0 +1,59 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-10-04T15:03:32+00:00",
+    "implementingStartedAt": "2026-10-04T14:57:43+00:00",
+    "taskFile": "plans/tasks/2026-10-04_followup-task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc-deliberation-plugin-retire-replaced-bundled-implementation-a.md",
+    "taskId": "task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc",
+    "title": "[acceptance-fix] Deliberation plugin: retire replaced bundled implementation and host path coupling: goal-001: Deliberat"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliberation plugin: retire replaced bundled implementation and host path coupling: goal-001: Deliberat"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "learnings/architecture/2026-10-04_plugin-retirement-must-decouple-loader-backed-host-tests.md",
+      "provenance": "untracked+referenced",
+      "size": 2050
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/calm-fork-3432.checkpoint.md",
+      "provenance": "untracked+referenced",
+      "size": 1501
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/calm-fork-3432.red-green-proof.md",
+      "provenance": "untracked+referenced",
+      "size": 2588
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/deliberation_bundled_plugin_retirement.md",
+      "provenance": "untracked+referenced",
+      "size": 19635
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc.checkpoint.md",
+      "provenance": "untracked",
+      "size": 3080
+    },
+    {
+      "mediaKind": "application/x-handoff-directory",
+      "path": "plans/handoffs/deliberation-plugin-retirement",
+      "provenance": "referenced",
+      "size": 46641
+    }
+  ],
+  "taskId": "task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc",
+  "tddRequired": true
+}

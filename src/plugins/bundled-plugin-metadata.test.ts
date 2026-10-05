@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
+import { listBundledPluginPackArtifacts } from "../../scripts/lib/bundled-plugin-build-entries.mjs";
 import { expectNoReaddirSyncDuring } from "../test-utils/fs-scan-assertions.js";
 import { listGitTrackedFiles, toRepoRelativePath } from "../test-utils/repo-files.js";
 import { collectBundledChannelConfigs } from "./bundled-channel-config-metadata.js";
@@ -12,6 +13,7 @@ import {
   resolveBundledPluginGeneratedPath,
   resolveBundledPluginRepoEntryPath,
 } from "./bundled-plugin-metadata.js";
+import { isExcludedSourceCheckoutBundledPlugin } from "./bundled-source-exclusions.js";
 import { resolveGatewayStartupPluginIdsFromRegistry } from "./gateway-startup-plugin-ids.js";
 import {
   createGeneratedPluginTempRoot,
@@ -36,7 +38,6 @@ const EXPECTED_BUNDLED_STARTUP_PLUGIN_IDS = [
   "bonjour",
   "browser",
   "canvas",
-  "deliberation",
   "device-pair",
   "diagnostics-otel",
   "diagnostics-prometheus",
@@ -56,6 +57,9 @@ const EXPECTED_BUNDLED_STARTUP_PLUGIN_IDS = [
   "webhooks",
   "workboard",
 ] as const;
+const EXPECTED_PACKAGED_STARTUP_PLUGIN_IDS = EXPECTED_BUNDLED_STARTUP_PLUGIN_IDS.filter(
+  (id) => !collectRootPackageExcludedExtensionDirsForTest().includes(id),
+);
 const EXPECTED_EMPTY_CONFIG_GATEWAY_STARTUP_PLUGIN_IDS = [
   "acpx",
   "browser",
@@ -142,10 +146,12 @@ function listRepoBundledPluginMetadata(): readonly BundledPluginMetadata[] {
 
 function listRepoBundledPluginManifestsUncached() {
   const bundledPluginsDir = path.join(repoRoot, "extensions");
-  return listRepoBundledPluginManifestDirs().flatMap((dirName) => {
-    const result = loadPluginManifest(path.join(bundledPluginsDir, dirName), false);
-    return result.ok ? [{ dirName, manifest: result.manifest }] : [];
-  });
+  return listRepoBundledPluginManifestDirs()
+    .filter((dirName) => !isExcludedSourceCheckoutBundledPlugin(bundledPluginsDir, dirName))
+    .flatMap((dirName) => {
+      const result = loadPluginManifest(path.join(bundledPluginsDir, dirName), false);
+      return result.ok ? [{ dirName, manifest: result.manifest }] : [];
+    });
 }
 
 function listRepoBundledPluginManifestDirs(): string[] {
@@ -214,9 +220,12 @@ function listRepoBundledPluginManifests() {
   return repoBundledPluginManifestsCache;
 }
 
-function createRepoBundledManifestRegistry(): PluginManifestRegistry {
+function createRepoBundledManifestRegistry(
+  entries = listRepoBundledPluginManifests(),
+  rootDir = repoRoot,
+): PluginManifestRegistry {
   return {
-    plugins: listRepoBundledPluginManifests().map(({ manifest, dirName }) => ({
+    plugins: entries.map(({ manifest, dirName }) => ({
       id: manifest.id,
       name: manifest.name,
       description: manifest.description,
@@ -232,9 +241,9 @@ function createRepoBundledManifestRegistry(): PluginManifestRegistry {
       nonSecretAuthMarkers: manifest.nonSecretAuthMarkers ?? [],
       skills: manifest.skills ?? [],
       origin: "bundled",
-      rootDir: path.join(repoRoot, "extensions", dirName),
-      source: path.join(repoRoot, "extensions", dirName, "index.ts"),
-      manifestPath: path.join(repoRoot, "extensions", dirName, "openclaw.plugin.json"),
+      rootDir: path.join(rootDir, "extensions", dirName),
+      source: path.join(rootDir, "extensions", dirName, "index.js"),
+      manifestPath: path.join(rootDir, "extensions", dirName, "openclaw.plugin.json"),
       activation: manifest.activation,
       setup: manifest.setup,
       hooks: [],
@@ -242,6 +251,24 @@ function createRepoBundledManifestRegistry(): PluginManifestRegistry {
     })),
     diagnostics: [],
   };
+}
+
+function createPackagedManifestRegistry(): PluginManifestRegistry {
+  const tempRoot = createGeneratedPluginTempRoot("openclaw-packaged-plugins-");
+  const artifacts = new Set(listBundledPluginPackArtifacts());
+  const packaged = listRepoBundledPluginManifests().flatMap(({ dirName, manifest }) => {
+    if (!artifacts.has(`dist/extensions/${dirName}/openclaw.plugin.json`)) {
+      return [];
+    }
+    const pluginDir = path.join(tempRoot, "extensions", dirName);
+    writeJson(path.join(pluginDir, "openclaw.plugin.json"), manifest);
+    const loaded = loadPluginManifest(pluginDir, false);
+    if (!loaded.ok) {
+      throw new Error(`invalid packaged manifest for ${dirName}: ${loaded.error}`);
+    }
+    return [{ dirName, manifest: loaded.manifest }];
+  });
+  return createRepoBundledManifestRegistry(packaged, tempRoot);
 }
 
 function readPackageManifest(pluginDir: string): PackageManifest | undefined {
@@ -341,6 +368,24 @@ describe("bundled plugin metadata", () => {
     listRepoBundledPluginMetadata();
     collectRepoBundledChannelConfigsForTest("discord");
     collectRepoBundledChannelConfigsForTest("tlon");
+  });
+
+  it("does not register deliberation from a source checkout even when enabled", () => {
+    expect(listRepoBundledPluginMetadata().map((entry) => entry.manifest.id)).not.toContain(
+      "deliberation",
+    );
+    const manifestRegistry = createRepoBundledManifestRegistry();
+    expect(manifestRegistry.plugins.map((plugin) => plugin.id)).not.toContain("deliberation");
+    const index = createInstalledPluginIndexForManifests(manifestRegistry);
+    expect(
+      resolveGatewayStartupPluginIdsFromRegistry({
+        config: { plugins: { entries: { deliberation: { enabled: true } } } },
+        env: {},
+        index,
+        manifestRegistry,
+        platform: "linux",
+      }),
+    ).not.toContain("deliberation");
   });
 
   it("lists bundled plugin manifests without scanning extension directories in-process", () => {
@@ -553,7 +598,7 @@ describe("bundled plugin metadata", () => {
     }
   });
 
-  it("declares explicit startup activation on all bundled plugin manifests", () => {
+  it("declares explicit startup activation on source-checkout plugin manifests", () => {
     const startupPluginIds: string[] = [];
 
     for (const entry of listRepoBundledPluginManifests()) {
@@ -566,6 +611,17 @@ describe("bundled plugin metadata", () => {
     expect(startupPluginIds.toSorted((left, right) => left.localeCompare(right))).toEqual(
       EXPECTED_BUNDLED_STARTUP_PLUGIN_IDS,
     );
+  });
+
+  it("omits deliberation from packaged startup while preserving every other packaged startup id", () => {
+    const registry = createPackagedManifestRegistry();
+    expect(
+      registry.plugins
+        .filter((plugin) => plugin.activation?.onStartup === true)
+        .map((plugin) => plugin.id)
+        .toSorted((left, right) => left.localeCompare(right)),
+    ).toEqual(EXPECTED_PACKAGED_STARTUP_PLUGIN_IDS);
+    expect(registry.plugins.some((plugin) => plugin.id === "deliberation")).toBe(false);
   });
 
   it("scopes Voice Call CLI activation to the voicecall command", () => {
@@ -622,8 +678,8 @@ describe("bundled plugin metadata", () => {
     ).toContain("bonjour");
   });
 
-  it("starts Deliberation when explicitly enabled", () => {
-    const manifestRegistry = createRepoBundledManifestRegistry();
+  it("does not start an enabled but uninstalled deliberation plugin in a packaged registry", () => {
+    const manifestRegistry = createPackagedManifestRegistry();
     const index = createInstalledPluginIndexForManifests(manifestRegistry);
 
     expect(
@@ -634,7 +690,8 @@ describe("bundled plugin metadata", () => {
         manifestRegistry,
         platform: "linux",
       }),
-    ).toContain("deliberation");
+    ).not.toContain("deliberation");
+    expect(manifestRegistry.plugins.find((plugin) => plugin.id === "deliberation")).toBeUndefined();
   });
 
   it("prefers built generated paths when present and falls back to source paths", () => {

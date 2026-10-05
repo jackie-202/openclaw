@@ -232,6 +232,8 @@ export function createMockCronStateForJobs(params: {
   const nowMs = params.nowMs ?? Date.now();
   return {
     store: { version: 1, jobs: params.jobs },
+    scheduledJobIds: new Set<string>(),
+    scheduledJobSessionKeys: new Map<string, Set<string>>(),
     running: false,
     timer: null,
     storeLoadedAtMs: nowMs,

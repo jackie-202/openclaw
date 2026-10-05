@@ -33,10 +33,8 @@ assert.equal(typeof resetGlobalHookRunner, "function", "resetGlobalHookRunner mi
 
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-build-smoke-"));
 const pluginId = "build-smoke-plugin";
-const deliberationId = "deliberation";
 const distPluginDir = path.join(repoRoot, "dist", "extensions", pluginId);
 const runtimePluginDir = path.join(repoRoot, "dist-runtime", "extensions", pluginId);
-const distDeliberationDir = path.join(repoRoot, "dist", "extensions", deliberationId);
 
 function cleanup() {
   clearPluginCommands();
@@ -114,17 +112,15 @@ fs.writeFileSync(
   "utf8",
 );
 
-for (const fileName of ["package.json", "openclaw.plugin.json"]) {
-  fs.copyFileSync(
-    path.join(repoRoot, "extensions", deliberationId, fileName),
-    path.join(distDeliberationDir, fileName),
-  );
-}
-
 stageBundledPluginRuntime({ repoRoot });
 
 const runtimeEntryPath = path.join(runtimePluginDir, "index.js");
 assert.ok(fs.existsSync(runtimeEntryPath), "runtime overlay entry missing");
+assert.equal(
+  fs.existsSync(path.join(repoRoot, "dist-runtime", "extensions", "deliberation")),
+  false,
+  "Deliberation must not be staged as a bundled runtime",
+);
 assert.equal(
   fs.existsSync(path.join(repoRoot, "dist-runtime", "plugins", "commands.js")),
   false,
@@ -165,102 +161,5 @@ assert.ok(match, "canonical built command registry did not receive the command")
 assert.equal(match.args, "now");
 const result = await match.command.handler({ args: match.args });
 assert.deepEqual(result, { text: "paired:now" });
-
-const deliberationRuntimeDir = path.join(repoRoot, "dist-runtime", "extensions", deliberationId);
-const deliberationRuntimeEntry = path.join(deliberationRuntimeDir, "index.js");
-assert.ok(fs.existsSync(deliberationRuntimeEntry), "built Deliberation runtime entry missing");
-const deliberationApiEntry = path.join(deliberationRuntimeDir, "api.js");
-assert.ok(fs.existsSync(deliberationApiEntry), "built Deliberation probe API missing");
-const deliberationApi = await import(pathToFileURL(deliberationApiEntry).href);
-assert.equal(
-  typeof deliberationApi.runDeliberationDeliveryProbe,
-  "function",
-  "built Deliberation probe export missing",
-);
-const refusedProbe = await deliberationApi.runDeliberationDeliveryProbe({
-  endpoint: "https://km.invalid",
-  credential: "production-credential",
-  requestTimeoutMs: 1000,
-});
-assert.equal(refusedProbe.ok, false);
-assert.equal(refusedProbe.error?.cause, "invalid_input");
-assert.equal(refusedProbe.provider.callCount, 0);
-assert.equal(refusedProbe.build.artifactClass, "built-api");
-assert.match(refusedProbe.build.moduleSha256, /^[0-9a-f]{64}$/);
-
-const deliberationRegistry = loadOpenClawPlugins({
-  cache: false,
-  workspaceDir: tempRoot,
-  onlyPluginIds: [deliberationId],
-  env: {
-    ...process.env,
-    OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "dist-runtime", "extensions"),
-  },
-  config: {
-    plugins: {
-      enabled: true,
-      allow: [deliberationId],
-      entries: {
-        [deliberationId]: {
-          enabled: true,
-          config: {
-            enabled: true,
-            failClosed: true,
-            pipelines: [
-              {
-                id: "discord-pilot",
-                source: { channel: "discord", accountId: "default", target: "pilot" },
-              },
-            ],
-            processingSource: {
-              channel: "discord",
-              accountId: "default",
-              target: "processing",
-            },
-            km: {
-              endpoint: "https://km.invalid",
-              credential: "test-credential",
-              requestTimeoutMs: 1000,
-            },
-            restrictedSessionKeys: ["agent:reviewer"],
-          },
-        },
-      },
-    },
-  },
-});
-
-const expectedDeliberationHooks = [
-  "inbound_event_policy",
-  "inbound_claim",
-  "before_dispatch",
-  "before_tool_call",
-  "message_sending",
-];
-const deliberation = deliberationRegistry.plugins.find((entry) => entry.id === deliberationId);
-assert.ok(deliberation, "Deliberation missing from built runtime registry");
-assert.equal(deliberation.source, deliberationRuntimeEntry);
-assert.equal(deliberation.status, "loaded", deliberation.error ?? "Deliberation failed to load");
-assert.equal(deliberation.hookCount, expectedDeliberationHooks.length);
-assert.deepEqual(deliberation.hookNames, expectedDeliberationHooks);
-assert.deepEqual(
-  deliberationRegistry.typedHooks
-    .filter((hook) => hook.pluginId === deliberationId)
-    .map((hook) => hook.hookName),
-  expectedDeliberationHooks,
-);
-assert.deepEqual(
-  deliberation.services,
-  ["deliberation-final-delivery"],
-  "built Deliberation runtime did not register its sole delivery service",
-);
-resetGlobalHookRunner();
-initializeGlobalHookRunner(deliberationRegistry);
-assert.equal(getGlobalHookRunner()?.hasHooks("inbound_claim"), true);
-
-const deliberationManifest = JSON.parse(
-  fs.readFileSync(path.join(deliberationRuntimeDir, "openclaw.plugin.json"), "utf8"),
-);
-assert.deepEqual(deliberationManifest.expectedHooks, expectedDeliberationHooks);
 
 process.stdout.write("[build-smoke] built plugin singleton smoke passed\n");

@@ -5,6 +5,7 @@ import path from "node:path";
 import { bundledDistPluginFile } from "openclaw/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
+import { isExcludedSourceCheckoutBundledPlugin } from "./bundled-source-exclusions.js";
 import { discoverOpenClawPlugins } from "./discovery.js";
 import { listBuiltRuntimeEntryCandidates } from "./package-entrypoints.js";
 import {
@@ -19,6 +20,19 @@ vi.mock("./bundled-dir.js", async (importOriginal) => {
     ...actual,
     resolveBundledPluginsDir: (env: NodeJS.ProcessEnv = process.env) =>
       env.OPENCLAW_BUNDLED_PLUGINS_DIR ?? actual.resolveBundledPluginsDir(env),
+  };
+});
+
+vi.mock("./bundled-source-overlays.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./bundled-source-overlays.js")>();
+  return {
+    ...actual,
+    listBundledSourceOverlayDirs: (
+      params: Parameters<typeof actual.listBundledSourceOverlayDirs>[0],
+    ) =>
+      params.env?.OPENCLAW_TEST_RETIRED_SOURCE_OVERLAY === "1"
+        ? [path.join(process.cwd(), "extensions", "deliberation")]
+        : actual.listBundledSourceOverlayDirs(params),
   };
 });
 
@@ -728,6 +742,86 @@ describe("discoverOpenClawPlugins", () => {
     expect(result.diagnostics.map((entry) => entry.message).join("\n")).not.toContain(
       "pnpm install",
     );
+  });
+
+  it("does not discover retired source Deliberation from source or built bundled roots", () => {
+    const stateDir = makeTempDir();
+    const sourceRoot = path.join(process.cwd(), "extensions");
+    const builtRoot = path.join(process.cwd(), "dist", "extensions");
+    for (const bundledRoot of [sourceRoot, builtRoot]) {
+      // Keep the stale-artifact guard covered after the retired source files disappear.
+      expect(isExcludedSourceCheckoutBundledPlugin(bundledRoot, "deliberation")).toBe(true);
+      expect(isExcludedSourceCheckoutBundledPlugin(bundledRoot, "bonjour")).toBe(false);
+      const result = discoverOpenClawPlugins({
+        env: buildDiscoveryEnvWithOverrides(stateDir, {
+          OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
+        }),
+      });
+      expect(result.candidates.some((candidate) => candidate.idHint === "deliberation")).toBe(
+        false,
+      );
+      expect(result.candidates.some((candidate) => candidate.idHint === "bonjour")).toBe(true);
+    }
+  });
+
+  it("does not register a retired bundled source overlay", () => {
+    const stateDir = makeTempDir();
+    expect(
+      isExcludedSourceCheckoutBundledPlugin(path.join(process.cwd(), "extensions"), "deliberation"),
+    ).toBe(true);
+    const result = discoverOpenClawPlugins({
+      env: buildDiscoveryEnvWithOverrides(stateDir, {
+        OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "dist", "extensions"),
+        OPENCLAW_TEST_RETIRED_SOURCE_OVERLAY: "1",
+      }),
+    });
+    expect(result.candidates.some((candidate) => candidate.idHint === "deliberation")).toBe(false);
+    expect(result.diagnostics.some((entry) => entry.message.includes("source overlay"))).toBe(
+      false,
+    );
+  });
+
+  it.skipIf(!canCreateDirectorySymlinks)(
+    "excludes source Deliberation through a symlinked checkout root",
+    () => {
+      const stateDir = makeTempDir();
+      const checkoutLink = path.join(makeTempDir(), "checkout");
+      symlinkDirectory(process.cwd(), checkoutLink);
+      expect(
+        isExcludedSourceCheckoutBundledPlugin(
+          path.join(checkoutLink, "extensions"),
+          "deliberation",
+        ),
+      ).toBe(true);
+      const result = discoverOpenClawPlugins({
+        env: buildDiscoveryEnvWithOverrides(stateDir, {
+          OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(checkoutLink, "extensions"),
+        }),
+      });
+      expect(result.candidates.some((candidate) => candidate.idHint === "deliberation")).toBe(
+        false,
+      );
+      expect(result.candidates.some((candidate) => candidate.idHint === "bonjour")).toBe(true);
+    },
+  );
+
+  it("allows a separately installed Deliberation plugin with the retired bundled id", () => {
+    const stateDir = makeTempDir();
+    const pluginDir = path.join(stateDir, "extensions", "deliberation");
+    createPackagePluginWithEntry({
+      packageDir: pluginDir,
+      packageName: "@example/deliberation",
+      pluginId: "deliberation",
+      entryPath: "index.js",
+    });
+    const result = discoverOpenClawPlugins({
+      env: buildDiscoveryEnvWithOverrides(stateDir, {
+        OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
+      }),
+    });
+    expectCandidateFields(findCandidateById(result.candidates, "deliberation"), {
+      origin: "global",
+    });
   });
 
   it("does not treat repo-level live or test files as plugin entrypoints", () => {

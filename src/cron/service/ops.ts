@@ -25,7 +25,6 @@ import {
   isJobEnabled,
   isJobDue,
   nextWakeAtMs,
-  recomputeNextRuns,
   recomputeNextRunsForMaintenance,
 } from "./jobs.js";
 import type {
@@ -420,8 +419,9 @@ export async function add(state: CronServiceState, input: CronJobCreate) {
     const job = createJob(state, input);
     state.store?.jobs.push(job);
 
-    // Defensive: recompute all next-run times to ensure consistency
-    recomputeNextRuns(state);
+    // Preserve due occurrences that await admission while repairing missing
+    // schedule state for the new job and existing rows.
+    recomputeNextRunsForMaintenance(state);
 
     await persist(state);
     armTimer(state);

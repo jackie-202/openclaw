@@ -53,14 +53,14 @@ async function expectJobDoesNotRefireWhenNextRunIsUnresolved(params: {
   advanceNow: () => void;
 }) {
   await onTimer(params.state);
-  expect(params.runIsolatedAgentJob).toHaveBeenCalledTimes(1);
-  expect(params.state.store?.jobs[0]?.state.nextRunAtMs).toBeUndefined();
+  await vi.waitFor(() => expect(params.runIsolatedAgentJob).toHaveBeenCalledTimes(1));
+  await vi.waitFor(() => expect(params.state.store?.jobs[0]?.state.nextRunAtMs).toBeUndefined());
 
   params.advanceNow();
   await onTimer(params.state);
 
-  expect(params.runIsolatedAgentJob).toHaveBeenCalledTimes(1);
-  expect(params.state.store?.jobs[0]?.state.nextRunAtMs).toBeUndefined();
+  await vi.waitFor(() => expect(params.runIsolatedAgentJob).toHaveBeenCalledTimes(1));
+  await vi.waitFor(() => expect(params.state.store?.jobs[0]?.state.nextRunAtMs).toBeUndefined());
 }
 
 describe("#66019 unresolved next-run repro", () => {
@@ -167,16 +167,16 @@ describe("#66019 unresolved next-run repro", () => {
 
     try {
       await onTimer(state);
-      expect(runIsolatedAgentJob).toHaveBeenCalledTimes(1);
-      expect(state.store?.jobs[0]?.state.nextRunAtMs).toBe(backoffNext);
+      await vi.waitFor(() => expect(runIsolatedAgentJob).toHaveBeenCalledTimes(1));
+      await vi.waitFor(() => expect(state.store?.jobs[0]?.state.nextRunAtMs).toBe(backoffNext));
 
       now = naturalNext + 1;
       await onTimer(state);
-      expect(runIsolatedAgentJob).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => expect(runIsolatedAgentJob).toHaveBeenCalledTimes(1));
 
       now = backoffNext + 1;
       await onTimer(state);
-      expect(runIsolatedAgentJob).toHaveBeenCalledTimes(2);
+      await vi.waitFor(() => expect(runIsolatedAgentJob).toHaveBeenCalledTimes(2));
     } finally {
       nextRunSpy.mockRestore();
       clearCronTimer(state);

@@ -1,0 +1,47 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-10-04T14:49:32+00:00",
+    "implementingStartedAt": "2026-10-04T14:19:45+00:00",
+    "taskFile": "plans/tasks/2026-09-07_deliberation-plugin-retire-replaced-bundled-implementation-a.md",
+    "taskId": "calm-fork-3432",
+    "title": "Deliberation plugin: retire replaced bundled implementation and host path coupling"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliberation plugin: retire replaced bundled implementation and host path coupling"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "calm-fork-3432-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/calm-fork-3432.checkpoint.md",
+      "provenance": "untracked",
+      "size": 1501
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/calm-fork-3432.red-green-proof.md",
+      "provenance": "untracked",
+      "size": 2588
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/deliberation_bundled_plugin_retirement.md",
+      "provenance": "untracked+referenced",
+      "size": 19635
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/handoffs/deliberation-plugin-retirement/accepted-host-contract.md",
+      "provenance": "untracked+referenced",
+      "size": 3864
+    }
+  ],
+  "taskId": "calm-fork-3432",
+  "tddRequired": true
+}

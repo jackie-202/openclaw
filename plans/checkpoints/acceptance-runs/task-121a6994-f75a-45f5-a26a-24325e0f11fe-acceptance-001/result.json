@@ -1,0 +1,104 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The active Discord and Slack consumers must load Deliberation through the separately packaged public API/test contract rather than the retired bundled implementation.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task checkpoint leaves owner package acquisition and migration of all three loaders incomplete; the supplied handoff contains only the host contract, suite log, and retirement manifest, with no runnable public package contract or archive.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Retiring the bundled implementation without a runnable config-origin package path leaves the active host consumers unable to load Deliberation and does not complete the required host decoupling.",
+      "required": "Supply the pinned repo-local offline public package/test contract and migrate all three consumers to config-origin package resolution while preserving their scenarios and assertions.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-121a6994-f75a-45f5-a26a-24325e0f11fe.checkpoint.md:3-17"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:3-8"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/handoffs/deliberation-plugin-retirement"
+        }
+      ]
+    },
+    {
+      "claim": "The retirement deliverable requires assertion-level external-owner mapping and immutable expanded proof for both transferred Slack root and child orchestration scenarios.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied retirement checkpoint states that the manifest has no dynamic target titles or target assertions, and the follow-up checkpoint leaves acquisition of orchestration-assertion-map.json and expanded root/child evidence incomplete.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Case-count parity and a broad suite receipt do not establish preservation of the required identity, bounded history, unrelated-thread exclusion, envelope and receipt, send-count, and lifecycle assertions.",
+      "required": "Supply the owner-exported assertion map and immutable expanded passing root/child evidence covering every required scenario invariant.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:74-91"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-121a6994-f75a-45f5-a26a-24325e0f11fe.checkpoint.md:3-17"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-10-04_task-121a6994-f75a-45f5-a26a-24325e0f11fe_acceptance-fix-deliberation-plugin-retire-replaced-bundled.md:23-29"
+        }
+      ]
+    },
+    {
+      "claim": "This caller-declared TDD task requires a complete ordered RED/GREEN proof for the acceptance repair.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The supplied proof projection contains only a RED phase and explicitly reports missing GREEN and incomplete phase order; the task checkpoint likewise leaves ordered GREEN capture incomplete.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The manifest declares tddRequired true, and RED-only evidence does not demonstrate that the follow-up implementation reached GREEN.",
+      "required": "After completing the repair, capture and supply a fresh GREEN linked to the genuine RED with complete phase ordering and provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-121a6994-f75a-45f5-a26a-24325e0f11fe.red-green-proof.md:1-6"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-121a6994-f75a-45f5-a26a-24325e0f11fe.checkpoint.md:3-17"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/task-121a6994-f75a-45f5-a26a-24325e0f11fe-acceptance-001/manifest.json:51-52"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation plugin: retire replaced bundled implementation and host path coupling: go"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-121a6994-f75a-45f5-a26a-24325e0f11fe-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-121a6994-f75a-45f5-a26a-24325e0f11fe"
+}

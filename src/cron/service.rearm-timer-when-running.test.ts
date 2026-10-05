@@ -1,6 +1,4 @@
 // Cron rearm tests cover timer rearming while scheduled jobs are already running.
-import fs from "node:fs/promises";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createNoopLogger,
@@ -9,6 +7,7 @@ import {
 } from "./service.test-harness.js";
 import { createCronServiceState } from "./service/state.js";
 import { onTimer } from "./service/timer.js";
+import { saveCronStore } from "./store.js";
 import type { CronJob } from "./types.js";
 
 const noopLogger = createNoopLogger();
@@ -105,31 +104,22 @@ describe("CronService - timer re-arm when running (#12025)", () => {
     await store.cleanup();
   });
 
-  it("arms a watchdog timer while a timer tick is still executing", async () => {
+  it("returns after admission while the scheduled run remains active", async () => {
     const timeoutSpy = vi.spyOn(globalThis, "setTimeout");
     const store = await makeStorePath();
     const now = Date.parse("2026-02-06T10:05:00.000Z");
     const deferredRun = createDeferred<{ status: "ok"; summary: string }>();
 
-    await fs.mkdir(path.dirname(store.storePath), { recursive: true });
-    await fs.writeFile(
-      store.storePath,
-      JSON.stringify(
-        {
-          version: 1,
-          jobs: [
-            createDueRecurringJob({
-              id: "long-running-job",
-              nowMs: now,
-              nextRunAtMs: now,
-            }),
-          ],
-        },
-        null,
-        2,
-      ),
-      "utf-8",
-    );
+    await saveCronStore(store.storePath, {
+      version: 1,
+      jobs: [
+        createDueRecurringJob({
+          id: "long-running-job",
+          nowMs: now,
+          nextRunAtMs: now,
+        }),
+      ],
+    });
 
     const state = createCronServiceState({
       storePath: store.storePath,
@@ -141,16 +131,12 @@ describe("CronService - timer re-arm when running (#12025)", () => {
       runIsolatedAgentJob: vi.fn(async () => await deferredRun.promise),
     });
 
-    let settled = false;
-    const timerPromise = onTimer(state);
-    void timerPromise.finally(() => {
-      settled = true;
-    });
-
-    await Promise.resolve();
-    expect(settled).toBe(false);
-    expect(state.running).toBe(true);
+    await onTimer(state);
+    expect(state.running).toBe(false);
+    expect(state.scheduledJobIds).toEqual(new Set(["long-running-job"]));
+    expect(state.store?.jobs[0]?.state.runningAtMs).toBe(now);
     expect(state.timer).toBe(latestTimeoutHandle(timeoutSpy));
+    expect(timeoutSpy.mock.calls.at(-1)?.[1]).toBe(60_000);
 
     const delays = timeoutSpy.mock.calls
       .map(([, delay]) => delay)
@@ -158,8 +144,8 @@ describe("CronService - timer re-arm when running (#12025)", () => {
     expect(delays).toContain(60_000);
 
     deferredRun.resolve({ status: "ok", summary: "done" });
-    await timerPromise;
-    expect(state.running).toBe(false);
+    await vi.waitFor(() => expect(state.scheduledJobIds).toEqual(new Set()));
+    expect(state.store?.jobs[0]?.state.lastStatus).toBe("ok");
 
     timeoutSpy.mockRestore();
     await store.cleanup();

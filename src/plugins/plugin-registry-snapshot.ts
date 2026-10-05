@@ -5,6 +5,7 @@ import path from "node:path";
 import { resolveUserPath } from "../utils.js";
 import { resolveCompatibilityHostVersion } from "../version.js";
 import { resolveBundledPluginsDir } from "./bundled-dir.js";
+import { isExcludedSourceCheckoutBundledPlugin } from "./bundled-source-exclusions.js";
 import { normalizePluginsConfig } from "./config-state.js";
 import { getCurrentPluginMetadataSnapshot } from "./current-plugin-metadata-snapshot.js";
 import type { PluginDiscoveryResult } from "./discovery.js";
@@ -330,7 +331,12 @@ function hasMismatchedPersistedBundledPluginRoot(
   }
   return index.plugins.some(
     (plugin) =>
-      plugin.origin === "bundled" && !isPathInsideOrEqual(plugin.rootDir, bundledPluginsDir),
+      plugin.origin === "bundled" &&
+      (!isPathInsideOrEqual(plugin.rootDir, bundledPluginsDir) ||
+        isExcludedSourceCheckoutBundledPlugin(
+          path.dirname(plugin.rootDir),
+          path.basename(plugin.rootDir),
+        )),
   );
 }
 
@@ -496,7 +502,7 @@ export function loadPluginRegistrySnapshotWithMetadata(
           level: "warn",
           code: "persisted-registry-stale-source",
           message:
-            "Persisted plugin registry points at a different bundled plugin tree; using derived plugin index. Run `openclaw plugins registry --refresh` to update the persisted registry.",
+            "Persisted plugin registry points at a different bundled plugin tree or a retired bundled plugin; using derived plugin index. Run `openclaw plugins registry --refresh` to update the persisted registry.",
         });
       } else if (hasStalePersistedPluginDiagnostics(persistedIndex)) {
         diagnostics.push({

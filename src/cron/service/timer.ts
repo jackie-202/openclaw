@@ -122,10 +122,11 @@ type StartupCatchupPlan = {
 export async function executeJobCoreWithTimeout(
   state: CronServiceState,
   job: CronJob,
+  options?: { onExecutionStarted?: (info?: CronAgentExecutionStarted) => void },
 ): Promise<Awaited<ReturnType<typeof executeJobCore>>> {
   const jobTimeoutMs = resolveCronJobTimeoutMs(job);
   if (typeof jobTimeoutMs !== "number") {
-    return await executeJobCore(state, job);
+    return await executeJobCore(state, job, undefined, options);
   }
 
   const runAbortController = new AbortController();
@@ -155,7 +156,12 @@ export async function executeJobCoreWithTimeout(
   });
   const corePromise = executeJobCore(state, job, runAbortController.signal, {
     onSetupProgress: deferTimeoutUntilExecutionStart ? watchdog.noteSetupProgress : undefined,
-    onExecutionStarted: deferTimeoutUntilExecutionStart ? watchdog.noteRunnerStarted : undefined,
+    onExecutionStarted: deferTimeoutUntilExecutionStart
+      ? (info) => {
+          watchdog.noteRunnerStarted(info);
+          options?.onExecutionStarted?.(info);
+        }
+      : options?.onExecutionStarted,
     onExecutionPhase: deferTimeoutUntilExecutionStart ? watchdog.notePhase : undefined,
   });
   watchdog.start();
@@ -720,7 +726,13 @@ export function armTimer(state: CronServiceState) {
     state.deps.log.debug({}, "cron: armTimer skipped - scheduler disabled");
     return;
   }
-  const nextAt = nextWakeAtMs(state);
+  // Detached jobs release capacity and re-arm on completion; polling their
+  // past-due timestamps would reload the store every MIN_REFIRE_GAP_MS.
+  if (state.scheduledJobIds.size >= resolveRunConcurrency(state)) {
+    armRunningRecheckTimer(state);
+    return;
+  }
+  const nextAt = nextWakeAtMs(state, state.scheduledJobIds);
   if (!nextAt) {
     const jobCount = state.store?.jobs.length ?? 0;
     const enabledCount = state.store?.jobs.filter((j) => j.enabled).length ?? 0;
@@ -780,7 +792,7 @@ function armRunningRecheckTimer(state: CronServiceState) {
   }, MAX_TIMER_DELAY_MS);
 }
 
-/** Handles one cron timer tick: load due jobs, reserve them, execute, persist, and re-arm. */
+/** Handles one cron timer tick: admit due jobs, then let each run settle independently. */
 export async function onTimer(state: CronServiceState) {
   if (state.running) {
     // Re-arm the timer so the scheduler keeps ticking even when a job is
@@ -797,14 +809,15 @@ export async function onTimer(state: CronServiceState) {
     return;
   }
   state.running = true;
-  // Keep a watchdog timer armed while a tick is executing. If execution hangs
-  // (for example in a provider call), the scheduler still wakes to re-check.
-  armRunningRecheckTimer(state);
   try {
     const dueJobs = await locked(state, async () => {
       await ensureLoaded(state, { forceReload: true, skipRecompute: true });
       const dueCheckNow = state.deps.nowMs();
-      const due = collectRunnableJobs(state, dueCheckNow);
+      const due = collectRunnableJobs(state, dueCheckNow, {
+        // Maintenance can clear a long-running persisted marker; retain the
+        // process-local admission guard so that work is never started twice.
+        skipJobIds: state.scheduledJobIds,
+      }).toSorted((a, b) => (a.state.nextRunAtMs ?? 0) - (b.state.nextRunAtMs ?? 0));
 
       if (due.length === 0) {
         // Use maintenance-only recompute to avoid advancing past-due nextRunAtMs
@@ -820,105 +833,37 @@ export async function onTimer(state: CronServiceState) {
         return [];
       }
 
+      const availableCapacity = Math.max(
+        0,
+        resolveRunConcurrency(state) - state.scheduledJobIds.size,
+      );
+      const admitted = due.slice(0, availableCapacity);
+      if (admitted.length === 0) {
+        return [];
+      }
       const now = state.deps.nowMs();
-      for (const job of due) {
+      for (const job of admitted) {
         job.state.runningAtMs = now;
         job.state.lastError = undefined;
       }
       await persist(state);
+      for (const job of admitted) {
+        state.scheduledJobIds.add(job.id);
+      }
 
-      return due.map((j) => ({
+      return admitted.map((j) => ({
         id: j.id,
         job: j,
       }));
     });
 
-    const runDueJob = async (params: {
-      id: string;
-      job: CronJob;
-    }): Promise<TimedCronRunOutcome> => {
-      const { id, job } = params;
-      const startedAt = state.deps.nowMs();
-      job.state.runningAtMs = startedAt;
-      markCronJobActive(job.id);
-      emit(state, { jobId: job.id, action: "started", job, runAtMs: startedAt });
-      const jobTimeoutMs = resolveCronJobTimeoutMs(job);
-      const taskRunId = tryCreateCronTaskRun({ state, job, startedAt });
-
-      try {
-        const result = await executeJobCoreWithTimeout(state, job);
-        return {
-          jobId: id,
-          job,
-          taskRunId,
-          ...result,
-          startedAt,
-          endedAt: state.deps.nowMs(),
-        };
-      } catch (err) {
-        const errorText = normalizeCronRunErrorText(err);
-        state.deps.log.warn(
-          { jobId: id, jobName: job.name, timeoutMs: jobTimeoutMs ?? null },
-          `cron: job failed: ${errorText}`,
-        );
-        return {
-          jobId: id,
-          job,
-          taskRunId,
-          status: "error",
-          error: errorText,
-          diagnostics: createCronRunDiagnosticsFromError("cron-setup", errorText, {
-            nowMs: state.deps.nowMs,
-          }),
-          startedAt,
-          endedAt: state.deps.nowMs(),
-        };
-      }
-    };
-
-    const concurrency = Math.min(resolveRunConcurrency(state), Math.max(1, dueJobs.length));
-    const results: (TimedCronRunOutcome | undefined)[] = Array.from({ length: dueJobs.length });
-    let cursor = 0;
-    const workers = Array.from({ length: concurrency }, async () => {
-      for (;;) {
-        const index = cursor++;
-        if (index >= dueJobs.length) {
-          return;
-        }
-        const due = dueJobs[index];
-        if (!due) {
-          return;
-        }
-        results[index] = await runDueJob(due);
-      }
-    });
-    await Promise.all(workers);
-
-    const completedResults: TimedCronRunOutcome[] = results.filter(
-      (entry): entry is TimedCronRunOutcome => entry !== undefined,
-    );
-
-    if (completedResults.length > 0) {
-      await locked(state, async () => {
-        await ensureLoaded(state, { forceReload: true, skipRecompute: true });
-        for (const result of completedResults) {
-          applyOutcomeToStoredJob(state, result);
-        }
-
-        // Use maintenance-only recompute to avoid advancing past-due
-        // nextRunAtMs values that became due between findDueJobs and this
-        // locked block.  The full recomputeNextRuns would silently skip
-        // those jobs (advancing nextRunAtMs without execution), causing
-        // daily cron schedules to jump 48 h instead of 24 h (#17852).
-        recomputeNextRunsForMaintenance(state);
-        await persist(state);
+    for (const dueJob of dueJobs) {
+      void runScheduledJob(state, dueJob).catch((err: unknown) => {
+        state.deps.log.error({ err: String(err), jobId: dueJob.id }, "cron: scheduled job failed");
       });
     }
   } finally {
     // Piggyback session reaper on timer tick (self-throttled to every 5 min).
-    // Placed in `finally` so the reaper runs even when a long-running job keeps
-    // `state.running` true across multiple timer ticks — the early return at the
-    // top of onTimer would otherwise skip the reaper indefinitely.
     const storePaths = new Set<string>();
     if (state.deps.resolveSessionStorePath) {
       const defaultAgentId = state.deps.defaultAgentId ?? DEFAULT_AGENT_ID;
@@ -944,6 +889,7 @@ export async function onTimer(state: CronServiceState) {
             sessionStorePath: storePath,
             nowMs,
             log: state.deps.log,
+            activeSessionKeys: state.scheduledJobSessionKeys,
           });
         } catch (err) {
           state.deps.log.warn({ err: String(err), storePath }, "cron: session reaper sweep failed");
@@ -953,6 +899,78 @@ export async function onTimer(state: CronServiceState) {
 
     state.running = false;
     armTimer(state);
+  }
+}
+
+async function runScheduledJob(
+  state: CronServiceState,
+  params: { id: string; job: CronJob },
+): Promise<void> {
+  const { id, job } = params;
+  const startedAt = job.state.runningAtMs ?? state.deps.nowMs();
+  markCronJobActive(job.id);
+  emit(state, { jobId: job.id, action: "started", job, runAtMs: startedAt });
+  const taskRunId = tryCreateCronTaskRun({ state, job, startedAt });
+  const jobTimeoutMs = resolveCronJobTimeoutMs(job);
+  let result: TimedCronRunOutcome;
+  try {
+    result = {
+      jobId: id,
+      job,
+      taskRunId,
+      ...(await executeJobCoreWithTimeout(state, job, {
+        onExecutionStarted: (info) => {
+          if (!info?.sessionKey) {
+            return;
+          }
+          const keys = state.scheduledJobSessionKeys.get(id) ?? new Set<string>();
+          keys.add(info.sessionKey);
+          state.scheduledJobSessionKeys.set(id, keys);
+        },
+      })),
+      startedAt,
+      endedAt: state.deps.nowMs(),
+    };
+  } catch (err) {
+    const errorText = normalizeCronRunErrorText(err);
+    state.deps.log.warn(
+      { jobId: id, jobName: job.name, timeoutMs: jobTimeoutMs ?? null },
+      `cron: job failed: ${errorText}`,
+    );
+    result = {
+      jobId: id,
+      job,
+      taskRunId,
+      status: "error",
+      error: errorText,
+      diagnostics: createCronRunDiagnosticsFromError("cron-setup", errorText, {
+        nowMs: state.deps.nowMs,
+      }),
+      startedAt,
+      endedAt: state.deps.nowMs(),
+    };
+  }
+
+  try {
+    await locked(state, async () => {
+      await ensureLoaded(state, { forceReload: true, skipRecompute: true });
+      applyOutcomeToStoredJob(state, result);
+      // Keep past-due jobs for a later admission rather than advancing them
+      // without execution while an unrelated scheduled run is still active.
+      recomputeNextRunsForMaintenance(state);
+      await persist(state);
+    });
+  } finally {
+    // A failed finalization must not strand an admission slot and starve later jobs.
+    state.scheduledJobIds.delete(id);
+    state.scheduledJobSessionKeys.delete(id);
+    if (state.running) {
+      armTimer(state);
+    } else {
+      void onTimer(state).catch((err: unknown) => {
+        state.deps.log.error({ err: String(err) }, "cron: timer tick failed");
+      });
+    }
   }
 }
 

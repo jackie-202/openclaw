@@ -11,16 +11,17 @@ The Deliberation plugin keeps configured Discord and Slack sources silent in ord
 
 ## Distribution
 
-- Package: `@openclaw/deliberation`
-- Install route: included in OpenClaw
+- Package: `@openclaw-deliberation/plugin`
+- Distribution: Deliberation is maintained as a separate plugin. Its replaced implementation is no longer present in the OpenClaw checkout or bundled package. An enabled configuration without a separate installation reports a missing plugin. Installation and deployment are managed by the external plugin owner.
 
 ## Repository boundary
 
 The published Deliberation v2 domain contract owns the closed HTTP wire schemas,
 fixtures, controls, and durable workflow fields. The plugin pins that immutable
 publication locally, without reading another checkout or fetching contract data
-at runtime. OpenClaw owns the channel and provider hooks, source identity and
-destination overlays, intake and history adapters, and final-delivery behavior.
+at runtime. The external plugin owns Deliberation intake, history, routing, and
+final-delivery behavior. OpenClaw supplies generic channel transport, history,
+hooks, and runtime APIs.
 The external orchestrator's implementation, storage, restart, reconciliation,
 migration, and cross-repository end-to-end gates are not part of OpenClaw's
 build or repository-local acceptance gate.

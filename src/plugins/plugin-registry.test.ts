@@ -519,6 +519,48 @@ describe("plugin registry facade", () => {
     expectSnapshotPluginIds(result.snapshot, ["demo"]);
   });
 
+  it("rebuilds an older persisted registry that still bundled source Deliberation", async () => {
+    const stateDir = makeTempDir();
+    const bundledRoot = path.join(process.cwd(), "extensions");
+    const pluginRoot = path.join(bundledRoot, "deliberation");
+    const manifestPath = path.join(pluginRoot, "openclaw.plugin.json");
+    // A persisted index retains metadata even after retirement removes its source package.
+    // Hash synthetic metadata without recreating the retired package in the host checkout.
+    const fixtureManifestPath = path.join(stateDir, "retired-plugin-manifest.json");
+    fs.writeFileSync(
+      fixtureManifestPath,
+      JSON.stringify({ id: "deliberation", configSchema: { type: "object" } }),
+      "utf8",
+    );
+    const config = { plugins: { entries: { deliberation: { enabled: true } } } } as const;
+    await writePersistedInstalledPluginIndex(
+      createIndex("deliberation", {
+        policyHash: resolveInstalledPluginIndexPolicyHash(config),
+        plugins: [
+          {
+            ...createIndex("deliberation").plugins[0],
+            origin: "bundled",
+            rootDir: pluginRoot,
+            source: path.join(pluginRoot, "index.ts"),
+            manifestPath,
+            manifestHash: hashFile(fixtureManifestPath),
+          },
+        ],
+      }),
+      { stateDir },
+    );
+
+    const result = loadPluginRegistrySnapshotWithMetadata({
+      stateDir,
+      candidates: [],
+      config,
+      env: hermeticEnv({ OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot }),
+    });
+    expect(result.source).toBe("derived");
+    expectDiagnosticCodes(result.diagnostics, ["persisted-registry-stale-source"]);
+    expect(result.snapshot.plugins.map((plugin) => plugin.pluginId)).not.toContain("deliberation");
+  });
+
   it("falls back to the derived registry when persisted manifest metadata is stale", async () => {
     const stateDir = makeTempDir();
     const rootDir = makeTempDir();

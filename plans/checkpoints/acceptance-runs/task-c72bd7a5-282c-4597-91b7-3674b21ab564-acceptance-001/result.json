@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Export plugin-sdk test surface so external plugins can run their own test lane"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-c72bd7a5-282c-4597-91b7-3674b21ab564-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-c72bd7a5-282c-4597-91b7-3674b21ab564"
+}

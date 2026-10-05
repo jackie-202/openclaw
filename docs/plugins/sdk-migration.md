@@ -671,7 +671,7 @@ releases.
   | `plugin-sdk/memory-host-markdown` | Managed markdown helpers | Shared managed-markdown helpers for memory-adjacent plugins |
   | `plugin-sdk/memory-host-search` | Active memory search facade | Lazy active-memory search-manager runtime facade |
   | `plugin-sdk/memory-host-status` | Deprecated memory host status alias | Use `plugin-sdk/memory-core-host-status` |
-  | `plugin-sdk/testing` | Test utilities | Repo-local deprecated compatibility barrel; use focused repo-local test subpaths such as `plugin-sdk/plugin-test-runtime`, `plugin-sdk/channel-test-helpers`, `plugin-sdk/channel-target-testing`, `plugin-sdk/test-env`, and `plugin-sdk/test-fixtures` |
+  | `plugin-sdk/testing` | Test utilities | Repo-local deprecated compatibility barrel; external plugin tests can use the packaged `plugin-sdk/plugin-test-api` and `plugin-sdk/test-env` subpaths, while `plugin-sdk/plugin-test-runtime`, `plugin-sdk/channel-test-helpers`, `plugin-sdk/channel-target-testing`, and `plugin-sdk/test-fixtures` remain repo-local |
 </Accordion>
 
 This table is intentionally the common migration subset, not the full SDK

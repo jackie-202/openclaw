@@ -1,0 +1,104 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "Remaining Discord and Slack consumers must load Deliberation through the separately packaged public API/test contract rather than the retired bundled implementation.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task checkpoint marks the package acquisition and three-loader migration incomplete; the supplied handoff inventory contains no public package contract or archive, and the owner-path consumers remain unable to load Deliberation.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Retiring the bundled source without a runnable config-origin public package path leaves active host integration consumers coupled to an implementation that no longer exists, so the requested host decoupling is incomplete.",
+      "required": "Provide the pinned repo-local offline public package/test contract and migrate all three loaders to config-origin package resolution while preserving their existing scenarios and assertions.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc.checkpoint.md:3-17"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:3-8"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/handoffs/deliberation-plugin-retirement"
+        }
+      ]
+    },
+    {
+      "claim": "The retirement deliverable must include assertion-level external-owner mapping and immutable proof for both transferred Slack root and child orchestration scenarios.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The supplied retirement checkpoint says the manifest has no dynamic target titles or target assertions and that two-case count parity does not establish preservation; the follow-up checkpoint marks acquisition of orchestration-assertion-map.json and expanded root/child proof incomplete.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "Without assertion-level mapping, the supplied material does not establish preservation of identity, bounded history, unrelated-thread exclusion, envelope and receipt invariants, send counts, and lifecycle behavior required by the task.",
+      "required": "Supply the owner-exported assertion map and immutable expanded root/child evidence covering every required scenario invariant.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_plugin_retirement.md:74-91"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc.checkpoint.md:6-17"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-10-04_task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc_deliberation-plugin-retire-replaced-bundled-implementation.md:23-29"
+        }
+      ]
+    },
+    {
+      "claim": "This caller-declared TDD task requires a complete, ordered RED/GREEN proof for the follow-up repair.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The supplied TDD projection explicitly reports a missing GREEN phase and incomplete phase order; the task checkpoint likewise leaves focused GREEN capture incomplete.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The manifest sets tddRequired to true, and a RED-only loader characterization does not demonstrate that the follow-up implementation reached GREEN.",
+      "required": "After delivering the repair, capture and supply the fresh GREEN phase linked to the valid historical or characterization RED, with complete phase ordering and provenance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc.red-green-proof.md:1-6"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc.checkpoint.md:3-17"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc-acceptance-001/manifest.json:57-58"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "[acceptance-fix] Deliberation plugin: retire replaced bundled implementation and host path coupling: goal-001: Deliberat"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc"
+}

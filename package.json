@@ -43,8 +43,6 @@
     "!dist/plugin-sdk/channel-test-helpers.d.ts",
     "!dist/plugin-sdk/codex-native-task-runtime.js",
     "!dist/plugin-sdk/codex-native-task-runtime.d.ts",
-    "!dist/plugin-sdk/plugin-test-api.js",
-    "!dist/plugin-sdk/plugin-test-api.d.ts",
     "!dist/plugin-sdk/plugin-test-contracts.js",
     "!dist/plugin-sdk/plugin-test-contracts.d.ts",
     "!dist/plugin-sdk/plugin-state-test-runtime.js",
@@ -59,8 +57,6 @@
     "!dist/plugin-sdk/reply-payload-testing.d.ts",
     "!dist/plugin-sdk/ssrf-runtime-internal.js",
     "!dist/plugin-sdk/ssrf-runtime-internal.d.ts",
-    "!dist/plugin-sdk/test-env.js",
-    "!dist/plugin-sdk/test-env.d.ts",
     "!dist/plugin-sdk/test-fixtures.js",
     "!dist/plugin-sdk/test-fixtures.d.ts",
     "!dist/plugin-sdk/test-node-mocks.js",
@@ -82,6 +78,7 @@
     "!dist/extensions/brave/**",
     "!dist/extensions/codex/**",
     "!dist/extensions/copilot/**",
+    "!dist/extensions/deliberation/**",
     "!dist/extensions/diagnostics-otel/**",
     "!dist/extensions/diagnostics-prometheus/**",
     "!dist/extensions/diffs/**",
@@ -628,6 +625,14 @@
     "./plugin-sdk/lazy-runtime": {
       "types": "./dist/plugin-sdk/lazy-runtime.d.ts",
       "default": "./dist/plugin-sdk/lazy-runtime.js"
+    },
+    "./plugin-sdk/plugin-test-api": {
+      "types": "./dist/plugin-sdk/plugin-test-api.d.ts",
+      "default": "./dist/plugin-sdk/plugin-test-api.js"
+    },
+    "./plugin-sdk/test-env": {
+      "types": "./dist/plugin-sdk/test-env.d.ts",
+      "default": "./dist/plugin-sdk/test-env.js"
     },
     "./plugin-sdk/temp-path": {
       "types": "./dist/plugin-sdk/temp-path.d.ts",
@@ -1766,7 +1771,6 @@
     "test:e2e:gateway": "node scripts/run-vitest.mjs run --config test/vitest/vitest.e2e.config.ts",
     "test:e2e:openshell": "node scripts/run-with-env.mjs OPENCLAW_E2E_OPENSHELL=1 -- node scripts/run-vitest.mjs run --config test/vitest/vitest.e2e.config.ts extensions/openshell/src/backend.e2e.test.ts",
     "test:e2e:status-corrupt-plugin-deps": "bash scripts/e2e/status-corrupt-plugin-deps.sh",
-    "test:deliberation:full-gate": "node --import tsx scripts/deliberation-full-gate.ts run",
     "test:extension": "node scripts/test-extension.mjs",
     "test:extensions": "node scripts/test-projects.mjs extensions",
     "test:extensions:batch": "node scripts/test-extension-batch.mjs",

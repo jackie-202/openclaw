@@ -40,11 +40,13 @@ production imports from it. Broad barrels such as `compat`, `config-types`,
 `infra-runtime`, `text-runtime`, and `zod` are compatibility only. Import `zod`
 directly from `zod`.
 
-OpenClaw's Vitest-backed test-helper subpaths are repo-local only and are no
-longer package exports: `agent-runtime-test-contracts`,
+`plugin-sdk/plugin-test-api` and `plugin-sdk/test-env` are public package exports
+intended for plugin test code, including external plugin tests. Other test-helper
+subpaths remain repo-local only and are not package exports:
+`agent-runtime-test-contracts`,
 `channel-contract-testing`, `channel-target-testing`, `channel-test-helpers`,
-`plugin-test-api`, `plugin-test-contracts`, `plugin-test-runtime`,
-`provider-http-test-mocks`, `provider-test-contracts`, `test-env`,
+`plugin-test-contracts`, `plugin-test-runtime`,
+`provider-http-test-mocks`, `provider-test-contracts`,
 `test-fixtures`, `test-node-mocks`, and `testing`.
 
 ### Reserved bundled plugin helper subpaths
@@ -341,7 +343,8 @@ usage endpoint failed or returned no usable usage data.
     | `plugin-sdk/web-media` | Shared remote/local media loading helpers |
     | `plugin-sdk/zod` | Deprecated compatibility re-export; import `zod` from `zod` directly |
     | `plugin-sdk/testing` | Repo-local deprecated compatibility barrel for legacy OpenClaw tests. New repo tests should import focused local test subpaths such as `plugin-sdk/agent-runtime-test-contracts`, `plugin-sdk/plugin-test-runtime`, `plugin-sdk/channel-test-helpers`, `plugin-sdk/test-env`, or `plugin-sdk/test-fixtures` instead |
-    | `plugin-sdk/plugin-test-api` | Repo-local minimal `createTestPluginApi` helper for direct plugin registration unit tests without importing repo test helper bridges |
+    | `plugin-sdk/plugin-test-api` | Packaged `createTestPluginApi` helper for plugin registration unit tests, including external plugin tests; not for production code |
+    | `plugin-sdk/test-env` | Packaged environment, network, and time fixtures for plugin test code, including external plugin tests; not for production code |
     | `plugin-sdk/agent-runtime-test-contracts` | Repo-local native agent-runtime adapter contract fixtures for auth, delivery, fallback, tool-hook, prompt-overlay, schema, and transcript projection tests |
     | `plugin-sdk/channel-test-helpers` | Repo-local channel-oriented test helpers for generic actions/setup/status contracts, directory assertions, account startup lifecycle, send-config threading, runtime mocks, status issues, outbound delivery, and hook registration |
     | `plugin-sdk/channel-target-testing` | Repo-local shared target-resolution error-case suite for channel tests |

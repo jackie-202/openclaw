@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-30T21:53:45+00:00",
+    "implementingStartedAt": "2026-09-30T21:39:43+00:00",
+    "taskFile": "plans/tasks/2026-09-30_export-plugin-sdk-test-surface-so-external-plugins-can-run-t.md",
+    "taskId": "task-c72bd7a5-282c-4597-91b7-3674b21ab564",
+    "title": "Export plugin-sdk test surface so external plugins can run their own test lane"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Export plugin-sdk test surface so external plugins can run their own test lane"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-c72bd7a5-282c-4597-91b7-3674b21ab564-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "learnings/architecture/plugin-sdk-test-helpers-require-aligned-public-metadata.md",
+      "provenance": "untracked+referenced",
+      "size": 1459
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-c72bd7a5-282c-4597-91b7-3674b21ab564.checkpoint.md",
+      "provenance": "untracked",
+      "size": 1256
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-c72bd7a5-282c-4597-91b7-3674b21ab564.red-green-proof.md",
+      "provenance": "untracked",
+      "size": 3391
+    }
+  ],
+  "taskId": "task-c72bd7a5-282c-4597-91b7-3674b21ab564",
+  "tddRequired": true
+}

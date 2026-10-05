@@ -137,6 +137,50 @@ describe("sweepCronRunSessions", () => {
     });
   });
 
+  it("preserves only the active run and its descendants", async () => {
+    const now = Date.now();
+    fs.writeFileSync(
+      storePath,
+      JSON.stringify({
+        "agent:main:cron:daily.report:run:active": {
+          sessionId: "active",
+          updatedAt: now - 31 * 60_000,
+        },
+        "agent:main:cron:daily.report:run:active:subagent:worker": {
+          sessionId: "active-child",
+          updatedAt: now - 31 * 60_000,
+        },
+        "agent:main:cron:daily.report:run:completed": {
+          sessionId: "completed",
+          updatedAt: now - 31 * 60_000,
+        },
+      }),
+    );
+
+    const result = await sweepCronRunSessions({
+      cronConfig: { sessionRetention: "30m" },
+      sessionStorePath: storePath,
+      nowMs: now,
+      log,
+      force: true,
+      activeSessionKeys: new Map([
+        ["daily.report", new Set(["agent:main:cron:daily.report:run:active"])],
+      ]),
+    });
+
+    expect(result.pruned).toBe(1);
+    expect(JSON.parse(fs.readFileSync(storePath, "utf-8"))).toEqual({
+      "agent:main:cron:daily.report:run:active": {
+        sessionId: "active",
+        updatedAt: now - 31 * 60_000,
+      },
+      "agent:main:cron:daily.report:run:active:subagent:worker": {
+        sessionId: "active-child",
+        updatedAt: now - 31 * 60_000,
+      },
+    });
+  });
+
   it("archives transcript files for pruned run sessions that are no longer referenced", async () => {
     const now = Date.now();
     const runSessionId = "old-run";

@@ -170,6 +170,10 @@ export type CronServiceState = {
   deps: CronServiceDepsInternal;
   store: CronStoreFile | null;
   timer: NodeJS.Timeout | null;
+  /** Scheduled jobs admitted by this process and awaiting their terminal outcome. */
+  scheduledJobIds: Set<string>;
+  /** Exact session keys reported by active detached runs, grouped by job. */
+  scheduledJobSessionKeys: Map<string, Set<string>>;
   running: boolean;
   /** Serializes mutating service operations so store writes and timers stay ordered. */
   op: Promise<unknown>;
@@ -190,6 +194,8 @@ export function createCronServiceState(deps: CronServiceDeps): CronServiceState 
     deps: { ...deps, nowMs: deps.nowMs ?? (() => Date.now()) },
     store: null,
     timer: null,
+    scheduledJobIds: new Set<string>(),
+    scheduledJobSessionKeys: new Map<string, Set<string>>(),
     running: false,
     op: Promise.resolve(),
     warnedDisabled: false,

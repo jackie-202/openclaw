@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-09-30T23:52:01+00:00",
+    "implementingStartedAt": "2026-09-30T23:02:01+00:00",
+    "taskFile": "plans/tasks/2026-09-30_remove-deliberation-from-the-fork-s-bundled-plugin-registrat.md",
+    "taskId": "task-170727a7-f1b4-40e6-b855-2bf5e0147680",
+    "title": "Remove deliberation from the fork's bundled plugin registration surface"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Remove deliberation from the fork's bundled plugin registration surface"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-170727a7-f1b4-40e6-b855-2bf5e0147680-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/deliberation_bundled_registration_removal.md",
+      "provenance": "untracked+referenced",
+      "size": 6435
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-170727a7-f1b4-40e6-b855-2bf5e0147680.checkpoint.md",
+      "provenance": "untracked",
+      "size": 1185
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-170727a7-f1b4-40e6-b855-2bf5e0147680.red-green-proof.md",
+      "provenance": "untracked",
+      "size": 2832
+    }
+  ],
+  "taskId": "task-170727a7-f1b4-40e6-b855-2bf5e0147680",
+  "tddRequired": true
+}

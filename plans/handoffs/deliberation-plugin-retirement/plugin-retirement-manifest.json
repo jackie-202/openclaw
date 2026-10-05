@@ -1,0 +1,720 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-04 Europe/Prague",
+  "sourceRoot": "/Users/michal/Projects/openclaw-fork/extensions/deliberation",
+  "targetRoot": "/Users/michal/Projects/deliberation-pipeline/plugins/openclaw-deliberation",
+  "identityScope": "source file hashes; literal scenario titles are an inspection aid, not dynamic-case equivalence",
+  "entries": [
+    {
+      "path": "README.md",
+      "sourceSha256": "caa295e064336606b094ef581e3276a0319f012e72a0974b6078d063d1f1978a",
+      "targetSha256": "caa295e064336606b094ef581e3276a0319f012e72a0974b6078d063d1f1978a",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "api.ts",
+      "sourceSha256": "7b7d447a9a8fc4181cb5227e1ef19a495c8c20af96aa79192678f16fbfc1dbd3",
+      "targetSha256": "7b7d447a9a8fc4181cb5227e1ef19a495c8c20af96aa79192678f16fbfc1dbd3",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "contracts/deliberation-v2-v1-contract.json",
+      "sourceSha256": "292e7f17b13379c8e909497084bddccb57e0f371f79f7113ebd894a78cd6a98f",
+      "targetSha256": "5aba32ba88a0df1ee7da2e5011ab63b462179687aa94f079beecf79a489eaa35",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "contracts/deliberation-v2-v1-fixtures.json",
+      "sourceSha256": "357e965edb2a82b7793f92807928718843f31d6152c7524723cf65a7207c8a78",
+      "targetSha256": "8fa38f6fd9d71c60c2a7848c9088d063c54f069aacdb491ad9ee14b42ff5eafc",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "contracts/deliberation-wire-pin-v1.json",
+      "sourceSha256": "0cfb20e158c5cd8af075bd8b22a359b5139252d9e008e7734b0bce092328e23d",
+      "targetSha256": "ee92deb8b6215be13c4f56b518574b324416223f3e4f00665ca3dbe9cb88f478",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "contracts/history-read-v1.json",
+      "sourceSha256": "9aa21eda8de39b6a2e67cb73d163b196c8374e0e52e3001b2da255696f3ae77a",
+      "targetSha256": "9aa21eda8de39b6a2e67cb73d163b196c8374e0e52e3001b2da255696f3ae77a",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "contracts/history-read-v2.json",
+      "sourceSha256": "cf89166cb51ba4dc2d733ef724403648ac0c57f910b273faa8f93b1b1c508fbc",
+      "targetSha256": "cf89166cb51ba4dc2d733ef724403648ac0c57f910b273faa8f93b1b1c508fbc",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "contracts/openclaw-overlay-v1.json",
+      "sourceSha256": "25c28e3d61d262ce05d09d61de29735c86860a6355c2aea9cf2727c6c3f31af8",
+      "targetSha256": "25c28e3d61d262ce05d09d61de29735c86860a6355c2aea9cf2727c6c3f31af8",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "contracts/provenance.json",
+      "sourceSha256": "013094256c30633df179e6ce13bbe77561b6148b4b9cae33364d5ca66d9d0fc3",
+      "targetSha256": "74c1f4c89f4024a4c8dcb0eb213c856d8878c5e441711d2436ffda0dbaee5d33",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "contracts/source-identity-fixtures-v1.json",
+      "sourceSha256": "8e4f0373b5d986cb8098fbc7bf3565cfd3f88ef9b83e7189f4bbb53299a427fb",
+      "targetSha256": "8e4f0373b5d986cb8098fbc7bf3565cfd3f88ef9b83e7189f4bbb53299a427fb",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "contracts/source-identity-v1.json",
+      "sourceSha256": "252f03184601f2f2fa8752c5df1b4bb7dd4a20b90bd47c932eee09b9c0bc3af6",
+      "targetSha256": "252f03184601f2f2fa8752c5df1b4bb7dd4a20b90bd47c932eee09b9c0bc3af6",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "index.ts",
+      "sourceSha256": "6a07689fbdbdf4d8ea59fa2781124c3982c1f6ffd4a474c5b7227dfea58c85da",
+      "targetSha256": "e853ff24bf932848c23363e8045ad6e2dc08a9248ec305347326be5138b34d52",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "openclaw.plugin.json",
+      "sourceSha256": "f6627a907ac4505b83a4f000da5ee798f73d42ba6bd79c84fcb0d71a60ffa6f3",
+      "targetSha256": "f6627a907ac4505b83a4f000da5ee798f73d42ba6bd79c84fcb0d71a60ffa6f3",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "package.json",
+      "sourceSha256": "c1cf107f10ef4e7cd7b2ffc1417316378d51b5e1d38f8a4e11e15e473c26e7c3",
+      "targetSha256": "849a60ef508eab6c549b56f3c31de55e92bb43aa2429655b704478d55f741c64",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "scripts/intake-producer.test.ts",
+      "sourceSha256": "478b3f455f6ab3737b51805c63fa154874b587449ead8b78c9481444c7622088",
+      "targetSha256": "478b3f455f6ab3737b51805c63fa154874b587449ead8b78c9481444c7622088",
+      "targetPresent": true,
+      "sameBytes": true,
+      "sourceLiteralScenarios": [
+        "carries normalized trusted sender hints while body text remains non-authoritative",
+        "derives omitted Discord root and child targets from authenticated source context",
+        "uses an explicit target exactly and never inherits the Slack source thread",
+        "derives omitted Slack root and child targets while keeping separate event identities",
+        "rejects duplicate and malformed canonical producer config before transport",
+        "rejects noncanonical routes input instead of translating sources",
+        "returns bounded KM rejection diagnostics"
+      ],
+      "targetLiteralScenarios": [
+        "carries normalized trusted sender hints while body text remains non-authoritative",
+        "derives omitted Discord root and child targets from authenticated source context",
+        "uses an explicit target exactly and never inherits the Slack source thread",
+        "derives omitted Slack root and child targets while keeping separate event identities",
+        "rejects duplicate and malformed canonical producer config before transport",
+        "rejects noncanonical routes input instead of translating sources",
+        "returns bounded KM rejection diagnostics"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "scripts/intake-producer.ts",
+      "sourceSha256": "2a7e89439b17630ab239633fa1667adbe149b06c12409d347b561007478e8882",
+      "targetSha256": "72499536b349397282f2375720c3e3956f3c04edd4db619333dcb32fd7f6ddab",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "src/config.test.ts",
+      "sourceSha256": "679734cd0f2f70356511b9f75d9362464dd173e5a4cdb4536745428caff5308f",
+      "targetSha256": "679734cd0f2f70356511b9f75d9362464dd173e5a4cdb4536745428caff5308f",
+      "targetPresent": true,
+      "sameBytes": true,
+      "sourceLiteralScenarios": [
+        "normalizes canonical pipelines as the sole runtime authority",
+        "rejects retired config keys before runtime startup",
+        "keeps source-default targets omitted and accepts explicit provider roots",
+        "accepts a credential materialized by the secrets runtime",
+        "defaults the invocation budget while allowing an explicit bounded override",
+        "keeps the canonical manifest aligned with runtime config",
+        "keeps manifest KM and credential constraints aligned with runtime validation"
+      ],
+      "targetLiteralScenarios": [
+        "normalizes canonical pipelines as the sole runtime authority",
+        "rejects retired config keys before runtime startup",
+        "keeps source-default targets omitted and accepts explicit provider roots",
+        "accepts a credential materialized by the secrets runtime",
+        "defaults the invocation budget while allowing an explicit bounded override",
+        "keeps the canonical manifest aligned with runtime config",
+        "keeps manifest KM and credential constraints aligned with runtime validation"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/config.ts",
+      "sourceSha256": "a7cc4d87c73c35e5c08374f59cae1421ee88141ebc8d40ea2d503229baef6a04",
+      "targetSha256": "fa9d9c2a26db7ab7f8c62ce828fe4c125c54613349921aae83e59774d067c4de",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "src/contract.test.ts",
+      "sourceSha256": "0056520c9a6dc0b9df5998621cbeb3935bf17c29e9d6f9f9d583dadb2bc0b6a3",
+      "targetSha256": "736104de7ceb499ede8fc5497db30db90af9c85d3301a9400139c99192cda1a9",
+      "targetPresent": true,
+      "sameBytes": false,
+      "sourceLiteralScenarios": [
+        "pins schema-v2 Slack root and reply freshness authority",
+        "validates every fixture request and status-specific response",
+        "defines immutable pipeline and target evidence at the published domain boundary",
+        "pins optional trusted sender hints and a sender-id-only intake fixture",
+        "matches the accepted provenance hashes",
+        "mirrors the exact canonical header, endpoints, and controls",
+        "defines the public endpoint and health contract consumed by OpenClaw",
+        "accepts the current closed projection fields",
+        "defines required source threads and generic structured targets across the lifecycle",
+        "keeps provider-specific destination evidence in the OpenClaw overlay",
+        "pins account-scoped Discord root, Slack root, and Slack reply intake vectors",
+        "records only OpenClaw-local contract provenance"
+      ],
+      "targetLiteralScenarios": [
+        "matches fresh producer export, handoff, pin, member bytes and current source provenance",
+        "pins schema-v2 Slack root and reply freshness authority",
+        "validates every fixture request and status-specific response",
+        "defines immutable pipeline and target evidence at the published domain boundary",
+        "pins optional trusted sender hints and a sender-id-only intake fixture",
+        "matches the accepted provenance hashes",
+        "mirrors the exact canonical header, endpoints, and controls",
+        "defines the public endpoint and health contract consumed by OpenClaw",
+        "accepts the current closed projection fields",
+        "defines required source threads and generic structured targets across the lifecycle",
+        "keeps provider-specific destination evidence in the OpenClaw overlay",
+        "pins account-scoped Discord root, Slack root, and Slack reply intake vectors",
+        "records only OpenClaw-local contract provenance"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/deliberation-wire-pin.test.ts",
+      "sourceSha256": "552086bf43addca954cfa1f7cb96dc9a553ac3fd2448fe4afe3b74b731332bde",
+      "targetSha256": "d746712276abc399b03eddfce49daa53e3806f715714a61f8462da9371735461",
+      "targetPresent": true,
+      "sameBytes": false,
+      "sourceLiteralScenarios": [
+        "pins the exact published manifest and canonical local artifact bytes",
+        "rejects missing, tampered, version-mismatched, unordered, and digest-mismatched pins",
+        "validates every published request and status-specific response fixture"
+      ],
+      "targetLiteralScenarios": [
+        "pins the exact published manifest and canonical local artifact bytes",
+        "rejects missing, tampered, version-mismatched, unordered, and digest-mismatched pins",
+        "validates every published request and status-specific response fixture"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/delivery-composition.test.ts",
+      "sourceSha256": "725fe0c987e06510a43e027c855b6e954e195ac82c57042dfbffa6d41c43e12e",
+      "targetSha256": "725fe0c987e06510a43e027c855b6e954e195ac82c57042dfbffa6d41c43e12e",
+      "targetPresent": true,
+      "sameBytes": true,
+      "sourceLiteralScenarios": [
+        "carries the durable key into one Discord native request",
+        "does not retry an ambiguous Discord native request",
+        "leaves malformed Discord native success evidence unresolved",
+        "rejects over-limit Discord text before a native request",
+        "uses one Slack native post and records unsupported idempotency honestly",
+        "does not retry an accepted-then-error Slack native request",
+        "rejects Slack text that renders into multiple messages before posting"
+      ],
+      "targetLiteralScenarios": [
+        "carries the durable key into one Discord native request",
+        "does not retry an ambiguous Discord native request",
+        "leaves malformed Discord native success evidence unresolved",
+        "rejects over-limit Discord text before a native request",
+        "uses one Slack native post and records unsupported idempotency honestly",
+        "does not retry an accepted-then-error Slack native request",
+        "rejects Slack text that renders into multiple messages before posting"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/delivery-probe.test.ts",
+      "sourceSha256": "3f86dadc83a4c48929cd3fd505ed491c03f1da1fe959521292da84a4378f8f0b",
+      "targetSha256": "3f86dadc83a4c48929cd3fd505ed491c03f1da1fe959521292da84a4378f8f0b",
+      "targetPresent": true,
+      "sameBytes": true,
+      "sourceLiteralScenarios": [
+        "is exported only from the non-plugin API boundary",
+        "runs the real ready/reserve/invoke/complete lifecycle once and replays with zero calls",
+        "reports the reserve stage for a target mismatch without calling the provider"
+      ],
+      "targetLiteralScenarios": [
+        "is exported only from the non-plugin API boundary",
+        "runs the real ready/reserve/invoke/complete lifecycle once and replays with zero calls",
+        "reports the reserve stage for a target mismatch without calling the provider"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/delivery-probe.ts",
+      "sourceSha256": "167e358d75034550aa6d396c7ea2454e9da550880bd73eba2fcd6e14a476ebc9",
+      "targetSha256": "3dc745e5fda06357bf44789b4c78c87e779f041df6839c57701e4a96e82c978b",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "src/delivery-target.ts",
+      "sourceSha256": "dc2c9ff757ba9f8fa0de01f0fe29a5b30476824f4c636ee0e559ac7f89f88ea1",
+      "targetSha256": "dc2c9ff757ba9f8fa0de01f0fe29a5b30476824f4c636ee0e559ac7f89f88ea1",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "src/final-adapter.test.ts",
+      "sourceSha256": "6e210bebb3bb586d724253a25c78c33582c4abf88e9271ce0ba08c477c4fc056",
+      "targetSha256": "6e210bebb3bb586d724253a25c78c33582c4abf88e9271ce0ba08c477c4fc056",
+      "targetPresent": true,
+      "sameBytes": true,
+      "sourceLiteralScenarios": [
+        "derives the owner-bound provider attempt identity",
+        "derives a bounded deterministic provider key per delivery attempt",
+        "uses the durable delivery target for send and all evidence",
+        "rejects a malformed ready target before reservation",
+        "rejects a reservation target mismatch before durable invocation",
+        "rejects an unsupported destination before invocation or provider send",
+        "durably invokes once, calls only the injected provider, and binds its receipt",
+        "does not send when invocation authorization times out",
+        "leaves a late authorization ambiguous without sending after the invocation timeout",
+        "terminalizes a definitive adapter rejection without retrying it",
+        "leaves an ambiguous adapter outcome unresolved without retrying it",
+        "leaves an invoked attempt unresolved when provider receipt evidence is invalid",
+        "does not retry a send when KM rejects completion evidence"
+      ],
+      "targetLiteralScenarios": [
+        "derives the owner-bound provider attempt identity",
+        "derives a bounded deterministic provider key per delivery attempt",
+        "uses the durable delivery target for send and all evidence",
+        "rejects a malformed ready target before reservation",
+        "rejects a reservation target mismatch before durable invocation",
+        "rejects an unsupported destination before invocation or provider send",
+        "durably invokes once, calls only the injected provider, and binds its receipt",
+        "does not send when invocation authorization times out",
+        "leaves a late authorization ambiguous without sending after the invocation timeout",
+        "terminalizes a definitive adapter rejection without retrying it",
+        "leaves an ambiguous adapter outcome unresolved without retrying it",
+        "leaves an invoked attempt unresolved when provider receipt evidence is invalid",
+        "does not retry a send when KM rejects completion evidence"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/final-adapter.ts",
+      "sourceSha256": "45aae09739f0abefb14dc0ea69d84a0ffb1aaa2b0c54a7f1049e319ac6154bf5",
+      "targetSha256": "45aae09739f0abefb14dc0ea69d84a0ffb1aaa2b0c54a7f1049e319ac6154bf5",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "src/guards.ts",
+      "sourceSha256": "375352189815036fbc2496ae3bda1c07846a622d930e2a12b55659aefa2168c3",
+      "targetSha256": "375352189815036fbc2496ae3bda1c07846a622d930e2a12b55659aefa2168c3",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "src/history-read.test.ts",
+      "sourceSha256": "3f970bc0afc6d28ae99befcdeb1be5b15263c4c94ecf9ed59187c66c06a7838c",
+      "targetSha256": "d8b84323e8056d38faafd0fc8039fffaf3a4efed405fb7b773623fb0430dc5aa",
+      "targetPresent": true,
+      "sameBytes": false,
+      "sourceLiteralScenarios": [
+        "reads the exact account and channel and normalizes chronological history",
+        "keeps a second channel under one account exact",
+        "rejects unconfigured identity and closed-schema drift without provider access",
+        "captures one watermark and excludes a concurrent post-watermark arrival",
+        "returns complete empty evidence when the read-start watermark is not newer",
+        "marks evidence incomplete when one message beyond the artifact count bound exists",
+        "reads a Discord child thread exactly while retaining the parent source route",
+        "rejects Discord provider rows outside the authenticated history channel",
+        "reads only the mapped Slack thread and preserves exact child and root identities",
+        "merges newer channel roots and same-thread replies for a root cutoff",
+        "rejects threaded rows returned by root-cutoff channel history",
+        "resolves the configured default Slack account and exact channel root",
+        "orders Slack decimal timestamps exactly instead of lexically or as floats",
+        "rejects malformed and off-thread Slack provider rows",
+        "rejects repeated Slack pagination cursors",
+        "rejects repeated Slack channel pagination cursors",
+        "stops a distinct-cursor Slack chain at the page budget and marks evidence incomplete",
+        "caps Slack freshness evidence at 50 messages and marks it incomplete",
+        "enforces the Slack freshness byte bound in the returned wire object",
+        "rejects conflicting duplicate Slack message ids"
+      ],
+      "targetLiteralScenarios": [
+        "resolves persisted history metadata through the client seam",
+        "reads the exact account and channel and normalizes chronological history",
+        "keeps a second channel under one account exact",
+        "rejects unconfigured identity and closed-schema drift without provider access",
+        "captures one watermark and excludes a concurrent post-watermark arrival",
+        "returns complete empty evidence when the read-start watermark is not newer",
+        "marks evidence incomplete when one message beyond the artifact count bound exists",
+        "reads a Discord child thread exactly while retaining the parent source route",
+        "rejects Discord provider rows outside the authenticated history channel",
+        "reads only the mapped Slack thread and preserves exact child and root identities",
+        "merges newer channel roots and same-thread replies for a root cutoff",
+        "rejects threaded rows returned by root-cutoff channel history",
+        "resolves the configured default Slack account and exact channel root",
+        "orders Slack decimal timestamps exactly instead of lexically or as floats",
+        "rejects malformed and off-thread Slack provider rows",
+        "rejects repeated Slack pagination cursors",
+        "rejects repeated Slack channel pagination cursors",
+        "stops a distinct-cursor Slack chain at the page budget and marks evidence incomplete",
+        "caps Slack freshness evidence at 50 messages and marks it incomplete",
+        "enforces the Slack freshness byte bound in the returned wire object",
+        "rejects conflicting duplicate Slack message ids"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/history-read.ts",
+      "sourceSha256": "0519dbc3f7199eff7304a284061e975bd6bfc5de97f6edbb765863a743328c1d",
+      "targetSha256": "fc41d89e22cd1309aaaba3214fc01fca14437e1c820c4e9f51d454d39fd62531",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "src/hooks.test.ts",
+      "sourceSha256": "c1716b02420e08a87b4fccf2ef33d83edcac3627e878389056707f7a42e8edc5",
+      "targetSha256": "d5fa188b7d284cb4011043b80e4c875cdd4e70cf0ebc053f89d2239bdcbd08b5",
+      "targetPresent": true,
+      "sameBytes": false,
+      "sourceLiteralScenarios": [
+        "claims configured source ownership for pre-aggregation policy even while disabled",
+        "normalizes bounded sender hints without changing authenticated intake identity",
+        "omits sender hints when the channel provides none or only invalid values",
+        "registers Slack child-to-thread identity before sending the unchanged KM intake body",
+        "registers authenticated Discord child history identity without changing parent route ownership",
+        "fails Slack intake closed when an existing child mapping conflicts",
+        "keeps configured Discord accounts distinct for the same channel",
+        "keeps two configured channels under one Discord account distinct",
+        "persists the live Discord event once through the closed KM wire contract",
+        "excludes processing before KM intake and never claims",
+        "intakes the canonical Discord channel event shape",
+        "queues and terminally claims the configured Discord source only",
+        "intakes blank-text audio with a MIME-only placeholder",
+        "warns about KM failure without leaking message or media values",
+        "silences but does not intake a source event without a stable message ID",
+        "silences exact sources independently of KM",
+        "blocks send tools and canonical sends for restricted sessions",
+        "keeps source traffic silent while v2 work is disabled"
+      ],
+      "targetLiteralScenarios": [
+        "claims configured source ownership for pre-aggregation policy even while disabled",
+        "normalizes bounded sender hints without changing authenticated intake identity",
+        "omits sender hints when the channel provides none or only invalid values",
+        "commits Slack child-to-thread identity only in the unchanged KM intake body",
+        "commits authenticated Discord child identity without changing parent route ownership",
+        "fails Slack intake closed when an existing child mapping conflicts",
+        "keeps configured Discord accounts distinct for the same channel",
+        "keeps two configured channels under one Discord account distinct",
+        "persists the live Discord event once through the closed KM wire contract",
+        "excludes processing before KM intake and never claims",
+        "intakes the canonical Discord channel event shape",
+        "queues and terminally claims the configured Discord source only",
+        "intakes blank-text audio with a MIME-only placeholder",
+        "warns about KM failure without leaking message or media values",
+        "silences but does not intake a source event without a stable message ID",
+        "silences exact sources independently of KM",
+        "blocks send tools and canonical sends for restricted sessions",
+        "keeps source traffic silent while v2 work is disabled"
+      ],
+      "sourceScenariosAbsentByExactTitle": [
+        "registers Slack child-to-thread identity before sending the unchanged KM intake body",
+        "registers authenticated Discord child history identity without changing parent route ownership"
+      ]
+    },
+    {
+      "path": "src/intake.ts",
+      "sourceSha256": "4ad45ad007c2300387217fff92921f078c2b5aa30b2a2774a0a569c4663a1dc6",
+      "targetSha256": "d0e5e706b71d589736643a56f0679273e09fdee49c6a441880ab576248c5b698",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "src/km-client.test.ts",
+      "sourceSha256": "b7570ed8ba7be31b958dab4a0e2c53d6b0245ede518d6f975a03a662d974b5f5",
+      "targetSha256": "3bcd1666f5837547e6b39a45f262f08059d2d3dfd9a0af7d1ccf0fecf5a18201",
+      "targetPresent": true,
+      "sameBytes": false,
+      "sourceLiteralScenarios": [
+        "waits for delayed matching invocation authorization without extending health requests",
+        "does not invoke transport after the reservation lease expires",
+        "serializes the required source thread identity with exact camelCase casing",
+        "returns duplicate intake identity from a local public-boundary response",
+        "reports an unavailable credential at the credential stage",
+        "identifies a failed ready request without exposing listener data",
+        "classifies Node transport caller aborts without exposing the error",
+        "gives caller cancellation precedence when the timeout also expires",
+        "classifies Node transport timeout aborts without exposing the error",
+        "reports response-schema after a successful malformed intake response",
+        "rejects caller debounce overrides before transport",
+        "rejects unsupported nested sender hint fields before transport",
+        "serializes producer authority at intake without a reservation-time target override",
+        "binds an exact Slack target and provider receipt through the KM lifecycle",
+        "binds bounded Slack failure evidence to KM completion without target drift",
+        "rejects a terminal reason that contradicts the delivery outcome",
+        "rejects unrelated caller-controlled intake fields before transport",
+        "accepts persisted messages with optional sender hints",
+        "emits only transport metadata accepted by the closed KM contract",
+        "does not duplicate the canonical API prefix from a configured endpoint",
+        "preserves a noncanonical endpoint parent prefix",
+        "uses the canonical protocol header and reservations route",
+        "rejects health responses outside the accepted closed schema",
+        "accepts published unavailable source-identity health evidence",
+        "accepts a degraded public health response",
+        "uses a credential already materialized by the secrets runtime",
+        "uses only the six canonical endpoint paths",
+        "rejects a successful response without closed durable invocation evidence",
+        "rejects invocation evidence whose immutable pipeline differs from the reservation",
+        "rejects invocation evidence whose attempted target drifts",
+        "rejects completion evidence that does not belong to the reservation",
+        "rejects completion evidence with another reservation idempotency key",
+        "accepts an exact completion replay",
+        "preserves a completion CAS conflict as an HTTP error",
+        "rejects receipt evidence that differs from the submitted message pair",
+        "accepts all schema-permitted record projection fields",
+        "rejects completion evidence whose attempted target drifts",
+        "rejects historical attempt envelopes belonging to another record",
+        "rejects ready pagination outside the canonical query contract",
+        "accepts bounded drafting diagnostics from record projections",
+        "rejects malformed closed ready and record responses",
+        "rejects active delivery attempts with null envelope evidence",
+        "accepts a proven never-invoked abandonment before a fresh attempt",
+        "OR-20 historical-attempt-drift-and-tamper-fail-closed",
+        "rejects a malformed ready delivery envelope at its field boundary",
+        "rejects malformed source provenance in a delivery envelope",
+        "rejects a ready envelope belonging to another record"
+      ],
+      "targetLiteralScenarios": [
+        "matches resolver JSON Schema character limits rather than UTF-8 or UTF-16 length",
+        "resolves source history identity using the pinned public operation",
+        "waits for delayed matching invocation authorization without extending health requests",
+        "does not invoke transport after the reservation lease expires",
+        "serializes the required source thread identity with exact camelCase casing",
+        "returns duplicate intake identity from a local public-boundary response",
+        "reports an unavailable credential at the credential stage",
+        "identifies a failed ready request without exposing listener data",
+        "classifies Node transport caller aborts without exposing the error",
+        "gives caller cancellation precedence when the timeout also expires",
+        "classifies Node transport timeout aborts without exposing the error",
+        "reports response-schema after a successful malformed intake response",
+        "rejects caller debounce overrides before transport",
+        "rejects unsupported nested sender hint fields before transport",
+        "serializes producer authority at intake without a reservation-time target override",
+        "binds an exact Slack target and provider receipt through the KM lifecycle",
+        "binds bounded Slack failure evidence to KM completion without target drift",
+        "rejects a terminal reason that contradicts the delivery outcome",
+        "rejects unrelated caller-controlled intake fields before transport",
+        "accepts persisted messages with optional sender hints",
+        "emits only transport metadata accepted by the closed KM contract",
+        "does not duplicate the canonical API prefix from a configured endpoint",
+        "preserves a noncanonical endpoint parent prefix",
+        "uses the canonical protocol header and reservations route",
+        "rejects health responses outside the accepted closed schema",
+        "accepts published unavailable source-identity health evidence",
+        "accepts a degraded public health response",
+        "uses a credential already materialized by the secrets runtime",
+        "uses only the six canonical endpoint paths",
+        "rejects a successful response without closed durable invocation evidence",
+        "rejects invocation evidence whose immutable pipeline differs from the reservation",
+        "rejects invocation evidence whose attempted target drifts",
+        "rejects completion evidence that does not belong to the reservation",
+        "rejects completion evidence with another reservation idempotency key",
+        "accepts an exact completion replay",
+        "preserves a completion CAS conflict as an HTTP error",
+        "rejects receipt evidence that differs from the submitted message pair",
+        "accepts all schema-permitted record projection fields",
+        "rejects completion evidence whose attempted target drifts",
+        "rejects historical attempt envelopes belonging to another record",
+        "rejects ready pagination outside the canonical query contract",
+        "accepts bounded drafting diagnostics from record projections",
+        "rejects malformed closed ready and record responses",
+        "rejects active delivery attempts with null envelope evidence",
+        "accepts a proven never-invoked abandonment before a fresh attempt",
+        "OR-20 historical-attempt-drift-and-tamper-fail-closed",
+        "rejects a malformed ready delivery envelope at its field boundary",
+        "rejects malformed source provenance in a delivery envelope",
+        "rejects a ready envelope belonging to another record"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/km-client.ts",
+      "sourceSha256": "f7685d89c5dd3ebb21eabcd8c0a3d1d4ad5232287ca11b9402c177839a257de2",
+      "targetSha256": "3a8498597cee7bf3ccbb0eb778e03eb8b92cf6910ee854f8dd9fd773f8d9090d",
+      "targetPresent": true,
+      "sameBytes": false
+    },
+    {
+      "path": "src/orchestration.test.ts",
+      "sourceSha256": "c884581f44c212caa92c2751042a76848848850ffeb1b65efb8d3e5953c98645",
+      "targetSha256": "3bd059fbc4966a87668326b1af2b88a8da403f78003f77f05da14ad09f254436",
+      "targetPresent": true,
+      "sameBytes": false,
+      "sourceLiteralScenarios": [],
+      "targetLiteralScenarios": [],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/plugin.test.ts",
+      "sourceSha256": "a1c4861c00a7c24c861b216ad1ff643cea9fdb69096e3c4974cc014b0792b921",
+      "targetSha256": "fd2f631052db1fa9d583df5c52947e0dea099552042cd216136db3cc78171d1a",
+      "targetPresent": true,
+      "sameBytes": false,
+      "sourceLiteralScenarios": [
+        "registers fail-closed hooks, read-only KM health, and one final sender",
+        "does not register final delivery while Deliberation is disabled",
+        "delivers one ready item through the exact Discord account and stops its timer",
+        "delivers an explicit Slack root without manufacturing a thread",
+        "delivers a Discord root target without forwarding a message id as threadId",
+        "fails an oversized result without sending multiple Discord messages",
+        "fails a Slack destination whose explicit account is not configured",
+        "leaves Slack delivery unresolved when the provider returns no platform message id",
+        "does not call Discord for an empty queue",
+        "logs safe KM request metadata and retries after a ready failure",
+        "leaves a thrown provider outcome unresolved",
+        "serializes repeated ticks and waits for the active tick during stop"
+      ],
+      "targetLiteralScenarios": [
+        "registers history read without a keyed-store runtime",
+        "registers fail-closed hooks, read-only KM health, and one final sender",
+        "does not register final delivery while Deliberation is disabled",
+        "delivers one ready item through the exact Discord account and stops its timer",
+        "delivers an explicit Slack root without manufacturing a thread",
+        "delivers a Discord root target without forwarding a message id as threadId",
+        "fails an oversized result without sending multiple Discord messages",
+        "fails a Slack destination whose explicit account is not configured",
+        "leaves Slack delivery unresolved when the provider returns no platform message id",
+        "does not call Discord for an empty queue",
+        "logs safe KM request metadata and retries after a ready failure",
+        "leaves a thrown provider outcome unresolved",
+        "serializes repeated ticks and waits for the active tick during stop"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/route-match.test.ts",
+      "sourceSha256": "074ba27d98893342f1335c6f39a948f5b6ba95dd25c37b31e01d18b68b713b77",
+      "targetSha256": "074ba27d98893342f1335c6f39a948f5b6ba95dd25c37b31e01d18b68b713b77",
+      "targetPresent": true,
+      "sameBytes": true,
+      "sourceLiteralScenarios": [
+        "keeps a Discord root message id out of the delivery destination",
+        "accepts one exact configured source identity without using its message id as a target",
+        "keeps a Slack reply",
+        "uses a Slack root message timestamp as both event and thread identity",
+        "matches a Discord child through its authenticated parent and preserves the child thread",
+        "rejects Discord parent evidence that describes the root conversation",
+        "uses an explicit root target without inheriting the Discord source thread"
+      ],
+      "targetLiteralScenarios": [
+        "keeps a Discord root message id out of the delivery destination",
+        "accepts one exact configured source identity without using its message id as a target",
+        "keeps a Slack reply",
+        "uses a Slack root message timestamp as both event and thread identity",
+        "matches a Discord child through its authenticated parent and preserves the child thread",
+        "rejects Discord parent evidence that describes the root conversation",
+        "uses an explicit root target without inheriting the Discord source thread"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/route-match.ts",
+      "sourceSha256": "d8d029ffd79e51f4f6ee8b13831b1b9910fcfa72eb234307b60794ef9604d5fe",
+      "targetSha256": "d8d029ffd79e51f4f6ee8b13831b1b9910fcfa72eb234307b60794ef9604d5fe",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "src/slack-timestamp.ts",
+      "sourceSha256": "f47fa4d63659a4034266a43b54544ab8c88b7b2eaf0a0f571a1cd3d3ae1afda4",
+      "targetSha256": "f47fa4d63659a4034266a43b54544ab8c88b7b2eaf0a0f571a1cd3d3ae1afda4",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "src/sole-send.test.ts",
+      "sourceSha256": "218eda8da9c2f44414c10b7c1254359690e699011979ef0ae166d505c6969ef5",
+      "targetSha256": "8729a45de35b552e0e10b63a7ee359bcbb5c223181f3363d698441d26acea1c4",
+      "targetPresent": true,
+      "sameBytes": false,
+      "sourceLiteralScenarios": [
+        "does not activate a durable sender without destination authority",
+        "keeps channel outbound calls in the registered final-delivery owner"
+      ],
+      "targetLiteralScenarios": [
+        "does not activate a durable sender without destination authority",
+        "keeps channel outbound calls in the registered final-delivery owner"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/source-identity.test.ts",
+      "sourceSha256": "c628c58c5a9e319ca610269c43edd5ccec68455a78e866ecff67dfc4a70c0984",
+      "targetSha256": "c628c58c5a9e319ca610269c43edd5ccec68455a78e866ecff67dfc4a70c0984",
+      "targetPresent": true,
+      "sameBytes": true,
+      "sourceLiteralScenarios": [
+        "keeps Slack provenance channel-scoped without a thread component",
+        "round-trips every accepted KM-owned fixture byte-for-byte",
+        "rejects every malformed, unsupported, and historical fixture"
+      ],
+      "targetLiteralScenarios": [
+        "keeps Slack provenance channel-scoped without a thread component",
+        "round-trips every accepted KM-owned fixture byte-for-byte",
+        "rejects every malformed, unsupported, and historical fixture"
+      ],
+      "sourceScenariosAbsentByExactTitle": []
+    },
+    {
+      "path": "src/source-identity.ts",
+      "sourceSha256": "955e47b7a7bd41c5889f30ba9765956bd7c4cf28d2153988ebbb26a68abf6bcc",
+      "targetSha256": "955e47b7a7bd41c5889f30ba9765956bd7c4cf28d2153988ebbb26a68abf6bcc",
+      "targetPresent": true,
+      "sameBytes": true
+    },
+    {
+      "path": "src/thread-identity-store.ts",
+      "sourceSha256": "117aa79eb1c470e2dcfc0ab23842b9951136df630ddc982b0c5f823bfa9d8312",
+      "targetSha256": null,
+      "targetPresent": false,
+      "sameBytes": false
+    },
+    {
+      "path": "tsconfig.json",
+      "sourceSha256": "bc5db228b4057b979bbf5fa7817be2ad5a4fbc9171c5ed58d026a33642053aee",
+      "targetSha256": "c046c40a800dbba007d0e66a31435797fce10edbae72f301a9772feac979bd36",
+      "targetPresent": true,
+      "sameBytes": false
+    }
+  ],
+  "targetFullNativeGate": {
+    "filesPassed": 17,
+    "testsPassed": 380,
+    "exitCode": 0,
+    "command": "node node_modules/vitest/vitest.mjs run --config .retirement-host-vitest.config.mjs --maxWorkers=2 --reporter=default",
+    "mode": "host-integrated source SDK/native adapter test configuration, no replacement/skip of native suites; not self-contained installed package gate"
+  }
+}

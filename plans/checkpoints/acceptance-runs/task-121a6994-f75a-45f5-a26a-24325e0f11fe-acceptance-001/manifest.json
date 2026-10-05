@@ -1,0 +1,53 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-10-04T15:19:33+00:00",
+    "implementingStartedAt": "2026-10-04T15:13:43+00:00",
+    "taskFile": "plans/tasks/2026-10-04_followup-task-121a6994-f75a-45f5-a26a-24325e0f11fe-acceptance-fix-deliberation-plugin-retire-replaced-bundled-i.md",
+    "taskId": "task-121a6994-f75a-45f5-a26a-24325e0f11fe",
+    "title": "[acceptance-fix] [acceptance-fix] Deliberation plugin: retire replaced bundled implementation and host path coupling: go"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliberation plugin: retire replaced bundled implementation and host path coupling: go"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-121a6994-f75a-45f5-a26a-24325e0f11fe-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/deliberation_bundled_plugin_retirement.md",
+      "provenance": "untracked+referenced",
+      "size": 19635
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-121a6994-f75a-45f5-a26a-24325e0f11fe.checkpoint.md",
+      "provenance": "untracked+referenced",
+      "size": 3971
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-121a6994-f75a-45f5-a26a-24325e0f11fe.red-green-proof.md",
+      "provenance": "untracked+referenced",
+      "size": 2948
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-29e25aa6-c5d5-4da5-ac89-e98c4538a2fc.checkpoint.md",
+      "provenance": "untracked+referenced",
+      "size": 3080
+    },
+    {
+      "mediaKind": "application/x-handoff-directory",
+      "path": "plans/handoffs/deliberation-plugin-retirement",
+      "provenance": "referenced",
+      "size": 46641
+    }
+  ],
+  "taskId": "task-121a6994-f75a-45f5-a26a-24325e0f11fe",
+  "tddRequired": true
+}

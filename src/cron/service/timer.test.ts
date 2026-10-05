@@ -147,6 +147,9 @@ describe("cron service timer seam coverage", () => {
     });
 
     await onTimer(state);
+    await vi.waitFor(async () =>
+      expect((await loadCronStore(storePath)).jobs[0]?.state.lastStatus).toBe("ok"),
+    );
 
     const cronRunSessionKey = `agent:main:cron:main-heartbeat-job:run:${now}`;
     expect(enqueueSystemEvent).toHaveBeenCalledWith("heartbeat seam tick", {
@@ -257,6 +260,9 @@ describe("cron service timer seam coverage", () => {
     });
 
     await onTimer(state);
+    await vi.waitFor(() =>
+      expect(findTaskByRunId(`cron:isolated-agent-job:${now}`)?.status).toBe("succeeded"),
+    );
 
     expect(runIsolatedAgentJob).toHaveBeenCalledWith(
       expect.objectContaining({

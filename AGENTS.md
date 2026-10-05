@@ -1,5 +1,9 @@
 # AGENTS.MD
 
+## Cross-repository investigation authority — user direction 2026-10-05
+
+For the three explicitly requested Deliberation test-parity/retirement-scope investigations, read/search non-secret source, tests, contracts, documentation and markdown evidence in `/Users/michal/Projects/deliberation-pipeline`, `/Users/michal/.openclaw/workspace/km-system` and `/Users/michal/Projects/openclaw-fork`. This narrowly authorizes those named sibling roots for these investigations only. Project `opencode.json` permits those reads and denies sibling edits and shell execution. No sibling imports, tests/commands, runtime state, private data, credentials, `.git` or dependencies. Write markdown only under this repository's `plans/`. No source copying, implementation/deletion, installation, live calls/messages, deployment, service/scheduler changes or gate releases. Missing evidence must remain explicitly unknown, not a fabricated parity claim. The explicit offline investigation scope supersedes general live-test/install guidance for these tasks; all other scope restrictions remain.
+
 Telegraph style. Root rules only. Read scoped `AGENTS.md` before subtree work.
 Skills own workflows; root owns hard policy and routing.
 

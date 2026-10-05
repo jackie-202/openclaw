@@ -1,0 +1,46 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "Deliberation remains registered and expected as a bundled plugin in source-checkout runtime behavior.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "implemented_behavior_incorrect",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The implementation checkpoint says src/plugins/bundled-plugin-metadata.test.ts retains the literal source-checkout startup inventory and src/plugins/source-checkout-runtime.test.ts retains real Deliberation hook and intake assertions as source-development behavior; only packaged build entries and artifacts omit Deliberation.",
+      "policyRule": "catalog:implemented_behavior_incorrect:blocking",
+      "rationale": "The canonical task requires the fork to stop registering and expecting Deliberation as bundled, explicitly identifies the source-checkout onlyPluginIds deliberation registry assertion as coupling that must change, and requires empty-config gateway startup resolution to omit Deliberation from bundled startup ids. Relabeling the retained source-checkout registration does not change that behavior.",
+      "required": "Keep extensions/deliberation source intact, but remove Deliberation from bundled discovery/registration and bundled startup expectations in source checkouts; preserve any source-level plugin tests through direct non-bundled loading and assert the explicit-enabled missing external plugin behavior.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-09-30_remove-deliberation-from-the-fork-s-bundled-plugin-registrat.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/deliberation_bundled_registration_removal.md"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-10-01_task-170727a7-f1b4-40e6-b855-2bf5e0147680_remove-deliberation-from-the-fork-s-bundled-plugin.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Remove deliberation from the fork's bundled plugin registration surface"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-170727a7-f1b4-40e6-b855-2bf5e0147680-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-170727a7-f1b4-40e6-b855-2bf5e0147680"
+}

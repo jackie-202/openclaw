@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "[acceptance-fix] Remove deliberation from the fork's bundled plugin registration surface: goal-001: Remove deliberation"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-e5c67922-31da-45dd-a3ec-305fe308ba2f-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-e5c67922-31da-45dd-a3ec-305fe308ba2f"
+}

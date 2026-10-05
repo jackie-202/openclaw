@@ -767,6 +767,23 @@ describe("plugin-sdk package contract guardrails", () => {
     expect(collectPluginSdkPackageExports()).toEqual([...publicPluginSdkEntrypoints].toSorted());
   });
 
+  it("publishes the two plugin test subpaths", () => {
+    const packageJson = JSON.parse(fs.readFileSync(resolve(REPO_ROOT, "package.json"), "utf8")) as {
+      exports: Record<string, { types: string; default: string }>;
+      files: string[];
+    };
+    for (const name of ["plugin-test-api", "test-env"]) {
+      expect(publicPluginSdkEntrypoints).toContain(name);
+      expect(packageJson.exports[`./plugin-sdk/${name}`]).toEqual({
+        types: `./dist/plugin-sdk/${name}.d.ts`,
+        default: `./dist/plugin-sdk/${name}.js`,
+      });
+      for (const ext of ["js", "d.ts"]) {
+        expect(packageJson.files).not.toContain(`!dist/plugin-sdk/${name}.${ext}`);
+      }
+    }
+  });
+
   it("keeps Vitest-backed SDK test helpers local-only", () => {
     const localOnly = new Set(privateLocalOnlyPluginSdkEntrypoints);
 

@@ -1,5 +1,25 @@
 # Agent Changelog
 
+## 2026-10-04
+
+**Deliberation plugin drops the replaced bundled implementation**
+
+The plugin no longer carries the replaced bundled implementation or relies on host-path coupling, removing that dependency boundary.
+
+## 2026-10-01
+
+**Protected catalog removal requires native approval**
+
+**Deliberation removed from bundled plugin registration**
+
+## 2026-09-30
+
+**Deliberation removed from bundled plugin registration**
+
+**Plugin SDK exports its test surface for external plugins**
+
+External plugins can use the Plugin SDK test surface to run their own test lane.
+
 ## 2026-09-14
 
 **Deliberation invocations time out before provider submission**

@@ -1,0 +1,53 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-10-01T00:58:11+00:00",
+    "implementingStartedAt": "2026-10-01T00:04:21+00:00",
+    "taskFile": "plans/tasks/2026-09-30_followup-task-e5c67922-31da-45dd-a3ec-305fe308ba2f-remove-deliberation-from-the-fork-s-bundled-plugin-registrat.md",
+    "taskId": "task-e5c67922-31da-45dd-a3ec-305fe308ba2f",
+    "title": "[acceptance-fix] Remove deliberation from the fork's bundled plugin registration surface: goal-001: Remove deliberation "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Remove deliberation from the fork's bundled plugin registration surface: goal-001: Remove deliberation"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-e5c67922-31da-45dd-a3ec-305fe308ba2f-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "learnings/architecture/bundled-plugin-source-versus-distribution-proof.md",
+      "provenance": "untracked+referenced",
+      "size": 2006
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/deliberation_bundled_registration_removal.md",
+      "provenance": "untracked+referenced",
+      "size": 7653
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-170727a7-f1b4-40e6-b855-2bf5e0147680.red-green-proof.md",
+      "provenance": "untracked+referenced",
+      "size": 2832
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-e5c67922-31da-45dd-a3ec-305fe308ba2f.checkpoint.md",
+      "provenance": "untracked",
+      "size": 1035
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-e5c67922-31da-45dd-a3ec-305fe308ba2f.red-green-proof.md",
+      "provenance": "untracked+referenced",
+      "size": 2767
+    }
+  ],
+  "taskId": "task-e5c67922-31da-45dd-a3ec-305fe308ba2f",
+  "tddRequired": true
+}

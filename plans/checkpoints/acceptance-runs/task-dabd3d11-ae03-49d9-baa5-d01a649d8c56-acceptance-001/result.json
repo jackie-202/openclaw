@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Repair the uncommitted cron detached-run admission changes in openclaw-fork"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-dabd3d11-ae03-49d9-baa5-d01a649d8c56-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-dabd3d11-ae03-49d9-baa5-d01a649d8c56"
+}

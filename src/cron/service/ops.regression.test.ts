@@ -15,7 +15,7 @@ import {
 } from "../../process/command-queue.js";
 import { CommandLane } from "../../process/lanes.js";
 import { saveCronStore } from "../store.js";
-import { enqueueRun, run, start } from "./ops.js";
+import { add, enqueueRun, run, start } from "./ops.js";
 import type { CronEvent } from "./state.js";
 import { createCronServiceState } from "./state.js";
 import { onTimer } from "./timer.js";
@@ -56,6 +56,54 @@ function expectIsolatedRunJobId(
 }
 
 describe("cron service ops regressions", () => {
+  it("preserves a waiting due job when adding another job during a running job", async () => {
+    const store = opsRegressionFixtures.makeStorePath();
+    const now = Date.parse("2026-09-15T13:30:00.000Z");
+    const firstRun = createDeferred<{ status: "ok"; summary: string }>();
+    const waitingJob = createDueIsolatedJob({ id: "waiting-job", nowMs: now, nextRunAtMs: now });
+    await saveCronStore(store.storePath, {
+      version: 1,
+      jobs: [
+        createDueIsolatedJob({ id: "running-job", nowMs: now, nextRunAtMs: now - 1 }),
+        waitingJob,
+      ],
+    });
+    const runIsolatedAgentJob = vi.fn(async () => {
+      if (runIsolatedAgentJob.mock.calls.length === 1) {
+        return await firstRun.promise;
+      }
+      return { status: "ok" as const, summary: "done" };
+    });
+    const state = createCronServiceState({
+      cronEnabled: true,
+      cronConfig: { maxConcurrentRuns: 1 },
+      storePath: store.storePath,
+      log: noopLogger,
+      nowMs: () => now,
+      enqueueSystemEvent: vi.fn(),
+      requestHeartbeat: vi.fn(),
+      runIsolatedAgentJob,
+    });
+
+    await onTimer(state);
+    await vi.waitFor(() => expect(runIsolatedAgentJob).toHaveBeenCalledOnce());
+
+    await add(state, {
+      name: "unrelated job",
+      enabled: true,
+      schedule: { kind: "at", at: new Date(now + 3_600_000).toISOString() },
+      sessionTarget: "main",
+      wakeMode: "next-heartbeat",
+      payload: { kind: "systemEvent", text: "unrelated" },
+    });
+    expect(state.store?.jobs.find((job) => job.id === waitingJob.id)?.state.nextRunAtMs).toBe(now);
+
+    firstRun.resolve({ status: "ok", summary: "done" });
+    await vi.waitFor(() => expect(runIsolatedAgentJob).toHaveBeenCalledTimes(2));
+    expectIsolatedRunJobId(runIsolatedAgentJob, 1, waitingJob.id);
+    await vi.waitFor(() => expect(state.scheduledJobIds).toEqual(new Set()));
+  });
+
   it("repairs missing job state during startup", async () => {
     const scheduledAt = Date.now() + 60_000;
     const store = opsRegressionFixtures.makeStorePath();

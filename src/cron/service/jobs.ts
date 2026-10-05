@@ -555,7 +555,13 @@ function normalizeJobTickState(params: { state: CronServiceState; job: CronJob; 
   }
 
   const runningAt = job.state.runningAtMs;
-  if (typeof runningAt === "number" && nowMs - runningAt > STUCK_RUN_MS) {
+  // Locally admitted runs can outlive the stale-marker window; their persisted
+  // marker is needed to recover an interrupted run after gateway restart.
+  if (
+    typeof runningAt === "number" &&
+    nowMs - runningAt > STUCK_RUN_MS &&
+    !state.scheduledJobIds.has(job.id)
+  ) {
     state.deps.log.warn(
       { jobId: job.id, runningAtMs: runningAt },
       "cron: clearing stuck running marker",
@@ -707,10 +713,11 @@ export function recomputeNextRunsForMaintenance(
 }
 
 /** Returns the next enabled wake timestamp from the in-memory cron store. */
-export function nextWakeAtMs(state: CronServiceState) {
+export function nextWakeAtMs(state: CronServiceState, skipJobIds?: ReadonlySet<string>) {
   const jobs = state.store?.jobs ?? [];
   const enabled = jobs.filter(
-    (j) => isJobEnabled(j) && hasScheduledNextRunAtMs(j.state.nextRunAtMs),
+    (j) =>
+      !skipJobIds?.has(j.id) && isJobEnabled(j) && hasScheduledNextRunAtMs(j.state.nextRunAtMs),
   );
   if (enabled.length === 0) {
     return undefined;

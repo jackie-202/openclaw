@@ -49,6 +49,8 @@ export async function sweepCronRunSessions(params: {
   log: Logger;
   /** Override for testing — skips the min-interval throttle. */
   force?: boolean;
+  /** Exact active run session keys; descendants remain protected with their parent. */
+  activeSessionKeys?: ReadonlyMap<string, ReadonlySet<string>>;
 }): Promise<ReaperResult> {
   const now = params.nowMs ?? Date.now();
   const storePath = params.sessionStorePath;
@@ -71,6 +73,12 @@ export async function sweepCronRunSessions(params: {
   try {
     await updateSessionStore(storePath, (store) => {
       const cutoff = now - retentionMs;
+      const activeSessionKeys = new Set<string>();
+      for (const keys of params.activeSessionKeys?.values() ?? []) {
+        for (const sessionKey of keys) {
+          activeSessionKeys.add(sessionKey);
+        }
+      }
       for (const key of Object.keys(store)) {
         if (!isCronRunSessionKey(key)) {
           continue;
@@ -80,7 +88,10 @@ export async function sweepCronRunSessions(params: {
           continue;
         }
         const updatedAt = entry.updatedAt ?? 0;
-        if (updatedAt < cutoff) {
+        const belongsToActiveRun = [...activeSessionKeys].some(
+          (sessionKey) => key === sessionKey || key.startsWith(`${sessionKey}:`),
+        );
+        if (updatedAt < cutoff && !belongsToActiveRun) {
           if (!prunedSessions.has(entry.sessionId) || entry.sessionFile) {
             prunedSessions.set(entry.sessionId, entry.sessionFile);
           }

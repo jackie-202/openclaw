@@ -50,6 +50,10 @@ function requireTimestamp(value: number | undefined, label: string): number {
   return value;
 }
 
+async function waitForScheduledJob(state: ReturnType<typeof createCronServiceState>, id: string) {
+  await vi.waitFor(() => expect(state.scheduledJobIds.has(id)).toBe(false));
+}
+
 function requireRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
@@ -67,6 +71,97 @@ function firstMockArg(mock: unknown): unknown {
 }
 
 describe("cron service timer regressions", () => {
+  it("admits a later-due command and persists its result while another cron run remains active", async () => {
+    const store = timerRegressionFixtures.makeStorePath();
+    const startedAt = Date.parse("2026-09-14T14:02:00.000Z");
+    const slow = createDueIsolatedJob({ id: "slow", nowMs: startedAt, nextRunAtMs: startedAt });
+    const fast = {
+      ...createDueIsolatedJob({
+        id: "fast-command",
+        nowMs: startedAt,
+        nextRunAtMs: startedAt + 60_000,
+      }),
+      payload: { kind: "command" as const, argv: ["echo", "fast"] },
+    };
+    await saveCronStore(store.storePath, { version: 1, jobs: [slow, fast] });
+    let now = startedAt;
+    const slowRun = createDeferred<{ status: "ok"; summary: string }>();
+    const runCommandJob = vi.fn(async () => ({ status: "ok" as const, summary: "fast" }));
+    const runIsolatedAgentJob = vi.fn(async () => await slowRun.promise);
+    const state = createCronServiceState({
+      cronEnabled: true,
+      storePath: store.storePath,
+      cronConfig: { maxConcurrentRuns: 2 },
+      log: noopLogger,
+      nowMs: () => now,
+      enqueueSystemEvent: vi.fn(),
+      requestHeartbeat: vi.fn(),
+      runIsolatedAgentJob,
+      runCommandJob,
+    });
+
+    void onTimer(state);
+    await vi.waitFor(() =>
+      expect(state.store?.jobs.find((job) => job.id === slow.id)?.state.runningAtMs).toBe(
+        startedAt,
+      ),
+    );
+    now += 2 * 60 * 60_000 + 60_000;
+    await onTimer(state);
+
+    await vi.waitFor(() => expect(runCommandJob).toHaveBeenCalledTimes(1));
+    await vi.waitFor(async () =>
+      expect(
+        (await loadCronStore(store.storePath)).jobs.find((job) => job.id === fast.id)?.state
+          .lastStatus,
+      ).toBe("ok"),
+    );
+
+    await onTimer(state);
+    expect(runIsolatedAgentJob).toHaveBeenCalledOnce();
+
+    slowRun.resolve({ status: "ok", summary: "slow" });
+    await vi.waitFor(() =>
+      expect(state.store?.jobs.find((job) => job.id === slow.id)?.state.lastStatus).toBe("ok"),
+    );
+  });
+
+  it("admits the oldest due job before newer recurring work", async () => {
+    const store = timerRegressionFixtures.makeStorePath();
+    const now = Date.parse("2026-09-14T14:02:00.000Z");
+    const recurring = createDueIsolatedJob({
+      id: "newer-recurring",
+      nowMs: now,
+      nextRunAtMs: now,
+    });
+    const overdueCommand = {
+      ...createDueIsolatedJob({
+        id: "older-command",
+        nowMs: now,
+        nextRunAtMs: now - 1_000,
+      }),
+      payload: { kind: "command" as const, argv: ["echo", "older"] },
+    };
+    await saveCronStore(store.storePath, { version: 1, jobs: [recurring, overdueCommand] });
+    const runCommandJob = vi.fn(async () => ({ status: "ok" as const, summary: "older" }));
+    const runIsolatedAgentJob = vi.fn(async () => ({ status: "ok" as const }));
+    const state = createCronServiceState({
+      cronEnabled: true,
+      storePath: store.storePath,
+      log: noopLogger,
+      nowMs: () => now,
+      enqueueSystemEvent: vi.fn(),
+      requestHeartbeat: vi.fn(),
+      runCommandJob,
+      runIsolatedAgentJob,
+    });
+
+    await onTimer(state);
+    await vi.waitFor(() => expect(runCommandJob).toHaveBeenCalledOnce());
+    expect(runIsolatedAgentJob).not.toHaveBeenCalled();
+    await waitForScheduledJob(state, overdueCommand.id);
+  });
+
   it("caps timer delay to 60s for far-future schedules", async () => {
     const timeoutSpy = vi.spyOn(globalThis, "setTimeout");
     const store = timerRegressionFixtures.makeStorePath();
@@ -94,6 +189,7 @@ describe("cron service timer regressions", () => {
       payload: { kind: "systemEvent", text: "future" },
       state: { nextRunAtMs: Date.parse("2035-01-01T00:00:00.000Z") },
     });
+    await saveCronStore(store.storePath, state.store);
 
     await onTimer(state);
 
@@ -167,6 +263,7 @@ describe("cron service timer regressions", () => {
       });
 
       await onTimer(state);
+      await waitForScheduledJob(state, params.id);
       const jobAfterRetry = requireJob(state, params.id);
       expect(jobAfterRetry.enabled).toBe(true);
       expect(jobAfterRetry.state.lastStatus).toBe("error");
@@ -174,6 +271,7 @@ describe("cron service timer regressions", () => {
 
       now = requireTimestamp(jobAfterRetry.state.nextRunAtMs, "retry next run") + 1;
       await onTimer(state);
+      await waitForScheduledJob(state, params.id);
       return { state, runIsolatedAgentJob };
     };
 
@@ -239,6 +337,7 @@ describe("cron service timer regressions", () => {
 
     for (let i = 0; i < 4; i += 1) {
       await onTimer(state);
+      await waitForScheduledJob(state, "oneshot-max-retries");
       const job = requireJob(state, "oneshot-max-retries");
       if (i < 3) {
         expect(job.enabled).toBe(true);
@@ -284,6 +383,7 @@ describe("cron service timer regressions", () => {
 
     for (let i = 0; i < 4; i += 1) {
       await onTimer(state);
+      await waitForScheduledJob(state, "oneshot-custom-retry");
       const job = requireJob(state, "oneshot-custom-retry");
       if (i < 2) {
         expect(job.enabled).toBe(true);
@@ -328,6 +428,7 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, "oneshot-overloaded-529-only");
     const jobAfterRetry = requireJob(state, "oneshot-overloaded-529-only");
     expect(jobAfterRetry.enabled).toBe(true);
     expect(jobAfterRetry.state.lastStatus).toBe("error");
@@ -335,6 +436,7 @@ describe("cron service timer regressions", () => {
 
     now = requireTimestamp(jobAfterRetry.state.nextRunAtMs, "529 retry next run") + 1;
     await onTimer(state);
+    await waitForScheduledJob(state, "oneshot-overloaded-529-only");
 
     const finishedJob = requireJob(state, "oneshot-overloaded-529-only");
     expect(finishedJob.state.lastStatus).toBe("ok");
@@ -376,6 +478,7 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, "oneshot-server-error-only");
     const jobAfterRetry = requireJob(state, "oneshot-server-error-only");
     expect(jobAfterRetry.enabled).toBe(true);
     expect(jobAfterRetry.state.lastStatus).toBe("error");
@@ -384,6 +487,7 @@ describe("cron service timer regressions", () => {
 
     now = requireTimestamp(jobAfterRetry.state.nextRunAtMs, "server_error retry next run") + 1;
     await onTimer(state);
+    await waitForScheduledJob(state, "oneshot-server-error-only");
 
     const finishedJob = requireJob(state, "oneshot-server-error-only");
     expect(finishedJob.state.lastStatus).toBe("ok");
@@ -426,6 +530,7 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, "oneshot-bedrock-too-many-tokens-per-day");
     const jobAfterRetry = requireJob(state, "oneshot-bedrock-too-many-tokens-per-day");
     expect(jobAfterRetry.enabled).toBe(true);
     expect(jobAfterRetry.state.lastStatus).toBe("error");
@@ -433,6 +538,7 @@ describe("cron service timer regressions", () => {
 
     now = requireTimestamp(jobAfterRetry.state.nextRunAtMs, "Bedrock retry next run") + 1;
     await onTimer(state);
+    await waitForScheduledJob(state, "oneshot-bedrock-too-many-tokens-per-day");
 
     const finishedJob = requireJob(state, "oneshot-bedrock-too-many-tokens-per-day");
     expect(finishedJob.state.lastStatus).toBe("ok");
@@ -468,6 +574,7 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, "oneshot-permanent-error");
 
     const job = requireJob(state, "oneshot-permanent-error");
     expect(job.enabled).toBe(false);
@@ -513,6 +620,7 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, "recurring-rate-limit-retry");
     const jobAfterRetry = requireJob(state, "recurring-rate-limit-retry");
     expect(jobAfterRetry.enabled).toBe(true);
     expect(jobAfterRetry.state.lastStatus).toBe("error");
@@ -523,6 +631,7 @@ describe("cron service timer regressions", () => {
 
     now = requireTimestamp(jobAfterRetry.state.nextRunAtMs, "recurring retry next run") + 1;
     await onTimer(state);
+    await waitForScheduledJob(state, "recurring-rate-limit-retry");
 
     const finishedJob = requireJob(state, "recurring-rate-limit-retry");
     expect(finishedJob.state.lastStatus).toBe("ok");
@@ -564,11 +673,13 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, "recurring-rate-limit-exhausted");
     let job = requireJob(state, "recurring-rate-limit-exhausted");
     expect(job.state.nextRunAtMs).toBeLessThan(scheduledAt + everySixHoursMs);
 
     now = requireTimestamp(job.state.nextRunAtMs, "recurring exhausted retry") + 1;
     await onTimer(state);
+    await waitForScheduledJob(state, "recurring-rate-limit-exhausted");
 
     job = requireJob(state, "recurring-rate-limit-exhausted");
     expect(job.enabled).toBe(true);
@@ -642,6 +753,7 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, "spin-loop-17821");
     expect(fireCount).toBe(1);
 
     const job = requireJob(state, "spin-loop-17821");
@@ -680,6 +792,7 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, "spin-gap-17821");
 
     const job = requireJob(state, "spin-gap-17821");
     const endedAt = now;
@@ -716,21 +829,51 @@ describe("cron service timer regressions", () => {
       }),
     });
 
-    const timerPromise = onTimer(state);
-    let settled = false;
-    void timerPromise.finally(() => {
-      settled = true;
-    });
-
+    await onTimer(state);
     await vi.advanceTimersByTimeAsync(0);
     await Promise.resolve();
-    expect(settled).toBe(false);
+    expect(state.scheduledJobIds).toEqual(new Set(["no-timeout-0"]));
 
     deferredRun.resolve({ status: "ok", summary: "done" });
-    await timerPromise;
+    await waitForScheduledJob(state, "no-timeout-0");
 
     const job = state.store?.jobs.find((entry) => entry.id === "no-timeout-0");
     expect(job?.state.lastStatus).toBe("ok");
+  });
+
+  it("keeps the persisted running marker for an admitted run beyond the stale window", async () => {
+    const store = timerRegressionFixtures.makeStorePath();
+    const scheduledAt = Date.parse("2026-02-15T13:00:00.000Z");
+    const cronJob = createIsolatedRegressionJob({
+      id: "long-admission",
+      name: "long admission",
+      scheduledAt,
+      schedule: { kind: "at", at: new Date(scheduledAt).toISOString() },
+      payload: { kind: "agentTurn", message: "work", timeoutSeconds: 0 },
+      state: { nextRunAtMs: scheduledAt },
+    });
+    await saveCronStore(store.storePath, { version: 1, jobs: [cronJob] });
+
+    let now = scheduledAt;
+    const deferredRun = createDeferred<{ status: "ok" }>();
+    const state = createCronServiceState({
+      cronEnabled: true,
+      storePath: store.storePath,
+      log: noopLogger,
+      nowMs: () => now,
+      enqueueSystemEvent: vi.fn(),
+      requestHeartbeat: vi.fn(),
+      runIsolatedAgentJob: vi.fn(async () => await deferredRun.promise),
+    });
+
+    await onTimer(state);
+    now += 2 * 60 * 60_000 + 1;
+    await onTimer(state);
+    expect(state.scheduledJobIds).toEqual(new Set(["long-admission"]));
+    expect(state.store?.jobs[0]?.state.runningAtMs).toBe(scheduledAt);
+
+    deferredRun.resolve({ status: "ok" });
+    await waitForScheduledJob(state, "long-admission");
   });
 
   it("does not time out agentTurn jobs at the default 10-minute safety window", async () => {
@@ -782,18 +925,13 @@ describe("cron service timer regressions", () => {
       runIsolatedAgentJob,
     });
 
-    const timerPromise = onTimer(state);
-    let settled = false;
-    void timerPromise.finally(() => {
-      settled = true;
-    });
-
+    await onTimer(state);
     await vi.advanceTimersByTimeAsync(DEFAULT_JOB_TIMEOUT_MS + 1_000);
     await Promise.resolve();
-    expect(settled).toBe(false);
+    expect(state.scheduledJobIds).toEqual(new Set(["agentturn-default-safety-window"]));
 
     deferredRun.resolve({ status: "ok", summary: "done" });
-    await timerPromise;
+    await waitForScheduledJob(state, "agentturn-default-safety-window");
 
     const job = state.store?.jobs.find((entry) => entry.id === "agentturn-default-safety-window");
     expect(job?.state.lastStatus).toBe("ok");
@@ -1163,6 +1301,9 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, first.id);
+    await onTimer(state);
+    await waitForScheduledJob(state, second.id);
 
     const jobs = state.store?.jobs ?? [];
     const firstDone = jobs.find((job) => job.id === first.id);
@@ -1236,6 +1377,8 @@ describe("cron service timer regressions", () => {
     firstRun.resolve({ status: "ok", summary: "first done" });
     secondRun.resolve({ status: "ok", summary: "second done" });
     await timerPromise;
+    await waitForScheduledJob(state, first.id);
+    await waitForScheduledJob(state, second.id);
 
     const jobs = state.store?.jobs ?? [];
     expect(jobs.find((job) => job.id === first.id)?.state.lastStatus).toBe("ok");
@@ -1288,6 +1431,7 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, selfRemovingJob.id);
 
     expect(state.store?.jobs).toStrictEqual([]);
     expect(
@@ -1350,6 +1494,7 @@ describe("cron service timer regressions", () => {
     });
 
     await onTimer(state);
+    await waitForScheduledJob(state, failedJob.id);
 
     expect(state.store?.jobs).toStrictEqual([]);
     expect(log.warn).toHaveBeenCalledWith(
