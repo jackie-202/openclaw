@@ -1,0 +1,41 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-10-06T00:19:22+00:00",
+    "implementingStartedAt": "2026-10-06T00:13:22+00:00",
+    "taskFile": "plans/tasks/2026-10-05_deliberation-generic-host-fixture-cleanup.md",
+    "taskId": "task-9585a131-9645-4da4-8cf4-739de464bf18",
+    "title": "Deliverable"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliverable"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-9585a131-9645-4da4-8cf4-739de464bf18-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-9585a131-9645-4da4-8cf4-739de464bf18.checkpoint.md",
+      "provenance": "untracked",
+      "size": 1177
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-9585a131-9645-4da4-8cf4-739de464bf18.red-green-proof.md",
+      "provenance": "untracked",
+      "size": 8218
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/handoffs/deliberation-plugin-retirement/accepted-host-contract.md",
+      "provenance": "referenced",
+      "size": 3864
+    }
+  ],
+  "taskId": "task-9585a131-9645-4da4-8cf4-739de464bf18",
+  "tddRequired": true
+}

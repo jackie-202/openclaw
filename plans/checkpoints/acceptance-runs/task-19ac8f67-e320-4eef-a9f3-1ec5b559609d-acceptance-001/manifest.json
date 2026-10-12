@@ -1,0 +1,47 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-10-06T00:39:22+00:00",
+    "implementingStartedAt": "2026-10-06T00:33:31+00:00",
+    "taskFile": "plans/tasks/2026-10-06_followup-task-19ac8f67-e320-4eef-a9f3-1ec5b559609d-deliverable.md",
+    "taskId": "task-19ac8f67-e320-4eef-a9f3-1ec5b559609d",
+    "title": "[acceptance-fix] Deliverable: goal-001: Deliverable"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliverable: goal-001: Deliverable"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-19ac8f67-e320-4eef-a9f3-1ec5b559609d-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-19ac8f67-e320-4eef-a9f3-1ec5b559609d.checkpoint.md",
+      "provenance": "untracked",
+      "size": 882
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-19ac8f67-e320-4eef-a9f3-1ec5b559609d.red-green-proof.md",
+      "provenance": "untracked",
+      "size": 8218
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-9585a131-9645-4da4-8cf4-739de464bf18.checkpoint.md",
+      "provenance": "untracked+referenced",
+      "size": 1177
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-9585a131-9645-4da4-8cf4-739de464bf18.red-green-proof.md",
+      "provenance": "untracked+referenced",
+      "size": 8218
+    }
+  ],
+  "taskId": "task-19ac8f67-e320-4eef-a9f3-1ec5b559609d",
+  "tddRequired": true
+}

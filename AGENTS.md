@@ -279,3 +279,7 @@ Skills own workflows; root owns hard policy and routing.
 - Local-only `.agents` ignores: `.git/info/exclude`, not repo `.gitignore`.
 - Provider tool schemas: prefer flat string enum helpers over `Type.Union([Type.Literal(...)])`; some providers reject `anyOf`.
 - External messaging: no token-delta channel messages. Follow `docs/concepts/streaming.md`.
+
+## Scoped cleanup and composed-test authority — user direction 2026-10-05 11:28 Prague
+
+The four explicitly requested tasks (KM source-resolver cleanup, fork generic host-fixture cleanup, Deliberation-owned offline native-intake lifecycle composition, final cross-project retirement investigation) are new scoped independent work, not permission to reopen exhausted lineages. Their canonical task briefs authorize only their named repo-local edits/tests; bootstrap-only restrictions are superseded for the target-owned composition test/public test seam only. Preserve all unrelated source/runtime/cutover holds. No deployments, services/restarts, hook changes, live requests/provider calls, production data or gate release.

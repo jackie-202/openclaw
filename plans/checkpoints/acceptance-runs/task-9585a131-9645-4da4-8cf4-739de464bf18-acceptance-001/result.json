@@ -1,0 +1,100 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "Replace retired Deliberation loader/config/wire coupling in the retained Discord and Slack owner-path tests with a minimal generic exclusive-owner fixture while preserving host behavior coverage.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The task-scoped implementation diff changes only one Discord policy expectation from ownerPluginId deliberation to host-test-owner; it adds no generic owner fixture and makes no planned adaptations to the Discord process or Slack owner-path tests. The supplied checkpoint marks fixture replacement unfinished.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "Renaming the expected owner does not provide the required generic registered owner or decouple the retained suites from the retired plugin loader/config/wire assumptions, so the central deliverable is absent.",
+      "required": "Implement the bounded generic host-owner fixture adaptation across the three named retained test surfaces while preserving the required host-path assertions and avoiding production behavior changes.",
+      "sources": [
+        {
+          "kind": "file",
+          "reference": "extensions/discord/src/monitor/message-handler.deliberation.test.ts:185"
+        },
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-9585a131-9645-4da4-8cf4-739de464bf18.checkpoint.md:7-10"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/2026-10-06_task-9585a131-9645-4da4-8cf4-739de464bf18_deliverable.md:Implementation"
+        }
+      ]
+    },
+    {
+      "claim": "Record exact characterization, focused before/after commands and outcomes, assertion mapping, and source-only proof in plans/checkpoints/deliberation_generic_host_fixture_cleanup.md.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "verification_evidence_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "No required deliberation_generic_host_fixture_cleanup.md artifact is supplied, and the task checkpoint marks focused/broader verification and evidence mapping unfinished.",
+      "policyRule": "catalog:verification_evidence_missing:blocking",
+      "rationale": "The canonical task makes this checkpoint and its exact command/result and assertion-mapping contents explicit verification evidence for the deliverable; the supplied materials contain only an incomplete RED proof and a progress checkpoint.",
+      "required": "Provide the required cleanup checkpoint with the specified characterization-to-final assertion mapping, exact permitted verification commands and outcomes, blockers where applicable, and explicit source-suite-only scope, relying on canonical Test Gate evidence for test interpretation.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-9585a131-9645-4da4-8cf4-739de464bf18.checkpoint.md:7-10"
+        },
+        {
+          "kind": "plan",
+          "reference": "plans/tasks/2026-10-05_deliberation-generic-host-fixture-cleanup.md:Verification and evidence"
+        }
+      ]
+    },
+    {
+      "claim": "Provide valid RED-then-GREEN TDD proof because the run manifest declares TDD required.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-003",
+      "kind": "evidence",
+      "observed": "The supplied TDD projection and proof artifact contain only a RED phase and explicitly report that the GREEN phase and phase order are incomplete.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "With tddRequired true, a RED-only capture cannot demonstrate the mandatory completed RED/GREEN cycle.",
+      "required": "Complete and supply valid ordered RED/GREEN proof for the scoped implementation using the caller-owned TDD evidence workflow.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-9585a131-9645-4da4-8cf4-739de464bf18.red-green-proof.md:7-11"
+        },
+        {
+          "kind": "artifact",
+          "reference": "TDD proof/provenance:missing GREEN Phase"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/checkpoints/acceptance-runs/task-9585a131-9645-4da4-8cf4-739de464bf18-acceptance-001/manifest.json:39-40"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Deliverable"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-9585a131-9645-4da4-8cf4-739de464bf18-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-9585a131-9645-4da4-8cf4-739de464bf18"
+}

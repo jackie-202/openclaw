@@ -182,7 +182,7 @@ describe("Discord deliberation owner path", () => {
       conversationId: sourceId,
       providerEventId: "policy-probe",
     });
-    expect(policy).toEqual({ kind: "exclusive", ownerPluginId: "deliberation" });
+    expect(policy).toEqual({ kind: "exclusive", ownerPluginId: "host-test-owner" });
     return { cfg, registry, runner, policy };
   }
 

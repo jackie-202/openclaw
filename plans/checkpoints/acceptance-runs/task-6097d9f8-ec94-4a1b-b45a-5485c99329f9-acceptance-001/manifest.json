@@ -1,0 +1,47 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-10-06T00:53:22+00:00",
+    "implementingStartedAt": "2026-10-06T00:47:31+00:00",
+    "taskFile": "plans/tasks/2026-10-06_followup-task-6097d9f8-ec94-4a1b-b45a-5485c99329f9-acceptance-fix-deliverable-goal-001-deliverable.md",
+    "taskId": "task-6097d9f8-ec94-4a1b-b45a-5485c99329f9",
+    "title": "[acceptance-fix] [acceptance-fix] Deliverable: goal-001: Deliverable: goal-001: [acceptance-fix] Deliverable: goal-001: "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliverable: goal-001: Deliverable: goal-001: [acceptance-fix] Deliverable: goal-001:"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-6097d9f8-ec94-4a1b-b45a-5485c99329f9-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "learnings/architecture/generic-host-tests-avoid-retired-plugin-discovery.md",
+      "provenance": "untracked+referenced",
+      "size": 964
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-19ac8f67-e320-4eef-a9f3-1ec5b559609d.checkpoint.md",
+      "provenance": "untracked+referenced",
+      "size": 882
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-19ac8f67-e320-4eef-a9f3-1ec5b559609d.red-green-proof.md",
+      "provenance": "untracked+referenced",
+      "size": 8218
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-6097d9f8-ec94-4a1b-b45a-5485c99329f9.checkpoint.md",
+      "provenance": "untracked",
+      "size": 984
+    }
+  ],
+  "taskId": "task-6097d9f8-ec94-4a1b-b45a-5485c99329f9",
+  "tddRequired": true
+}
