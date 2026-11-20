@@ -1,0 +1,28 @@
+{
+  "runId": "task-4670891c-252f-4234-a6e7-1a64e0725f1d-implementation-a2cfceb1f9634ce7-acceptance-001",
+  "taskId": "task-4670891c-252f-4234-a6e7-1a64e0725f1d",
+  "tddDecision": {
+    "attempt": 1,
+    "implSessionId": "cool-brook-4223",
+    "implementingStartedAt": "2026-11-20T19:42:39+00:00",
+    "review": {
+      "bindingId": "b9f4a6909093d73bfb3fcd2141c86ef3f5d22f64b628a83c332f85181193a293",
+      "decision": "required",
+      "disposition": "pass",
+      "planFile": "plans/2026-11-20_task-4670891c-252f-4234-a6e7-1a64e0725f1d_acceptance-fix-deliverable-repair-reasoning-catalog-type.md",
+      "planSha256": "1a6432ea79e9d5fec26cb78078a346a680a1530091bd64bbf0c8ae1eec7ed918",
+      "reason": "The acceptance requires genuine task-bound compiler RED before the type changes and matching GREEN afterward; any uncovered reasoning-policy regression must also be characterized before its corresponding behavior change. The earlier interpreter prerequisite must be resolved or reviewed by existing owners without relabeling historical proof.",
+      "reviewId": "59421626359f412f955dc8bb44b600c4",
+      "scopeMetadata": {
+        "description": "",
+        "project": "openclaw-fork",
+        "task": "[acceptance-fix] [acceptance-fix] Deliverable: repair reasoning-catalog type consistency blocking the complete fork buil"
+      },
+      "scopeSha256": "bbae7a1fa48181d9cd46510c0c79d68e506c54a7f8776ce922798325dcef1f20",
+      "taskId": "task-4670891c-252f-4234-a6e7-1a64e0725f1d",
+      "version": 1
+    },
+    "version": 1
+  },
+  "tddRequired": true
+}

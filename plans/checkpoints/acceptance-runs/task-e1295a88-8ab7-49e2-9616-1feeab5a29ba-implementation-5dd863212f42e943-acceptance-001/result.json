@@ -1,0 +1,16 @@
+{
+  "classification": "ACCEPT",
+  "findings": [],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "MET",
+      "summary": "Deliverable: repair stale /think catalog fixture and pin existing capability semantics"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-e1295a88-8ab7-49e2-9616-1feeab5a29ba-implementation-5dd863212f42e943-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-e1295a88-8ab7-49e2-9616-1feeab5a29ba"
+}

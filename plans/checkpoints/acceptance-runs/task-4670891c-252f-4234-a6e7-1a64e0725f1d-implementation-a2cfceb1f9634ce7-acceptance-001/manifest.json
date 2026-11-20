@@ -1,0 +1,35 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-11-20T19:48:36+00:00",
+    "implementingStartedAt": "2026-11-20T19:42:39+00:00",
+    "taskFile": "plans/tasks/2026-11-20_followup-task-4670891c-252f-4234-a6e7-1a64e0725f1d-acceptance-fix-deliverable-repair-reasoning-catalog-type-con.md",
+    "taskId": "task-4670891c-252f-4234-a6e7-1a64e0725f1d",
+    "title": "[acceptance-fix] [acceptance-fix] Deliverable: repair reasoning-catalog type consistency blocking the complete fork buil"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] [acceptance-fix] Deliverable: repair reasoning-catalog type consistency blocking the complete fork buil"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-4670891c-252f-4234-a6e7-1a64e0725f1d-implementation-a2cfceb1f9634ce7-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-4670891c-252f-4234-a6e7-1a64e0725f1d.checkpoint.md",
+      "provenance": "untracked",
+      "size": 1555
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-4670891c-252f-4234-a6e7-1a64e0725f1d.red-green-proof.md",
+      "provenance": "untracked",
+      "size": 1807
+    }
+  ],
+  "taskId": "task-4670891c-252f-4234-a6e7-1a64e0725f1d",
+  "tddRequired": true
+}

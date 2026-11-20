@@ -1,0 +1,28 @@
+{
+  "runId": "task-fdef5f79-d364-498f-b367-16d4da21977c-implementation-f23be5349b7bd895-acceptance-001",
+  "taskId": "task-fdef5f79-d364-498f-b367-16d4da21977c",
+  "tddDecision": {
+    "attempt": 1,
+    "implSessionId": "swift-vale-9657",
+    "implementingStartedAt": "2026-11-20T13:34:52+00:00",
+    "review": {
+      "bindingId": "572403f6edc936913976a4b388e4b61478b8e268f7fd9b7aa6db0e57027c7821",
+      "decision": "required",
+      "disposition": "pass",
+      "planFile": "plans/2026-11-20_task-fdef5f79-d364-498f-b367-16d4da21977c_omlx-memory-guard-prevent-false-context-overflow-and.md",
+      "planSha256": "fe4b2753628b4f1aebecfa424d01eb3f8fe136bf962566ec103fffdff6106bee",
+      "reason": "The planned source repair changes provider memory-admission classification, user-facing error formatting, and eligibility for overflow compaction; exported-classifier and runner-seam regression tests must fail before the repair and pass afterward.",
+      "reviewId": "e1b3e0d5b690462d9db419d21856487b",
+      "scopeMetadata": {
+        "description": "",
+        "project": "openclaw-fork",
+        "task": "oMLX memory guard: prevent false context overflow and compaction"
+      },
+      "scopeSha256": "4fbf887af2acf9436b096e5886577ccb8236503a9a7502660f42271382ce14a9",
+      "taskId": "task-fdef5f79-d364-498f-b367-16d4da21977c",
+      "version": 1
+    },
+    "version": 1
+  },
+  "tddRequired": true
+}

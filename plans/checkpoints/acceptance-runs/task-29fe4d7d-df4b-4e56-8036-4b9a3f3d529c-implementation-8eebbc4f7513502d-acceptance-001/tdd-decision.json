@@ -1,0 +1,28 @@
+{
+  "runId": "task-29fe4d7d-df4b-4e56-8036-4b9a3f3d529c-implementation-8eebbc4f7513502d-acceptance-001",
+  "taskId": "task-29fe4d7d-df4b-4e56-8036-4b9a3f3d529c",
+  "tddDecision": {
+    "attempt": 1,
+    "implSessionId": "warm-cove-2195",
+    "implementingStartedAt": "2026-11-20T19:28:55+00:00",
+    "review": {
+      "bindingId": "d506ee38ed2b9d85e277413956055fc231fc6a78cfeb5c18bdc3480078f62efd",
+      "decision": "required",
+      "disposition": "pass",
+      "planFile": "plans/2026-11-20_task-29fe4d7d-df4b-4e56-8036-4b9a3f3d529c_deliverable-repair-reasoning-catalog-type-consistency.md",
+      "planSha256": "ee00da00aeeeb80ebc125787eae09ff9aedda43de13e3d4d57d6d57bd775b018",
+      "reason": "The scoped repair changes compiler-visible reasoning catalog behavior and its acceptance requires genuine task-bound declaration RED before source correction and matching GREEN afterward; preserve original proof provenance and characterize any uncovered policy invariant.",
+      "reviewId": "bdeffb2162714422843a33e8af6500e7",
+      "scopeMetadata": {
+        "description": "",
+        "project": "openclaw-fork",
+        "task": "[acceptance-fix] Deliverable: repair reasoning-catalog type consistency blocking the complete fork build: goal-001: Deli"
+      },
+      "scopeSha256": "45a3cb65e6ce31185a9c2e5fc091193198bdf73b939a5d66bfc36dca0b9c4bb1",
+      "taskId": "task-29fe4d7d-df4b-4e56-8036-4b9a3f3d529c",
+      "version": 1
+    },
+    "version": 1
+  },
+  "tddRequired": true
+}

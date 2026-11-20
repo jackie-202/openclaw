@@ -1,0 +1,47 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-11-20T14:07:10+00:00",
+    "implementingStartedAt": "2026-11-20T13:53:39+00:00",
+    "taskFile": "plans/tasks/2026-11-20_followup-task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd-omlx-memory-guard-prevent-false-context-overflow-and-compact.md",
+    "taskId": "task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd",
+    "title": "[acceptance-fix] oMLX memory guard: prevent false context overflow and compaction: goal-001: oMLX memory guard: prevent "
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] oMLX memory guard: prevent false context overflow and compaction: goal-001: oMLX memory guard: prevent"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd-implementation-e21f9abea5aa090f-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/archive/2026-11-20_task-fdef5f79-d364-498f-b367-16d4da21977c.checkpoint.md",
+      "provenance": "untracked+referenced",
+      "size": 1727
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/omlx-prefill-memory-20261120-evidence.md",
+      "provenance": "untracked+referenced",
+      "size": 5081
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd.checkpoint.md",
+      "provenance": "untracked",
+      "size": 5954
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd.red-green-proof.md",
+      "provenance": "untracked+referenced",
+      "size": 14803
+    }
+  ],
+  "taskId": "task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd",
+  "tddRequired": true
+}

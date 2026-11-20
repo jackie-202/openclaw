@@ -1,0 +1,28 @@
+{
+  "runId": "task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd-implementation-e21f9abea5aa090f-acceptance-001",
+  "taskId": "task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd",
+  "tddDecision": {
+    "attempt": 1,
+    "implSessionId": "wild-fork-0270",
+    "implementingStartedAt": "2026-11-20T13:53:39+00:00",
+    "review": {
+      "bindingId": "fed3384e77bd811dfe94705238e0661e0ec93ef71edc76f184fc355e9539519c",
+      "decision": "required",
+      "disposition": "pass",
+      "planFile": "plans/2026-11-20_task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd_omlx-memory-guard-prevent-false-context-overflow-and.md",
+      "planSha256": "bcd3ec2b81bac8c2a375502b56613873c11270cc137d0589705061752ce216b2",
+      "reason": "The remaining repair changes memory-admission classification, safe error diagnostics, and overflow recovery eligibility; real exported-classifier and runner-seam regressions require this task's genuine RED before production edits and matching GREEN afterward.",
+      "reviewId": "2562cc1af71b46c2abbd3ac12d8f09ac",
+      "scopeMetadata": {
+        "description": "",
+        "project": "openclaw-fork",
+        "task": "[acceptance-fix] oMLX memory guard: prevent false context overflow and compaction: goal-001: oMLX memory guard: prevent "
+      },
+      "scopeSha256": "7d4003b7db2bbe0a24a06ed723130525c8bc46482888b58471cb37dafc579a64",
+      "taskId": "task-c4182e9b-d2c7-4902-a665-5f76cc1d02bd",
+      "version": 1
+    },
+    "version": 1
+  },
+  "tddRequired": true
+}

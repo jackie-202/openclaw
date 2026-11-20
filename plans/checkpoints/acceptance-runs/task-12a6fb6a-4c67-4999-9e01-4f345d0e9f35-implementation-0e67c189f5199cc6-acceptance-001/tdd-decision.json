@@ -1,0 +1,28 @@
+{
+  "runId": "task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35-implementation-0e67c189f5199cc6-acceptance-001",
+  "taskId": "task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35",
+  "tddDecision": {
+    "attempt": 1,
+    "implSessionId": "wild-vale-7846",
+    "implementingStartedAt": "2026-11-20T19:14:29+00:00",
+    "review": {
+      "bindingId": "30528452898b9c6d91a2cf2e4652a3edb74b72e8d13df1041ff9f265cda420cd",
+      "decision": "required",
+      "disposition": "pass",
+      "planFile": "plans/2026-11-20_task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35_deliverable-repair-reasoning-catalog-type-consistency.md",
+      "planSha256": "7ac3d0c75f7470e7f9fd0860d97593c1b7271b13e9f65e56c2eb877d043a196f",
+      "reason": "The repair must demonstrate the actual declaration compiler failure before the type correction and a passing result afterward; relevant uncovered reasoning behavior also needs causal characterization.",
+      "reviewId": "b06cf948a2ad47e0848132021e6d709d",
+      "scopeMetadata": {
+        "description": "",
+        "project": "openclaw-fork",
+        "task": "Deliverable: repair reasoning-catalog type consistency blocking the complete fork build"
+      },
+      "scopeSha256": "7aa04e86f150aa0ae7d00c19fc6f49b3a41575e57990a0d0d37aaa99a7feced1",
+      "taskId": "task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35",
+      "version": 1
+    },
+    "version": 1
+  },
+  "tddRequired": true
+}

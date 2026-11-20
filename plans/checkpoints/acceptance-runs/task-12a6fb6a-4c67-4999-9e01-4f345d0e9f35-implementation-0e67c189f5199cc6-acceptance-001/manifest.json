@@ -1,0 +1,29 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-11-20T19:20:18+00:00",
+    "implementingStartedAt": "2026-11-20T19:14:29+00:00",
+    "taskFile": "plans/tasks/2026-11-20_thinking-catalog-types-unblock-full-build.md",
+    "taskId": "task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35",
+    "title": "Deliverable: repair reasoning-catalog type consistency blocking the complete fork build"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliverable: repair reasoning-catalog type consistency blocking the complete fork build"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35-implementation-0e67c189f5199cc6-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35.checkpoint.md",
+      "provenance": "untracked",
+      "size": 850
+    }
+  ],
+  "taskId": "task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35",
+  "tddRequired": true
+}

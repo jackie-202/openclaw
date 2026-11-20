@@ -1,0 +1,71 @@
+{
+  "classification": "correctness_reject",
+  "findings": [
+    {
+      "claim": "The required reasoning-catalog type repair has not been delivered as a completed repair.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_implementation_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-001",
+      "kind": "correctness",
+      "observed": "The supplied task checkpoint marks inspection/RED, type correction/GREEN, and verification as incomplete. Its resume context still describes the omitted optional supportsReasoningEffort field and the effort-array narrowing defect; its last completed activity is reading contracts. No supplied artifact establishes a completed correction.",
+      "policyRule": "catalog:required_implementation_missing:blocking",
+      "rationale": "The goal requires an actual source/type correction preserving reasoning policy. The checkpoint affirmatively records implementation as pending, so unresolved diagnosis cannot establish terminal repair success. This finding does not infer on-disk absence from paths missing in the diff or evaluate unrelated oMLX changes.",
+      "required": "Complete the bounded canonical optional-contract and contextual-array type repair, preserve the specified reasoning policies, and supply the resulting implementation and completed checkpoint for independent acceptance.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35.checkpoint.md"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-11-20_thinking-catalog-types-unblock-full-build.md"
+        }
+      ]
+    },
+    {
+      "claim": "Caller-required causal RED/GREEN proof is missing.",
+      "crossCutting": false,
+      "effect": "blocking",
+      "findingType": "required_tdd_proof_missing",
+      "goalIds": [
+        "goal-001"
+      ],
+      "id": "finding-002",
+      "kind": "evidence",
+      "observed": "The manifest declares tddRequired true and the reviewed applicability decision is required. The supplied TDD provenance explicitly says no proof supplied, while the checkpoint leaves capture causal RED and correction/GREEN incomplete.",
+      "policyRule": "catalog:required_tdd_proof_missing:blocking",
+      "rationale": "The task explicitly requires actual compiler failure before correction and success afterward at the named declaration boundary. Contract inspection and identification of a Python prerequisite do not constitute causal proof. This finding concerns the explicit proof deliverable, not execution or interpretation of the unrun Test Gate.",
+      "required": "Supply genuine task-bound RED/GREEN provenance at node scripts/run-tsgo.mjs -p tsconfig.plugin-sdk.dts.json --declaration true, including the pre-correction failure and post-correction result, plus causal characterization proof where newly required by the reviewed scope.",
+      "sources": [
+        {
+          "kind": "artifact",
+          "reference": "plans/checkpoints/task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35.checkpoint.md"
+        },
+        {
+          "kind": "artifact",
+          "reference": "caller-supplied-TDD-proof-provenance"
+        },
+        {
+          "kind": "file",
+          "reference": "plans/tasks/2026-11-20_thinking-catalog-types-unblock-full-build.md"
+        }
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "status": "UNMET",
+      "summary": "Deliverable: repair reasoning-catalog type consistency blocking the complete fork build"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35-implementation-0e67c189f5199cc6-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "status": "finalized",
+  "taskId": "task-12a6fb6a-4c67-4999-9e01-4f345d0e9f35"
+}

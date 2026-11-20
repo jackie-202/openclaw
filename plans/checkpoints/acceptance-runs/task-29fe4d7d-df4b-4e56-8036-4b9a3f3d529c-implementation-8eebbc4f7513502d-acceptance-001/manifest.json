@@ -1,0 +1,29 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-11-20T19:34:33+00:00",
+    "implementingStartedAt": "2026-11-20T19:28:55+00:00",
+    "taskFile": "plans/tasks/2026-11-20_followup-task-29fe4d7d-df4b-4e56-8036-4b9a3f3d529c-deliverable-repair-reasoning-catalog-type-consistency-blocki.md",
+    "taskId": "task-29fe4d7d-df4b-4e56-8036-4b9a3f3d529c",
+    "title": "[acceptance-fix] Deliverable: repair reasoning-catalog type consistency blocking the complete fork build: goal-001: Deli"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "[acceptance-fix] Deliverable: repair reasoning-catalog type consistency blocking the complete fork build: goal-001: Deli"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-29fe4d7d-df4b-4e56-8036-4b9a3f3d529c-implementation-8eebbc4f7513502d-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-29fe4d7d-df4b-4e56-8036-4b9a3f3d529c.checkpoint.md",
+      "provenance": "untracked+referenced",
+      "size": 1135
+    }
+  ],
+  "taskId": "task-29fe4d7d-df4b-4e56-8036-4b9a3f3d529c",
+  "tddRequired": true
+}

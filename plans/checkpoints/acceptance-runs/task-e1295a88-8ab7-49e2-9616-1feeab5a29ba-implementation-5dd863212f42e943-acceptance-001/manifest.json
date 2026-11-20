@@ -1,0 +1,47 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-11-20T20:14:39+00:00",
+    "implementingStartedAt": "2026-11-20T20:08:31+00:00",
+    "taskFile": "plans/tasks/2026-11-20_thinking-menu-capability-fixture-consistency.md",
+    "taskId": "task-e1295a88-8ab7-49e2-9616-1feeab5a29ba",
+    "title": "Deliverable: repair stale /think catalog fixture and pin existing capability semantics"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "Deliverable: repair stale /think catalog fixture and pin existing capability semantics"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-e1295a88-8ab7-49e2-9616-1feeab5a29ba-implementation-5dd863212f42e943-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "learnings/architecture/2026-08-09_reasoning-effort-audits-separate-configured-wire-values.md",
+      "provenance": "referenced_runtime+referenced",
+      "size": 1156
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-e1295a88-8ab7-49e2-9616-1feeab5a29ba.checkpoint.md",
+      "provenance": "untracked",
+      "size": 1948
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-e1295a88-8ab7-49e2-9616-1feeab5a29ba.red-green-proof.md",
+      "provenance": "untracked+referenced",
+      "size": 3002
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/thinking-catalog-host-review-20261120.md",
+      "provenance": "untracked+referenced",
+      "size": 3504
+    }
+  ],
+  "taskId": "task-e1295a88-8ab7-49e2-9616-1feeab5a29ba",
+  "tddRequired": true
+}

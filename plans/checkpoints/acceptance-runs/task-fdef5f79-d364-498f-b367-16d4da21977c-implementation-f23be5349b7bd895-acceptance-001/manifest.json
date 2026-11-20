@@ -1,0 +1,35 @@
+{
+  "concurrentContext": [],
+  "evaluationTarget": {
+    "acceptanceDispatchAt": "2026-11-20T13:40:49+00:00",
+    "implementingStartedAt": "2026-11-20T13:34:52+00:00",
+    "taskFile": "plans/tasks/2026-11-20_omlx-memory-guard-not-context-overflow.md",
+    "taskId": "task-fdef5f79-d364-498f-b367-16d4da21977c",
+    "title": "oMLX memory guard: prevent false context overflow and compaction"
+  },
+  "goals": [
+    {
+      "id": "goal-001",
+      "summary": "oMLX memory guard: prevent false context overflow and compaction"
+    }
+  ],
+  "policyVersion": "acceptance-policy-v2",
+  "runId": "task-fdef5f79-d364-498f-b367-16d4da21977c-implementation-f23be5349b7bd895-acceptance-001",
+  "schemaVersion": "acceptance-run-v1",
+  "taskArtifacts": [
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/omlx-prefill-memory-20261120-evidence.md",
+      "provenance": "untracked+referenced",
+      "size": 5081
+    },
+    {
+      "mediaKind": "text/markdown",
+      "path": "plans/checkpoints/task-fdef5f79-d364-498f-b367-16d4da21977c.checkpoint.md",
+      "provenance": "untracked",
+      "size": 1727
+    }
+  ],
+  "taskId": "task-fdef5f79-d364-498f-b367-16d4da21977c",
+  "tddRequired": true
+}

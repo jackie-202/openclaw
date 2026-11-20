@@ -1,0 +1,28 @@
+{
+  "runId": "task-e1295a88-8ab7-49e2-9616-1feeab5a29ba-implementation-5dd863212f42e943-acceptance-001",
+  "taskId": "task-e1295a88-8ab7-49e2-9616-1feeab5a29ba",
+  "tddDecision": {
+    "attempt": 1,
+    "implSessionId": "swift-mist-3925",
+    "implementingStartedAt": "2026-11-20T20:08:31+00:00",
+    "review": {
+      "bindingId": "debe278047595aa2582cdb4ca631d2c2ac60626befd510f0ebce0cf09113b7a6",
+      "decision": "required",
+      "disposition": "pass",
+      "planFile": "plans/2026-11-20_task-e1295a88-8ab7-49e2-9616-1feeab5a29ba_deliverable-repair-stale-think-catalog-fixture-and-pin.md",
+      "planSha256": "5630690b03f46a6413ca30584144bccbd10a951b4f5db26b337efef68f3d1860",
+      "reason": "This task fixes an observed failing menu regression fixture and adds focused characterization for existing capability and fallback semantics; use the real pre-correction command failure as RED and capture matching GREEN with the supported proof helper.",
+      "reviewId": "08cde0a03c634bbfa1045c438376c639",
+      "scopeMetadata": {
+        "description": "",
+        "project": "openclaw-fork",
+        "task": "Deliverable: repair stale /think catalog fixture and pin existing capability semantics"
+      },
+      "scopeSha256": "b25e23839aba7400c95618d0adc100a235979e784c249c0e74571676f63da0cf",
+      "taskId": "task-e1295a88-8ab7-49e2-9616-1feeab5a29ba",
+      "version": 1
+    },
+    "version": 1
+  },
+  "tddRequired": true
+}
