@@ -1,6 +1,13 @@
 // Coverage for the overflow compaction retry loop in runEmbeddedAgent.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  classifyFailoverReason,
+  formatAssistantErrorText,
+  formatUserFacingAssistantErrorText,
+  isLikelyContextOverflowError,
+} from "../embedded-agent-helpers/errors.js";
+import { makeAssistantMessageFixture } from "../test-helpers/assistant-message-fixtures.js";
+import {
   makeAttemptResult,
   makeCompactionSuccess,
   makeOverflowError,
@@ -11,6 +18,10 @@ import {
   overflowBaseRunParams as baseParams,
   loadRunOverflowCompactionHarness,
   mockedCompactDirect,
+  mockedBuildEmbeddedRunPayloads,
+  mockedClassifyFailoverReason,
+  mockedCoerceToFailoverError,
+  mockedFormatAssistantErrorText,
   mockedIsCompactionFailureError,
   mockedIsLikelyContextOverflowError,
   mockedLog,
@@ -75,19 +86,80 @@ describe("overflow compaction in run loop", () => {
       const lower = msg.toLowerCase();
       return lower.includes("request_too_large") && lower.includes("summarization failed");
     });
-    mockedIsLikelyContextOverflowError.mockImplementation((msg?: string) => {
-      if (!msg) {
-        return false;
-      }
-      const lower = msg.toLowerCase();
-      return (
-        lower.includes("request_too_large") ||
-        lower.includes("request size exceeds") ||
-        lower.includes("context window exceeded") ||
-        lower.includes("prompt too large")
-      );
-    });
+    mockedIsLikelyContextOverflowError.mockImplementation(isLikelyContextOverflowError);
   });
+
+  it.each(["promptError", "assistantError", "interruptedPrefill"] as const)(
+    "does not compact or replay a memory failure from %s",
+    async (source) => {
+      mockedClassifyFailoverReason.mockImplementation(classifyFailoverReason);
+      mockedFormatAssistantErrorText.mockImplementation(formatAssistantErrorText);
+      const { coerceToFailoverError } =
+        await vi.importActual<typeof import("../failover-error.js")>("../failover-error.js");
+      mockedCoerceToFailoverError.mockImplementation(coerceToFailoverError);
+      const { buildEmbeddedRunPayloads } =
+        await vi.importActual<typeof import("./run/payloads.js")>("./run/payloads.js");
+      mockedBuildEmbeddedRunPayloads.mockImplementation(buildEmbeddedRunPayloads);
+      const raw =
+        source === "interruptedPrefill"
+          ? '400 {"error":{"type":"invalid_request_error","code":"prefill_memory_aborted","message":"Request interrupted"}}'
+          : "400 oMLX prefill memory guard rejected this prompt: Prefill would require ~61.90 GB peak but the prefill limit is 59.80 GB. To continue, free system memory, or compact/reduce context.";
+      const error = new Error(raw);
+      const assistant = makeAssistantMessageFixture({
+        provider: "anthropic",
+        model: "test-model",
+        errorMessage: raw,
+        content:
+          source === "interruptedPrefill" ? [{ type: "text", text: "Partial response" }] : [],
+      });
+      mockedRunEmbeddedAttempt.mockResolvedValue(
+        makeAttemptResult({
+          promptError: source === "promptError" ? error : null,
+          lastAssistant: source === "promptError" ? undefined : assistant,
+          currentAttemptAssistant: source === "promptError" ? undefined : assistant,
+          messagesSnapshot: source === "promptError" ? [] : [assistant],
+          assistantTexts: source === "interruptedPrefill" ? ["Partial response"] : [],
+          ...(source === "interruptedPrefill"
+            ? {
+                didSendViaMessagingTool: true,
+                messagingToolSentTexts: ["Already delivered"],
+                toolMetas: [{ toolName: "message" }],
+              }
+            : {}),
+        }),
+      );
+      if (source === "promptError") {
+        await expect(runEmbeddedAgent(baseParams)).rejects.toBe(error);
+        expect(formatUserFacingAssistantErrorText(assistant)).toMatch(/memory.*headroom/i);
+      } else {
+        const result = await runEmbeddedAgent(baseParams);
+        const payloadParams = requireMockCallArg(mockedBuildEmbeddedRunPayloads, 0);
+        expect(payloadParams.lastAssistant).toBe(assistant);
+        expect(mockedFormatAssistantErrorText).toHaveBeenCalled();
+        expect(formatUserFacingAssistantErrorText(assistant)).toMatch(
+          source === "interruptedPrefill"
+            ? /memory.*interrupt|interrupt.*memory/i
+            : /memory.*headroom/i,
+        );
+        expect(result.meta.error?.kind).not.toBe("context_overflow");
+        if (source === "assistantError") {
+          expect(result.payloads?.find((payload) => payload.isError)?.text).toMatch(
+            /memory.*headroom/i,
+          );
+        }
+        if (source === "interruptedPrefill") {
+          expect(result.didSendViaMessagingTool).toBe(true);
+          expect(result.messagingToolSentTexts).toEqual(["Already delivered"]);
+        }
+      }
+      expect(assistant.errorMessage).toBe(raw);
+      expect(mockedRunEmbeddedAttempt).toHaveBeenCalledTimes(1);
+      expect(mockedCompactDirect).not.toHaveBeenCalled();
+      expect(mockedTruncateOversizedToolResultsInSession).not.toHaveBeenCalled();
+      expectLogExcludes(mockedLog.warn, "context-overflow-diag");
+      expectLogExcludes(mockedLog.warn, "compactionTokens=200001");
+    },
+  );
 
   it("retries after successful compaction on context overflow promptError", async () => {
     mockOverflowRetrySuccess({

@@ -31,6 +31,7 @@ export type ThinkingCatalogEntry = {
   reasoning?: boolean;
   compat?: {
     thinkingFormat?: string;
+    supportsReasoningEffort?: boolean;
     supportedReasoningEfforts?: readonly string[] | null;
   } | null;
 };

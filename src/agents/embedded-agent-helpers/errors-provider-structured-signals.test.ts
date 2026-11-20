@@ -1,7 +1,7 @@
 // Covers provider hook structured failover signals.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveFailoverReasonFromError } from "../failover-error.js";
-import { classifyFailoverSignal } from "./errors.js";
+import { classifyFailoverSignal, classifyProviderRuntimeFailureKind } from "./errors.js";
 
 const providerRuntimeMocks = vi.hoisted(() => ({
   classifyProviderPluginError: vi.fn(),
@@ -19,6 +19,24 @@ describe("provider failover hook structured signals", () => {
   beforeEach(() => {
     providerRuntimeMocks.classifyProviderPluginError.mockReset();
   });
+
+  it.each(["prefill_memory_exceeded", "prefill_memory_aborted"])(
+    "preserves structured memory semantics for %s",
+    (code) => {
+      for (const message of [undefined, "Request rejected"]) {
+        const signal = { status: 400, code, errorType: "invalid_request_error", message };
+        expect(classifyFailoverSignal(signal)).toBeNull();
+        expect(classifyProviderRuntimeFailureKind(signal)).not.toBe("schema");
+        for (const error of [
+          { status: 400, code, message },
+          { status: 400, error: { code, type: "invalid_request_error", message } },
+          { status: 400, error: { omlx_code: code, type: "invalid_request_error", message } },
+        ]) {
+          expect(resolveFailoverReasonFromError(error)).toBeNull();
+        }
+      }
+    },
+  );
 
   it("lets provider hooks refine ambiguous auth statuses from stable codes", () => {
     // HTTP 403 is ambiguous; provider-owned stable codes can refine it to

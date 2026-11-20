@@ -159,7 +159,7 @@ function readDirectErrorCode(err: unknown): string | undefined {
   if (!err || typeof err !== "object") {
     return undefined;
   }
-  const directCode = (err as { code?: unknown }).code;
+  const directCode = (err as { code?: unknown }).code ?? (err as { omlx_code?: unknown }).omlx_code;
   if (typeof directCode === "string") {
     const trimmed = directCode.trim();
     return trimmed ? trimmed : undefined;

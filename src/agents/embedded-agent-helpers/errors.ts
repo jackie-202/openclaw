@@ -40,6 +40,7 @@ import {
   classifyProviderPluginError,
   classifyProviderSpecificError,
   matchesProviderContextOverflow,
+  recognizePrefillMemoryFailure,
 } from "./provider-error-patterns.js";
 import {
   formatBillingErrorMessage,
@@ -99,7 +100,7 @@ function hasRateLimitTpmHint(raw: string): boolean {
 
 /** Detect explicit context-window overflow without confusing TPM rate limits. */
 export function isContextOverflowError(errorMessage?: string): boolean {
-  if (!errorMessage) {
+  if (!errorMessage || recognizePrefillMemoryFailure(errorMessage)) {
     return false;
   }
   const lower = normalizeLowercaseStringOrEmpty(errorMessage);
@@ -160,7 +161,7 @@ const RATE_LIMIT_HINT_RE =
   /rate limit|too many requests|requests per (?:minute|hour|day)|quota|throttl|429\b|tokens per day/i;
 
 export function isLikelyContextOverflowError(errorMessage?: string): boolean {
-  if (!errorMessage) {
+  if (!errorMessage || recognizePrefillMemoryFailure(errorMessage)) {
     return false;
   }
 
@@ -1010,6 +1011,9 @@ function classifyFailoverClassificationFromMessage(
 }
 
 export function classifyFailoverSignal(signal: FailoverSignal): FailoverClassification | null {
+  if (recognizePrefillMemoryFailure(signal)) {
+    return null;
+  }
   const inferredStatus = inferSignalStatus(signal);
   const explicitStatus =
     typeof signal.status === "number" && Number.isFinite(signal.status) ? signal.status : undefined;
@@ -1069,6 +1073,9 @@ export function classifyProviderRuntimeFailureKind(
   signal: FailoverSignal | string,
 ): ProviderRuntimeFailureKind {
   const normalizedSignal = typeof signal === "string" ? { message: signal } : signal;
+  if (recognizePrefillMemoryFailure(normalizedSignal)) {
+    return "unclassified";
+  }
   const message = normalizedSignal.message?.trim() ?? "";
   const status = inferSignalStatus(normalizedSignal);
 
@@ -1166,6 +1173,14 @@ export function formatAssistantErrorText(
   }
   if (!raw) {
     return "LLM request failed with an unknown error.";
+  }
+
+  const memoryFailure = recognizePrefillMemoryFailure(raw);
+  if (memoryFailure === "admission") {
+    return "LLM prefill rejected: insufficient memory headroom. Free system memory or reduce concurrent memory use before trying again.";
+  }
+  if (memoryFailure === "interrupted") {
+    return "LLM generation interrupted by prefill memory protection. Partial output or completed work may already exist; check the result before retrying.";
   }
 
   const providerRuntimeFailureKind = classifyProviderRuntimeFailureKind({

@@ -16,6 +16,14 @@ import type {
   PluginHookBeforeModelResolveResult,
   PluginHookBeforePromptBuildResult,
 } from "../../plugins/types.js";
+import {
+  BILLING_ERROR_USER_MESSAGE,
+  formatRawAssistantErrorForUi,
+  formatUserFacingAssistantErrorText,
+  getApiErrorPayloadFingerprint,
+  isRawApiErrorPayload,
+} from "../embedded-agent-helpers/errors.js";
+import { normalizeTextForComparison } from "../embedded-agent-helpers/messaging-dedupe.js";
 import type { FailoverReason } from "../embedded-agent-helpers/types.js";
 import { clearAgentHarnesses, registerAgentHarness } from "../harness/registry.js";
 import type { buildEmbeddedRunPayloads } from "./run/payloads.js";
@@ -211,7 +219,9 @@ export const mockedExtractObservedOverflowTokenCount = vi.fn((msg?: string) => {
   const match = msg?.match(/prompt is too long:\s*([\d,]+)\s+tokens\s*>\s*[\d,]+\s+maximum/i);
   return match?.[1] ? Number(match[1].replaceAll(",", "")) : undefined;
 });
-export const mockedFormatAssistantErrorText = vi.fn(() => "");
+export const mockedFormatAssistantErrorText = vi.fn<
+  typeof import("../embedded-agent-helpers/errors.js").formatAssistantErrorText
+>(() => "");
 export const mockedIsAuthAssistantError = vi.fn(() => false);
 export const mockedIsBillingAssistantError = vi.fn(() => false);
 export const mockedIsCompactionFailureError = vi.fn(() => false);
@@ -613,6 +623,12 @@ export async function loadRunOverflowCompactionHarness(): Promise<{
   }));
 
   vi.doMock("../embedded-agent-helpers.js", () => ({
+    BILLING_ERROR_USER_MESSAGE,
+    formatRawAssistantErrorForUi,
+    formatUserFacingAssistantErrorText,
+    getApiErrorPayloadFingerprint,
+    isRawApiErrorPayload,
+    normalizeTextForComparison,
     formatBillingErrorMessage: mockedFormatBillingErrorMessage,
     classifyFailoverReason: mockedClassifyFailoverReason,
     extractObservedOverflowTokenCount: mockedExtractObservedOverflowTokenCount,

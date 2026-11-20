@@ -22,6 +22,15 @@ The full conversation history stays on disk. Compaction only changes what the mo
 
 Auto-compaction is on by default. It runs when the session nears the context limit, or when the model returns a context-overflow error (in which case OpenClaw compacts and retries).
 
+Local servers can also reject a prompt because there is not enough RAM headroom
+for prefill, even when it fits the token context window. Recognized oMLX
+`prefill_memory_exceeded` rejections are memory-admission failures, so they do
+not trigger overflow compaction or automatic replay. Free system memory or
+reduce concurrent memory use before trying again; capacity is not guaranteed.
+The separate `prefill_memory_aborted` error means prefill was interrupted by
+memory protection. Partial output or completed work may already exist, so check
+the result before retrying.
+
 You will see:
 
 - `embedded run auto-compaction start` / `complete` in normal Gateway logs.

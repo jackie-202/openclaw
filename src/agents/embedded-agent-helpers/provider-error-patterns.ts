@@ -16,6 +16,47 @@ type ProviderErrorPattern = {
   reason: FailoverReason;
 };
 
+/** RAM admission/interruptions must precede token and schema heuristics: neither
+ * compaction nor replay can be inferred from a memory guard rejection. */
+export function recognizePrefillMemoryFailure(
+  input: string | { code?: string; message?: string },
+): "admission" | "interrupted" | null {
+  const memoryCode = (code: unknown) =>
+    code === "prefill_memory_exceeded"
+      ? "admission"
+      : code === "prefill_memory_aborted"
+        ? "interrupted"
+        : null;
+  const code = typeof input === "string" ? undefined : input.code;
+  const classified = memoryCode(code);
+  if (classified) {
+    return classified;
+  }
+  const raw = (typeof input === "string" ? input : input.message)?.trim() ?? "";
+  const text = raw.replace(/^\d{3}\s+/, "");
+  if (/^oMLX prefill memory guard rejected this prompt:\s*Prefill would require\b/i.test(text)) {
+    return "admission";
+  }
+  if (!text.startsWith("{")) {
+    return memoryCode(text);
+  }
+  try {
+    const payload: unknown = JSON.parse(text);
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return null;
+    }
+    const envelope = payload as Record<string, unknown>;
+    const nested = envelope.error;
+    const error =
+      nested && typeof nested === "object" && !Array.isArray(nested)
+        ? (nested as Record<string, unknown>)
+        : envelope;
+    return memoryCode(error.code) ?? memoryCode(error.omlx_code);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Provider-specific context overflow patterns not covered by the generic
  * `isContextOverflowError()` in errors.ts. Called from `isContextOverflowError()`

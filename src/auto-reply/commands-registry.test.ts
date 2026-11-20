@@ -764,7 +764,10 @@ describe("commands registry args", () => {
                   id: "gpt-5.4",
                   name: "GPT 5.4 via GMN",
                   reasoning: true,
-                  compat: { supportedReasoningEfforts: ["low", "medium", "high", "xhigh"] },
+                  compat: {
+                    supportsReasoningEffort: true,
+                    supportedReasoningEfforts: ["low", "medium", "high", "xhigh"],
+                  },
                 },
               ],
             },

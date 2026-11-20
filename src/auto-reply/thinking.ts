@@ -247,7 +247,7 @@ export function resolveThinkingProfile(params: {
     },
   });
   if (binaryDecision !== true && catalogEfforts?.length) {
-    const levels = catalogEfforts
+    const levels: RankedThinkingLevelOption[] = catalogEfforts
       .filter((id) => id !== "off")
       .map((id) => ({ id, label: id, rank: THINKING_LEVEL_RANKS[id] }));
     if (catalogEfforts.includes("off")) {

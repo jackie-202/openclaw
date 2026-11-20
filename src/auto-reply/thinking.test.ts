@@ -321,14 +321,15 @@ describe("listThinkingLevels", () => {
         id: "gpt-5.4",
         name: "GPT 5.4 via GMN",
         reasoning: true,
-        compat: { supportedReasoningEfforts: ["low", "medium", "high", "xhigh"] },
+        compat: {
+          supportsReasoningEffort: true,
+          supportedReasoningEfforts: ["low", "medium", "high", "xhigh"],
+        },
       },
     ];
 
     expect(listThinkingLevels("gmn", "gpt-5.4", catalog)).toContain("xhigh");
-    expect(formatThinkingLevels("gmn", "gpt-5.4", ", ", catalog)).toBe(
-      "off, minimal, low, medium, high, xhigh",
-    );
+    expect(formatThinkingLevels("gmn", "gpt-5.4", ", ", catalog)).toBe("low, medium, high, xhigh");
     expect(
       isThinkingLevelSupported({
         provider: "gmn",
@@ -339,6 +340,38 @@ describe("listThinkingLevels", () => {
     ).toBe(true);
   });
 
+  it("uses advertised efforts only when catalog explicitly enables reasoning efforts", () => {
+    const efforts = ["low", "medium", "high", "xhigh"] as const;
+    for (const supportsReasoningEffort of [undefined, false] as const) {
+      const catalog = [
+        {
+          provider: "gmn",
+          id: "gpt-5.4",
+          reasoning: true,
+          compat: { supportedReasoningEfforts: [...efforts], supportsReasoningEffort },
+        },
+      ];
+      expect(listThinkingLevels("gmn", "gpt-5.4", catalog)).not.toContain("xhigh");
+      expect(listThinkingLevels("gmn", "gpt-5.4", catalog)).toContain("minimal");
+    }
+  });
+
+  it("preserves exact advertised off and non-off effort lists", () => {
+    const levels = (efforts: string[]) =>
+      listThinkingLevels("gmn", "gpt-5.4", [
+        {
+          provider: "gmn",
+          id: "gpt-5.4",
+          reasoning: true,
+          compat: { supportsReasoningEffort: true, supportedReasoningEfforts: efforts },
+        },
+      ]);
+
+    expect(levels(["off"])).toEqual(["off"]);
+    expect(levels(["off", "high"])).toEqual(["off", "high"]);
+    expect(levels(["low", "high"])).toEqual(["low", "high"]);
+  });
+
   it("does not let catalog xhigh compat override binary thinking providers", () => {
     providerRuntimeMocks.resolveProviderBinaryThinking.mockReturnValue(true);
     const catalog = [
@@ -346,7 +379,10 @@ describe("listThinkingLevels", () => {
         provider: "zai",
         id: "glm-4.7",
         name: "GLM 4.7",
-        compat: { supportedReasoningEfforts: ["xhigh"] },
+        compat: {
+          supportsReasoningEffort: true,
+          supportedReasoningEfforts: ["low", "xhigh"],
+        },
       },
     ];
 

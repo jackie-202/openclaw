@@ -1,5 +1,9 @@
 # Agent Changelog
 
+## 2026-11-20
+
+**oMLX memory guard prevents false context overflow and compaction**
+
 ## 2026-10-04
 
 **Deliberation plugin drops the replaced bundled implementation**
